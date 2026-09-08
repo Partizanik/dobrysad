@@ -1064,6 +1064,7 @@
     }
     if(!waterAdLoading) waterAdBtn.textContent = T().waterAdBtn;
     waterAdBtn.style.display = anyGrowing() ? '' : 'none';
+    waterAdBtn.disabled = !hasWaterTarget();
     renderBackpack();
   }
 
@@ -1131,9 +1132,22 @@
 
   function onCellTap(i){
     var t = T(); var g = ensureGarden(active); var val = g.board[i];
+    /* a growing (not-ready) plant can't merge or move yet, but tapping it picks it as the
+       target for the "Podlej i przyspiesz" button below — instead of that button watering
+       a random plant, it now only lights up for whichever one you've chosen. */
     if(val && !isReady(g,i)){
-      var secsLeft = Math.max(1, Math.ceil(((g.readyAt[i]||0)-Date.now())/1000));
-      toast(t.toast.stillGrowing(secsLeft)); sfx('deny'); return;
+      var wasSelected = selected===i;
+      selected = wasSelected ? null : i;
+      if(!wasSelected){
+        var secsLeft = Math.max(1, Math.ceil(((g.readyAt[i]||0)-Date.now())/1000));
+        toast(t.toast.stillGrowing(secsLeft));
+      }
+      renderGrid(); return;
+    }
+    if(selected!==null && g.board[selected] && !isReady(g, selected)){
+      /* the previous selection was a growing plant chosen only for watering — you can't
+         merge or move through it, so any other tap just abandons that pick. */
+      selected = null;
     }
     if(val && selected===null){
       var maxInfo = levelInfo(val);
@@ -1227,19 +1241,21 @@
     for(var i=0;i<g.board.length;i++){ if(g.board[i] && !isReady(g,i)) return true; }
     return false;
   }
-  /* one ad = one sprout ripened (the one closest to finishing), not the whole board — otherwise
-     a single ad view could instantly max out every plant at once. */
+  /* the button only ever waters the sprout the player explicitly tapped — never a heuristic
+     guess — so it stays disabled until `selected` points at a real growing plant. */
+  function hasWaterTarget(){
+    var g = ensureGarden(active);
+    return selected!==null && !!g.board[selected] && !isReady(g, selected);
+  }
   function watchWaterAd(){
-    if(waterAdLoading || !anyGrowing()) return;
+    if(waterAdLoading || !hasWaterTarget()) return;
     var t = T();
+    var target = selected;
     waterAdLoading = true; waterAdBtn.textContent = t.waterAdBtnLoading;
     setTimeout(function(){
       var g = ensureGarden(active);
-      var best = -1;
-      for(var i=0;i<g.board.length;i++){
-        if(g.board[i] && !isReady(g,i) && (best===-1 || g.readyAt[i] < g.readyAt[best])) best = i;
-      }
-      if(best!==-1) g.readyAt[best] = 0;
+      if(g.board[target] && !isReady(g, target)) g.readyAt[target] = 0;
+      if(selected===target) selected = null;
       waterAdLoading = false; renderAll(); toast(T().toast.watered, 2700); sfx('ad');
     }, 900);
   }
