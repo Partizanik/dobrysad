@@ -285,7 +285,7 @@
     </symbol>
     <symbol id="ic-studio" viewBox="0 0 64 64">
       <circle cx="32" cy="32" r="30" fill="url(#badgeGrad)"/>
-      <text x="32" y="39" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="19" fill="#fbfaf1">GS</text>
+      <text x="32" y="40" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="21" fill="#fbfaf1">+48</text>
     </symbol>
   </defs>
 </svg>
@@ -574,7 +574,7 @@
         noCandidates: 'Brak roślin, które można przyspieszyć.',
         alreadyGuaranteed: 'Masz już nieużytą gwarancję.',
         stillGrowing: function(s){ return '🌱 Jeszcze rośnie — zostało ' + s + ' s.'; },
-        watered: '💧 Podlano! Wszystkie rosnące rośliny dojrzały.',
+        watered: '💧 Podlano! Jedna roślina dojrzała.',
         warehouseFull: '📦 Magazyn pełny — powiększ go, żeby zbierać więcej.',
         harvested: function(n, icon){ return '📺 Zebrano +' + n + ' ' + icon + '! Trafiło do magazynu.'; },
         gotWater: function(n){ return '📺 Dzięki! +' + n + ' 💧 wody w magazynie.'; },
@@ -724,7 +724,7 @@
         noCandidates: 'No plants available to speed up.',
         alreadyGuaranteed: 'You already have an unused guarantee.',
         stillGrowing: function(s){ return '🌱 Still growing — ' + s + 's left.'; },
-        watered: '💧 Watered! All growing plants are now ready.',
+        watered: '💧 Watered! One plant is now ready.',
         warehouseFull: '📦 Warehouse full — expand it to collect more.',
         harvested: function(n, icon){ return '📺 Harvested +' + n + ' ' + icon + '! Added to the warehouse.'; },
         gotWater: function(n){ return '📺 Thanks! +' + n + ' 💧 water in the warehouse.'; },
@@ -1227,13 +1227,19 @@
     for(var i=0;i<g.board.length;i++){ if(g.board[i] && !isReady(g,i)) return true; }
     return false;
   }
+  /* one ad = one sprout ripened (the one closest to finishing), not the whole board — otherwise
+     a single ad view could instantly max out every plant at once. */
   function watchWaterAd(){
     if(waterAdLoading || !anyGrowing()) return;
     var t = T();
     waterAdLoading = true; waterAdBtn.textContent = t.waterAdBtnLoading;
     setTimeout(function(){
       var g = ensureGarden(active);
-      for(var i=0;i<g.board.length;i++){ if(g.board[i]) g.readyAt[i]=0; }
+      var best = -1;
+      for(var i=0;i<g.board.length;i++){
+        if(g.board[i] && !isReady(g,i) && (best===-1 || g.readyAt[i] < g.readyAt[best])) best = i;
+      }
+      if(best!==-1) g.readyAt[best] = 0;
       waterAdLoading = false; renderAll(); toast(T().toast.watered, 2700); sfx('ad');
     }, 900);
   }
