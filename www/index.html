@@ -1,0 +1,950 @@
+<title>GoodGarden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef2e3; --bg-2:#e4ead4; --surface:#fbfaf1; --surface-2:#e8e3ce;
+    --ink:#233020; --ink-dim:#5b6a4f; --line:#d7dcc1;
+    --gold:#a8791f; --gold-ink:#5c4110; --gold-soft:#f1dfab;
+    --coral:#a94e34; --coral-soft:#f2d3c2;
+    --leaf:#3f7a3f; --leaf-deep:#26501f;
+    --violet:#6a4f9e; --violet-soft:#e6dcf5;
+    --blue:#2e6fa0; --blue-soft:#dbe9f3;
+    --shadow:rgba(35,48,31,0.14); --focus:#2f6b3f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1712; --bg-2:#131f16; --surface:#17231a; --surface-2:#1e2c20;
+      --ink:#e6ecdd; --ink-dim:#9db08e; --line:#2a3a28;
+      --gold:#e3b355; --gold-ink:#2c2308; --gold-soft:#3a2e14;
+      --coral:#e28563; --coral-soft:#3b2018;
+      --leaf:#6fa765; --leaf-deep:#8fc684;
+      --violet:#b79cf0; --violet-soft:#2c2440;
+      --blue:#7fb3dd; --blue-soft:#1c2c38;
+      --shadow:rgba(0,0,0,0.45); --focus:#8fc684;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1712; --bg-2:#131f16; --surface:#17231a; --surface-2:#1e2c20;
+    --ink:#e6ecdd; --ink-dim:#9db08e; --line:#2a3a28;
+    --gold:#e3b355; --gold-ink:#2c2308; --gold-soft:#3a2e14;
+    --coral:#e28563; --coral-soft:#3b2018;
+    --leaf:#6fa765; --leaf-deep:#8fc684;
+    --violet:#b79cf0; --violet-soft:#2c2440;
+    --blue:#7fb3dd; --blue-soft:#1c2c38;
+    --shadow:rgba(0,0,0,0.45); --focus:#8fc684;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:
+      radial-gradient(60% 50% at 15% 0%, var(--bg-2), transparent 60%),
+      radial-gradient(50% 40% at 100% 100%, var(--bg-2), transparent 60%),
+      var(--bg);
+    color:var(--ink); font-family:'Manrope', -apple-system, sans-serif; min-height:100%;
+  }
+  h1,h2,h3,.display{font-family:'PT Serif', Georgia, serif; text-wrap:balance;}
+  ::selection{background:var(--gold-soft);}
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button{font-family:inherit;}
+
+  .page{max-width:1100px; margin:0 auto; padding:28px 20px 60px;}
+  .top{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:12px;}
+  .brand h1{font-size:28px; margin:0; font-weight:700; color:var(--leaf-deep);}
+  .badge{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--coral); background:var(--coral-soft); border-radius:999px; padding:4px 10px;}
+  .subtitle{color:var(--ink-dim); font-size:14.5px; max-width:64ch;}
+
+  .layout{display:grid; grid-template-columns:minmax(300px,364px) 1fr; gap:32px; align-items:start;}
+  @media (max-width:780px){ .layout{grid-template-columns:1fr;} }
+
+  .phone-wrap{display:flex; justify-content:center;}
+  .phone{
+    width:100%; max-width:346px; background:var(--surface);
+    border:10px solid #233020; border-radius:38px;
+    box-shadow:0 24px 48px -20px var(--shadow), inset 0 0 0 2px var(--bg);
+    overflow:hidden; position:relative;
+  }
+  :root[data-theme="dark"] .phone{border-color:#050a06;}
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .phone{border-color:#050a06;} }
+  .statusbar{display:flex; justify-content:space-between; align-items:center; padding:8px 16px 2px; font-size:11px; font-weight:700; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
+  .langsw{display:flex; gap:3px;}
+  .langsw button{border:1px solid var(--line); background:var(--surface-2); color:var(--ink-dim); font-size:9.5px; font-weight:800; border-radius:6px; padding:2px 6px; cursor:pointer;}
+  .langsw button.active{background:var(--leaf); color:#fff; border-color:var(--leaf);}
+  .screen{padding:4px 14px 4px; position:relative;}
+
+  .game-title{text-align:center; font-size:17px; font-weight:700; color:var(--leaf-deep); margin:0 0 2px; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .game-tagline{text-align:center; font-size:10px; color:var(--ink-dim); margin-bottom:8px;}
+  .garden-row{display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:8px;}
+  .garden-row .sup{font-size:10.5px; background:var(--gold-soft); color:var(--gold-ink); border-radius:999px; padding:3px 9px; font-weight:800;}
+  .map-open{border:none; background:var(--violet-soft); color:var(--violet); border-radius:999px; width:24px; height:24px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+
+  .stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
+  .stat{background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:7px 10px; display:flex; align-items:center; gap:7px;}
+  .stat .icon{font-size:17px; line-height:1;}
+  .stat .num{font-weight:800; font-variant-numeric:tabular-nums; font-size:14px;}
+  .stat.gold{background:var(--gold-soft);} .stat.gold .num{color:var(--gold-ink);}
+  .stat.coral{background:var(--coral-soft);} .stat.coral .num{color:var(--coral);}
+
+  .boosts{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; min-height:0;}
+  .boost-chip{font-size:10px; font-weight:700; background:var(--violet-soft); color:var(--violet); border-radius:999px; padding:3px 8px; display:flex; gap:4px; align-items:center; font-variant-numeric:tabular-nums;}
+
+  .impact{border:1px dashed var(--line); border-radius:14px; padding:8px 10px; margin-bottom:10px; background:var(--surface);}
+  .impact-row{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-dim); margin-bottom:5px; gap:6px;}
+  .impact-row b{color:var(--ink); font-weight:700;}
+  .bar{height:7px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
+  .bar > span{display:block; height:100%; background:linear-gradient(90deg, var(--leaf), var(--gold)); transition:width .5s ease;}
+  @media (prefers-reduced-motion:reduce){ .bar > span{transition:none;} }
+
+  .grid-wrap{position:relative; margin-bottom:10px;}
+  .grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; background:var(--bg-2); border:1px solid var(--line); border-radius:16px; padding:8px;}
+  .cell{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:19px; background:var(--surface-2); border:1.5px dashed var(--line); cursor:pointer; user-select:none; transition:transform .12s ease, box-shadow .12s ease; position:relative;}
+  @media (prefers-reduced-motion:reduce){ .cell{transition:none;} }
+  .cell.filled{border-style:solid; border-color:transparent;}
+  .cell.secret{box-shadow:0 0 0 2px var(--violet) inset, 0 0 10px 0 var(--violet-soft);}
+  .cell.selected{box-shadow:0 0 0 2px var(--focus) inset; transform:scale(0.94);}
+  .cell:active{transform:scale(0.92);}
+  .cell .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
+
+  .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px;}
+  .fruit{position:absolute; font-size:20px; top:-8%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, opacity .2s ease;}
+  .fruit.gold{font-size:24px;}
+  .float-plus{position:absolute; font-weight:800; font-size:13px; color:var(--gold-ink); pointer-events:none; animation:floatUp 900ms ease-out forwards;}
+  @keyframes floatUp{ from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-32px);} }
+  .combo{position:absolute; top:6px; left:50%; transform:translateX(-50%); background:var(--coral); color:#fff; font-weight:800; font-size:11px; border-radius:999px; padding:3px 10px; opacity:0; transition:opacity .2s ease; z-index:3;}
+  .combo.show{opacity:1;}
+
+  .actions{display:grid; gap:7px; margin-bottom:8px;}
+  .btn{border:none; border-radius:12px; padding:10px 12px; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s ease;}
+  .btn:hover{filter:brightness(1.06);} .btn:active{filter:brightness(0.96);}
+  .btn-primary{background:var(--leaf); color:#fbfaf1;}
+  .btn-gold{background:var(--gold-soft); color:var(--gold-ink); border:1px solid var(--gold);}
+  .btn-coral{background:var(--coral-soft); color:var(--coral); border:1px solid var(--coral);}
+  .btn-ghost{background:transparent; color:var(--ink-dim); border:1px solid var(--line); font-weight:600;}
+  .btn-violet{background:var(--violet-soft); color:var(--violet); border:1px solid var(--violet);}
+  .btn-blue{background:var(--blue-soft); color:var(--blue); border:1px solid var(--blue);}
+  .btn[disabled]{opacity:.45; cursor:not-allowed; filter:none;}
+  .btn-big{padding:13px; font-size:13.5px;}
+
+  .navbar{display:grid; grid-template-columns:repeat(4,1fr); gap:4px; border-top:1px solid var(--line); padding-top:7px; margin-top:2px;}
+  .navbtn{background:none; border:none; border-radius:10px; padding:6px 2px; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9.5px; font-weight:700; color:var(--ink-dim); cursor:pointer;}
+  .navbtn .ic{font-size:16px;}
+  .navbtn.active{color:var(--leaf-deep); background:var(--surface-2);}
+
+  .toast{position:absolute; left:14px; right:14px; bottom:70px; background:var(--ink); color:var(--bg); border-radius:12px; padding:9px 12px; font-size:11.5px; font-weight:600; box-shadow:0 10px 24px -8px var(--shadow); opacity:0; transform:translateY(8px); transition:opacity .25s ease, transform .25s ease; pointer-events:none; z-index:6; text-align:center;}
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  .modal-overlay{position:absolute; inset:0; background:rgba(15,23,18,0.55); display:none; align-items:center; justify-content:center; padding:14px; z-index:10;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface); border-radius:16px; padding:14px; width:100%; max-width:280px; border:1px solid var(--line); box-shadow:0 20px 40px -12px var(--shadow); max-height:85vh; overflow:auto;}
+  .modal h3{margin:0 0 8px; font-size:15px;}
+  .modal p{margin:0 0 8px; font-size:11.5px; color:var(--ink-dim); line-height:1.5;}
+
+  .map-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:4px;}
+  .garden-card{flex:0 0 auto; width:96px; border-radius:14px; padding:9px 8px; text-align:center; border:1.5px solid var(--line); background:var(--surface-2); cursor:pointer;}
+  .garden-card.active{border-color:var(--leaf); background:var(--gold-soft);}
+  .garden-card.locked{opacity:.6;}
+  .garden-card .gicon{font-size:24px; display:block; margin-bottom:4px;}
+  .garden-card .gname{font-size:10px; font-weight:700; line-height:1.25; display:block; margin-bottom:3px;}
+  .garden-card .gcost{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
+
+  .shop-cat{font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--ink-dim); margin:10px 0 6px;}
+  .shop-cat:first-child{margin-top:0;}
+  .shop-item{border:1px solid var(--line); border-radius:13px; padding:8px 10px; margin-bottom:7px; background:var(--surface-2);}
+  .shop-item .row1{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .shop-item .name{font-weight:700; font-size:12.5px; display:flex; gap:6px; align-items:center;}
+  .shop-item .desc{font-size:10.5px; color:var(--ink-dim); margin-top:2px; line-height:1.4;}
+  .shop-item .charity{font-size:9.5px; color:var(--leaf-deep); font-weight:700; margin-top:3px;}
+  .shop-item button{border:none; background:var(--gold); color:var(--gold-ink); font-weight:800; border-radius:8px; padding:6px 9px; font-size:11px; cursor:pointer; white-space:nowrap;}
+  .shop-item button[disabled]{opacity:.4;}
+  .scroll420{max-height:430px; overflow-y:auto; padding-right:2px;}
+
+  .rank-banner{background:var(--blue-soft); border:1px solid var(--blue); border-radius:13px; padding:9px 11px; font-size:11px; color:var(--ink); line-height:1.5; margin-bottom:9px;}
+  .rank-tabs{display:flex; gap:6px; margin-bottom:8px;}
+  .rank-tab{flex:1; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-dim); font-weight:700; font-size:11px; border-radius:10px; padding:7px; cursor:pointer;}
+  .rank-tab.active{background:var(--leaf); color:#fff; border-color:var(--leaf);}
+  .rank-row{display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:11px; margin-bottom:5px; background:var(--surface-2); border:1px solid var(--line);}
+  .rank-row.me{background:var(--gold-soft); border-color:var(--gold);}
+  .rank-medal{width:22px; text-align:center; font-size:14px; flex-shrink:0;}
+  .rank-name{flex:1; font-weight:700; font-size:11.5px;}
+  .rank-val{font-weight:800; font-size:11px; color:var(--leaf-deep); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .your-card{border:1px dashed var(--gold); background:var(--gold-soft); border-radius:13px; padding:9px 11px; font-size:11px; color:var(--gold-ink); margin-top:8px; line-height:1.5;}
+
+  .vote-note{background:var(--violet-soft); color:var(--violet); border-radius:11px; padding:8px 10px; font-size:10.5px; margin-bottom:9px; line-height:1.5; font-weight:600;}
+  .vote-card{border:1px solid var(--line); border-radius:13px; padding:9px 10px; margin-bottom:8px; background:var(--surface-2);}
+  .vote-card .vname{font-weight:700; font-size:12px; margin-bottom:2px;}
+  .vote-card .vdesc{font-size:10.5px; color:var(--ink-dim); margin-bottom:6px; line-height:1.4;}
+  .vote-bar{height:8px; border-radius:999px; background:var(--surface); overflow:hidden; margin-bottom:6px; border:1px solid var(--line);}
+  .vote-bar > span{display:block; height:100%; background:linear-gradient(90deg, var(--violet), var(--blue));}
+  .vote-card button{border:none; background:var(--violet); color:#fff; font-weight:800; border-radius:8px; padding:6px 10px; font-size:10.5px; cursor:pointer;}
+  .vote-card button[disabled]{opacity:.4;}
+  .past-recipient{font-size:10.5px; color:var(--ink-dim); border-top:1px solid var(--line); padding-top:8px; margin-top:4px; line-height:1.5;}
+
+  .panel h2{font-size:22px; margin:0 0 6px; color:var(--leaf-deep);}
+  .panel > p{color:var(--ink-dim); max-width:60ch; line-height:1.6; margin:0 0 18px;}
+  .facts{display:grid; gap:12px; margin-bottom:20px;}
+  .fact{display:grid; grid-template-columns:auto 1fr; gap:12px; padding:13px 14px; border-radius:14px; background:var(--surface); border:1px solid var(--line);}
+  .fact .n{font-family:'PT Serif',serif; font-weight:700; font-size:20px; color:var(--gold-ink); background:var(--gold-soft); border-radius:10px; padding:4px 10px; align-self:flex-start;}
+  .fact .t{font-weight:700; font-size:13.5px; margin-bottom:2px;}
+  .fact .d{color:var(--ink-dim); font-size:12.5px; line-height:1.5;}
+  .legend{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; color:var(--ink-dim);}
+  .legend b{color:var(--ink);}
+  .note{margin-top:16px; padding:13px 14px; border-radius:14px; background:var(--coral-soft); border:1px solid var(--coral); font-size:12.5px; color:var(--ink); line-height:1.5;}
+  .note b{color:var(--coral);}
+  .note.stack{margin-top:10px; background:var(--blue-soft); border-color:var(--blue);}
+  .note.stack b{color:var(--blue);}
+  .note.warn{background:var(--gold-soft); border-color:var(--gold);}
+  .note.warn b{color:var(--gold-ink);}
+</style>
+
+<div class="page">
+  <div class="top">
+    <div>
+      <div class="brand"><h1>GoodGarden</h1><span class="badge">Demo · rynek PL</span></div>
+      <div class="subtitle">Wersja na rynek polski: pomoc głównie przez oglądanie reklam (za darmo dla gracza), zakupy opcjonalne, ranking i comiesięczne głosowanie na cel — wszystko widoczne na ekranie telefonu.</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="statusbar">
+          <span>9:41</span>
+          <div class="langsw"><button id="langPl" class="active">PL</button><button id="langEn">EN</button></div>
+        </div>
+        <div class="screen" id="screen">
+
+          <div class="game-title">🌱 GoodGarden</div>
+          <div class="game-tagline" id="tagline"></div>
+          <div class="garden-row">
+            <button class="map-open" id="mapOpenBtn" title="Gardens map">🗺️</button>
+            <span class="sup" id="gardenNameTag"></span>
+          </div>
+
+          <div class="stats">
+            <div class="stat gold"><span class="icon">🌾</span><span class="num" id="dobro">0</span></div>
+            <div class="stat coral"><span class="icon">💛</span><span class="num" id="hearts">5</span></div>
+          </div>
+
+          <div class="boosts" id="boosts"></div>
+
+          <div class="impact">
+            <div class="impact-row"><span id="impactLabelText"></span><b id="impactLabel"></b></div>
+            <div class="bar"><span id="impactBar" style="width:0%"></span></div>
+          </div>
+
+          <div id="viewGarden">
+            <div class="grid-wrap">
+              <div class="grid" id="grid"></div>
+              <div class="fruit-layer" id="fruitLayer"></div>
+              <div class="combo" id="combo"></div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-coral btn-big" id="adBtn"></button>
+              <button class="btn btn-primary" id="plantBtn"></button>
+              <button class="btn btn-ghost" id="offlineBtn"></button>
+            </div>
+          </div>
+
+          <div id="viewMap" style="display:none;">
+            <div style="font-size:11px; color:var(--ink-dim); margin-bottom:6px;" id="mapHint"></div>
+            <div class="map-strip" id="mapStrip"></div>
+            <button class="btn btn-ghost" id="mapCloseBtn" style="width:100%; margin-top:4px;"></button>
+          </div>
+
+          <div id="viewShop" style="display:none;"><div class="scroll420" id="shopScroll"></div></div>
+
+          <div id="viewRank" style="display:none;">
+            <div class="rank-banner" id="rankBanner"></div>
+            <div class="rank-tabs">
+              <button class="rank-tab active" id="rankTabTime"></button>
+              <button class="rank-tab" id="rankTabMoney"></button>
+            </div>
+            <div class="scroll420" id="rankList"></div>
+            <div class="your-card" id="rankYou"></div>
+          </div>
+
+          <div id="viewVote" style="display:none;">
+            <div class="vote-note" id="voteNote"></div>
+            <div class="scroll420" id="voteList"></div>
+          </div>
+
+          <div class="navbar">
+            <button class="navbtn active" id="navGarden"><span class="ic">🌱</span><span id="navGardenLbl"></span></button>
+            <button class="navbtn" id="navShop"><span class="ic">🛍️</span><span id="navShopLbl"></span></button>
+            <button class="navbtn" id="navRank"><span class="ic">🏆</span><span id="navRankLbl"></span></button>
+            <button class="navbtn" id="navVote"><span class="ic">🗳️</span><span id="navVoteLbl"></span></button>
+          </div>
+
+          <div class="toast" id="toast"></div>
+
+          <div class="modal-overlay" id="confirmModal">
+            <div class="modal">
+              <h3 id="confirmTitle"></h3>
+              <p id="confirmText"></p>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="flex:1" id="confirmNo"></button>
+                <button class="btn btn-primary" style="flex:1" id="confirmYes"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-overlay" id="roundupModal">
+            <div class="modal">
+              <h3 id="roundupTitle"></h3>
+              <p id="roundupText"></p>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="flex:1" id="roundupNo"></button>
+                <button class="btn btn-gold" style="flex:1" id="roundupYes"></button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Что изменилось под польский рынок</h2>
+      <p>Интерфейс внутри телефона — полностью на польском с переключателем на английский (PL/EN в статус-баре сверху). Главная кнопка теперь — просмотр рекламы, покупки явно опциональны. Добавил Ranking и Głosowanie как отдельные вкладки снизу, а карта садов переехала в иконку 🗺️ рядом с названием сада, чтобы снизу поместилось 4 вкладки.</p>
+
+      <div class="facts">
+        <div class="fact"><div class="n">📺</div><div><div class="t">Реклама — главное действие</div><div class="d">Кнопка «Obejrzyj reklamę i zrób dobro» теперь первая и самая заметная. Покупки остались, но подписаны как необязательные — ровно то, что вы просили: помогать можно просто временем.</div></div></div>
+        <div class="fact"><div class="n">🏆</div><div><div class="t">Ranking на два измерения</div><div class="d">Отдельно топ по количеству просмотренной рекламы и отдельно по сумме поддержки — так те, кто не платит, тоже видят себя в лидерах. Показаны только топ-8, у каждого всегда есть личная карточка «Twoje miejsce» — чтобы никто не чувствовал себя проигравшим.</div></div></div>
+        <div class="fact"><div class="n">🗳️</div><div><div class="t">Głosowanie — превью функции</div><div class="d">Демо голосования за фонд месяца: три кандидата, живые проценты, история прошлых получателей для прозрачности. Помечено как preview — для реального голосования нужен бэкенд (ниже).</div></div></div>
+      </div>
+
+      <div class="legend"><b>Важно про Ranking:</b> честный рейтинг реальных пользователей нельзя сделать только на клиенте — люди смогут подделать локальные данные. Нужен бэкенд с аккаунтами и серверной проверкой показов рекламы — подробный план ниже в документе.</div>
+
+      <div class="note"><b>Реклама:</b> да, по сути вы правы — Google (через AdMob) сам находит рекламодателей через аукцион в реальном времени, вам не нужно ни с кем договариваться лично. Кнопка «Obejrzyj reklamę» в коде — это именно то место, куда встраивается вызов AdMob SDK.</div>
+      <div class="note stack"><b>Важно для Польши (EU):</b> с 2024 года Google требует сертифицированный CMP (экран согласия на рекламу, GDPR/RODO) для показа персонализированной рекламы в ЕЭЗ — без этого AdMob режет доход. Google даёт готовый UMP SDK для этого. (<a href="https://support.google.com/admob/answer/13554116?hl=en" target="_blank" rel="noopener">источник</a>)</div>
+      <div class="note warn"><b>Про сбор средств в Польше:</b> перевод банковским переводом партнёрскому фонду — это НЕ «zbiórka publiczna» и регистрации на zbiorki.gov.pl не требует (она нужна только для сбора наличных/вещей в общественных местах). Проще всего оформить партнёрство с существующим фондом, например через «Firmową Skarbonkę» Siepomaga.pl — готовый инструмент именно для такой ежемесячной корпоративной передачи средств.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= i18n ================= */
+  var LANG = 'pl';
+  var I18N = {
+    pl: {
+      tagline: 'Pomagaj, oglądając reklamy — za darmo',
+      gardenLabelSuffix: '',
+      impactLabel: 'Wspólne dobro (cały świat)',
+      plantFree: '(za darmo)',
+      plantCost: function(c){ return '(' + c + ' 🌾)'; },
+      plantBtn: '🌰 Zasadź nasionko',
+      adBtn: '📺 Obejrzyj reklamę i zrób dobro',
+      adBtnLoading: '⏳ Wyświetlanie reklamy (demo)...',
+      offlineBtn: '🕐 Symulacja: godzina offline',
+      navGarden:'Ogród', navShop:'Sklep', navRank:'Ranking', navVote:'Głosy',
+      mapHint: 'Przesuń, aby zobaczyć wszystkie ogrody — nowe otwierają się bez końca.',
+      mapClose: '← Wróć do ogrodu',
+      comboLabel: function(n){ return '🔥 Combo ×' + n; },
+      confirmYes:'Otwórz', confirmNo:'Anuluj',
+      confirmTitle: function(name){ return 'Otworzyć „' + name + '"?'; },
+      confirmText: function(cost){ return 'Koszt: ' + cost + ' 🌾 Dobra. Otrzymasz nową grządkę 5×5 z własnym zestawem roślin.'; },
+      roundupTitle: 'Dziękujemy za wsparcie 💛',
+      roundupText: function(extra){ return 'Chcesz zaokrąglić tę wpłatę na rzecz fundacji? Dotychczas dodatkowo przekazano: ' + extra + ' zł.'; },
+      roundupYes: 'Zaokrąglij (+2 zł)', roundupNo:'Nie teraz',
+      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Leśna Gęstwina','Ogród Kwiatowy','Oaza'],
+      adjectives: ['Zagadkowy','Kryształowy','Księżycowy','Słoneczny','Szmaragdowy','Niebiański','Magiczny','Pradawny','Bajkowy','Tęczowy'],
+      nouns: ['ogród','oaza','las','wyspa','park','zakątek','raj','kryształowy ogród'],
+      milestones: ['zestaw warzyw','jeden obiad','20 litrów wody','podręcznik','prawdziwe drzewo','zabawka','wizyta u lekarza','dzień w szkole','miesiąc dachu nad głową dla rodziny'],
+      milestoneToast: function(icon,t,label){ return icon + ' Kamień milowy: ' + t + ' Dobra — jakby sfinansowano: ' + label; },
+      toast: {
+        notEnoughSoft: 'Za mało 🌾 Dobra.',
+        notEnoughHeart: 'Za mało 💛 Serduszek.',
+        gridFull: 'Grządka pełna — połącz rośliny, by zrobić miejsce.',
+        maxSameLine: 'Ta roślina jest już na maksymalnym poziomie.',
+        secretSpawn: '✨ Sekretna roślina! Zbieraj je jako osobną kolekcję.',
+        maxReached: 'Roślina osiągnęła maksymalny poziom!',
+        adReward: 'Dzięki za obejrzenie! +10 💛. W wersji pełnej ten przychód też trafia do funduszu.',
+        offline: function(v){ return '🕐 Pod Twoją nieobecność ogród zarobił ' + v + ' Dobra.'; },
+        noCandidates: 'Brak roślin, które można przyspieszyć.',
+        alreadyGuaranteed: 'Masz już nieużytą gwarancję.',
+        boosterOn: function(name){ return name + ' aktywowany!'; },
+        instantGrowth: '🧪 Roślina natychmiast urosła o poziom!',
+        guaranteeReady: '🌟 Gotowe — następne połączenie da sekretną roślinę!',
+        heartsBought: '💛 +50 Serduszek!',
+        honeyApplied: '🍯 Stały bonus +5% zastosowany!',
+        skinApplied: function(name){ return '🎨 Wygląd „' + name + '" zastosowany!'; },
+        gardenUnlocked: function(name){ return '🎉 Otwarto ogród „' + name + '"!'; },
+        notEnoughForGarden: 'Za mało Dobra — rozwijaj obecny ogród dalej.',
+        roundupThanks: 'Dziękujemy! Dodatkowe 2 zł trafi do funduszu razem z zakupem.',
+        voted: function(name){ return 'Twój głos na „' + name + '" został zapisany (demo).'; }
+      },
+      shop: {
+        catFree: 'Przyspieszacze — zwykła ekonomia gry',
+        catHeart: 'Aktywatory za Serduszka — część trafia do funduszu',
+        catSupport: 'Wsparcie projektu — złotówki (demo)',
+        catCosmetic: 'Dekoracje — tylko dla wyglądu',
+        water: {name:'💧 Podlewanie', desc:'+25% dochodu ogrodu na 10 minut.'},
+        fertilizer: {name:'🌿 Nawóz', desc:'+40% bonusu za połączenie na 20 minut.'},
+        growlamp: {name:'☀️ Lampa wzrostu ×2', desc:'Podwaja cały dochód ogrodu na 60 minut.'},
+        bio: {name:'🧪 Bio-aktywator', desc:'Natychmiast podnosi losową roślinę o 1 poziom.'},
+        rareSeed: {name:'🌟 Rzadkie nasiono', desc:'Następne udane połączenie gwarantowanie da sekretną roślinę.'},
+        honey: {name:'🍯 Miód pszczeli', desc:'Stały bonus +5% do dochodu (maks. 5 zakupów = +25%).'},
+        heartsPack: {name:'💛 Pakiet Serduszek ×50', desc:'Szybkie doładowanie twardej waluty.'},
+        skinSunset: {name:'🎨 Zachodzące słońce', desc:'Zmienia akcent kolorystyczny grządki.'},
+        skinMidnight:{name:'🎨 Północny ogród', desc:'Zmienia akcent kolorystyczny grządki.'},
+        charityHeart: '≈30% czystego przychodu z Serduszek trafia do fundacji partnerskiej',
+        charityMoney: '30% tego zakupu trafia do fundacji',
+        charityCosmetic: '40% tego zakupu trafia do fundacji',
+        max:'Maksimum', owned:'Kupione'
+      },
+      rank: {
+        banner: 'W tym miesiącu społeczność obejrzała <b>128 400 reklam</b> i wsparła kwotą <b>3 260 zł</b> — to prawie cały cel miesiąca.',
+        tabTime:'Wg czasu (reklamy)', tabMoney:'Wg wsparcia (zł)',
+        unitAds: ' reklam', unitPln:' zł',
+        you: function(rank,total,value,unit){ return 'Twoje miejsce: <b>#' + rank + '</b> z ' + total + ' uczestników — ' + value + unit + ' w tym miesiącu. Każdy wkład się liczy, dziękujemy! 💚'; }
+      },
+      vote: {
+        note: 'Podgląd funkcji: w pełnej wersji raz w miesiącu społeczność głosuje, dokąd trafi zebrana kwota. Poniżej przykładowe głosowanie (demo, głosy nie są prawdziwe).',
+        voteBtn:'Zagłosuj', voted:'Zagłosowano ✓',
+        candidates: [
+          {name:'Fundacja „Mały Bohater"', desc:'Wsparcie leczenia dzieci onkologicznych.'},
+          {name:'Schronisko „Cztery Łapy"', desc:'Opieka nad porzuconymi zwierzętami.'},
+          {name:'Fundacja „Czysta Woda"', desc:'Dostęp do czystej wody w małych miejscowościach.'}
+        ],
+        pastTitle:'Poprzedni miesiąc',
+        past: 'Wygrała: <b>Fundacja „Razem Zdrowiej"</b> — przekazano 2 450 zł ✅ (przykład ilustracyjny)'
+      }
+    },
+    en: {
+      tagline: 'Do good by watching ads — free for you',
+      gardenLabelSuffix: '',
+      impactLabel: 'Shared good (whole world)',
+      plantFree: '(free)',
+      plantCost: function(c){ return '(' + c + ' 🌾)'; },
+      plantBtn: '🌰 Plant a seed',
+      adBtn: '📺 Watch an ad and do good',
+      adBtnLoading: '⏳ Showing ad (demo)...',
+      offlineBtn: '🕐 Simulate: 1 hour offline',
+      navGarden:'Garden', navShop:'Shop', navRank:'Rank', navVote:'Vote',
+      mapHint: 'Scroll to see every garden — new ones unlock forever.',
+      mapClose: '← Back to garden',
+      comboLabel: function(n){ return '🔥 Combo ×' + n; },
+      confirmYes:'Unlock', confirmNo:'Cancel',
+      confirmTitle: function(name){ return 'Unlock "' + name + '"?'; },
+      confirmText: function(cost){ return 'Cost: ' + cost + ' 🌾 Good. You get a new 5×5 plot with its own set of plants.'; },
+      roundupTitle: 'Thank you for your support 💛',
+      roundupText: function(extra){ return 'Want to round up this purchase for the foundation? Extra given so far: ' + extra + ' PLN.'; },
+      roundupYes: 'Round up (+2 PLN)', roundupNo:'Not now',
+      gardenNames: ['Garden of Hope','Tropical Garden','Forest Thicket','Flower Garden','Oasis'],
+      adjectives: ['Mysterious','Crystal','Moonlit','Sunny','Emerald','Heavenly','Magic','Ancient','Fairytale','Rainbow'],
+      nouns: ['garden','oasis','forest','island','park','corner','paradise','crystal garden'],
+      milestones: ['a box of vegetables','one meal','20 liters of water','a school textbook','a real tree planted','a toy','a doctor visit','a day of school','a month of rent for a family'],
+      milestoneToast: function(icon,t,label){ return icon + ' Milestone: ' + t + ' Good — as if we funded: ' + label; },
+      toast: {
+        notEnoughSoft: 'Not enough 🌾 Good.',
+        notEnoughHeart: 'Not enough 💛 Hearts.',
+        gridFull: 'Plot is full — merge plants to free up space.',
+        maxSameLine: 'This plant is already at max level.',
+        secretSpawn: '✨ Secret plant! Collect them as a separate set.',
+        maxReached: 'Plant reached the maximum level!',
+        adReward: 'Thanks for watching! +10 💛. In the live version this revenue also goes to the fund.',
+        offline: function(v){ return '🕐 While you were away your garden earned ' + v + ' Good.'; },
+        noCandidates: 'No plants available to speed up.',
+        alreadyGuaranteed: 'You already have an unused guarantee.',
+        boosterOn: function(name){ return name + ' activated!'; },
+        instantGrowth: '🧪 A plant instantly grew a level!',
+        guaranteeReady: '🌟 Ready — your next merge will be secret!',
+        heartsBought: '💛 +50 Hearts!',
+        honeyApplied: '🍯 Permanent +5% bonus applied!',
+        skinApplied: function(name){ return '🎨 "' + name + '" theme applied!'; },
+        gardenUnlocked: function(name){ return '🎉 Unlocked garden "' + name + '"!'; },
+        notEnoughForGarden: 'Not enough Good — keep growing your current garden.',
+        roundupThanks: 'Thank you! An extra 2 PLN will go to the fund with your purchase.',
+        voted: function(name){ return 'Your vote for "' + name + '" was recorded (demo).'; }
+      },
+      shop: {
+        catFree: 'Boosters — regular game economy',
+        catHeart: 'Heart-powered activators — a share goes to the fund',
+        catSupport: 'Support the project — PLN (demo)',
+        catCosmetic: 'Decorations — cosmetic only',
+        water: {name:'💧 Watering', desc:'+25% garden income for 10 minutes.'},
+        fertilizer: {name:'🌿 Fertilizer', desc:'+40% merge bonus for 20 minutes.'},
+        growlamp: {name:'☀️ Grow lamp ×2', desc:'Doubles the whole garden income for 60 minutes.'},
+        bio: {name:'🧪 Bio-activator', desc:'Instantly levels up a random plant by 1.'},
+        rareSeed: {name:'🌟 Rare seed', desc:'Your next successful merge is guaranteed to be a secret plant.'},
+        honey: {name:'🍯 Bee honey', desc:'Permanent +5% income bonus (max 5 purchases = +25%).'},
+        heartsPack: {name:'💛 Hearts pack ×50', desc:'Quick top-up of hard currency.'},
+        skinSunset: {name:'🎨 Sunset sky', desc:'Changes the color accent of your plot.'},
+        skinMidnight:{name:'🎨 Midnight garden', desc:'Changes the color accent of your plot.'},
+        charityHeart: '≈30% of net Hearts revenue goes to the partner foundation',
+        charityMoney: '30% of this purchase goes to the foundation',
+        charityCosmetic: '40% of this purchase goes to the foundation',
+        max:'Max', owned:'Owned'
+      },
+      rank: {
+        banner: 'This month the community watched <b>128,400 ads</b> and gave <b>3,260 PLN</b> — almost the whole monthly goal.',
+        tabTime:'By time (ads)', tabMoney:'By support (PLN)',
+        unitAds: ' ads', unitPln:' PLN',
+        you: function(rank,total,value,unit){ return 'Your rank: <b>#' + rank + '</b> of ' + total + ' participants — ' + value + unit + ' this month. Every bit counts, thank you! 💚'; }
+      },
+      vote: {
+        note: 'Feature preview: in the full version the community votes once a month on where the collected amount goes. Below is a sample vote (demo, not real).',
+        voteBtn:'Vote', voted:'Voted ✓',
+        candidates: [
+          {name:'"Little Hero" Foundation', desc:'Supporting treatment for children with cancer.'},
+          {name:'"Four Paws" Shelter', desc:'Caring for abandoned animals.'},
+          {name:'"Clean Water" Foundation', desc:'Access to clean water in small towns.'}
+        ],
+        pastTitle:'Last month',
+        past: 'Winner: <b>"Together Healthier" Foundation</b> — 2,450 PLN transferred ✅ (illustrative example)'
+      }
+    }
+  };
+  function T(){ return I18N[LANG]; }
+
+  /* ================= game data ================= */
+  var EMOJI_POOL = ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🌳','🌵','🌴','🍍','🥥','🌼','🌹','🪷','🌸','🍄','🦔','🦋','🐚','💎','🏝️','🌌','⭐','🔥','🌈','🌺','🌾','🍂','🍇'];
+  var SECRET_POOL = ['🌟','🐚','🦋','🦄','🔥','💎','🌈','⚡','❄️','🍀'];
+  var CURATED_PLANTS = [
+    ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🌳','✨'],
+    ['🌰','🌱','🍃','🌿','🍌','🍍','🥥','🌴','🏝️'],
+    ['🌰','🌱','🌿','🍄','🦔','🌲','🦉','🏔️','🌌'],
+    ['🌰','🌱','🌿','🌼','🌷','🌹','🪷','🌸','🌈'],
+    ['🌰','🌵','🌵','🦎','🐫','💎','🏜️','🌅','✨']
+  ];
+  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','🔥'];
+  var CURATED_COST = [0,600,1500,3000,6000];
+  var MAX_LEVEL = 9, SECRET_OFFSET = 100;
+  var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
+  var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
+
+  function gardenDef(n){
+    var t = T();
+    if(n < CURATED_PLANTS.length){
+      return {name: t.gardenNames[n], plants: CURATED_PLANTS[n], secret: CURATED_SECRET[n], cost: CURATED_COST[n]};
+    }
+    var adj = t.adjectives[n % t.adjectives.length];
+    var noun = t.nouns[Math.floor(n / t.adjectives.length) % t.nouns.length];
+    var plants = [];
+    for(var i=0;i<9;i++) plants.push(EMOJI_POOL[(n*7 + i) % EMOJI_POOL.length]);
+    var cost = Math.round(600 * Math.pow(2.15, n-1));
+    return {name: adj + ' ' + noun, plants: plants, secret: SECRET_POOL[n % SECRET_POOL.length], cost: cost};
+  }
+
+  /* ================= state ================= */
+  var gardens = {}; var unlockedMax = 0; var active = 0;
+  var dobro = 12, hearts = 5, allTime = 0, milestoneIdx = 0;
+  var honeyStacks = 0, extraDonated = 0, secretGuaranteed = false;
+  var activeBoosts = {}; var combo = 1, comboResetTimer = null;
+  var screen = 'garden'; var rankTab = 'time'; var votes = {}; var votedAlready = false;
+  var skins = {sunset:false, midnight:false};
+
+  function newBoard(){ return new Array(25).fill(0); }
+  function ensureGarden(n){
+    if(!gardens[n]){
+      gardens[n] = {board:newBoard(), seeds:0, unlocked:false};
+      if(n===0){ gardens[n].unlocked = true; gardens[n].board[6]=1; gardens[n].board[7]=1; gardens[n].board[13]=2; gardens[n].seeds=3; }
+    }
+    return gardens[n];
+  }
+  ensureGarden(0);
+
+  /* mock leaderboard data (demo only) */
+  var LB_TIME = [342,298,276,251,230,214,201,190];
+  var LB_MONEY = [89,76,64,58,52,47,41,35];
+  var LB_NAMES = ['Zielony_Waldek','KubaPomaga','Ania_Ogrodniczka','MartaZDobrem','PawelRosnie','NataliaKwiat','TomekLas','GosiaSad'];
+  var YOUR_RANK = 47, YOUR_TOTAL = 812, YOUR_ADS = 96, YOUR_PLN = 12;
+
+  /* ================= dom ================= */
+  var $ = function(id){ return document.getElementById(id); };
+  var dobroEl=$('dobro'), heartsEl=$('hearts'), boostsEl=$('boosts');
+  var impactLabel=$('impactLabel'), impactBar=$('impactBar'), impactLabelText=$('impactLabelText');
+  var gridEl=$('grid'), fruitLayer=$('fruitLayer'), comboEl=$('combo');
+  var toastEl=$('toast'), gardenNameTag=$('gardenNameTag'), tagline=$('tagline');
+  var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn');
+  var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
+  var navGarden=$('navGarden'), navShop=$('navShop'), navRank=$('navRank'), navVote=$('navVote');
+  var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn');
+  var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
+  var roundupModal=$('roundupModal'), roundupTitle=$('roundupTitle'), roundupText=$('roundupText'), roundupYes=$('roundupYes'), roundupNo=$('roundupNo');
+  var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
+  var voteNote=$('voteNote'), voteList=$('voteList');
+  var langPl=$('langPl'), langEn=$('langEn');
+  var selected = null;
+
+  function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
+  function toast(msg, ms){
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(function(){ toastEl.classList.remove('show'); }, ms||2700);
+  }
+
+  /* ---- boosts / multipliers ---- */
+  function boostActive(key){ return activeBoosts[key] && activeBoosts[key] > Date.now(); }
+  function addBoost(key, ms){ activeBoosts[key] = Date.now() + ms; }
+  function productionMult(){ var m = 1 + (boostActive('water')?0.25:0) + honeyStacks*0.05; if(boostActive('growlamp')) m*=2; return m; }
+  function mergeBonusMult(){ return 1 + (boostActive('fertilizer')?0.4:0); }
+
+  function levelInfo(cellVal){ if(cellVal===0) return null; var secret = cellVal>SECRET_OFFSET; var lvl = secret?cellVal-SECRET_OFFSET:cellVal; return {lvl:lvl, secret:secret}; }
+  function emojiFor(gardenIdx, info){ var g = gardenDef(gardenIdx); return info.secret ? g.secret : g.plants[info.lvl-1]; }
+  function production(gardenIdx, cellVal){ var info = levelInfo(cellVal); if(!info) return 0; var base = Math.pow(info.lvl,1.7)*0.35; if(info.secret) base*=1.5; return base; }
+  function totalProduction(gardenIdx){ var g = ensureGarden(gardenIdx); var sum=0; for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, g.board[i]); return sum * productionMult(); }
+
+  function checkMilestone(){
+    while(milestoneIdx < MILESTONE_T.length && allTime >= MILESTONE_T[milestoneIdx]){
+      var t = T();
+      toast(t.milestoneToast(MILESTONE_ICON[milestoneIdx], MILESTONE_T[milestoneIdx], t.milestones[milestoneIdx]), 3300);
+      milestoneIdx++;
+    }
+  }
+  function addAllTime(n){ allTime += n; checkMilestone(); }
+
+  /* ---- static text application ---- */
+  function applyStatic(){
+    var t = T();
+    tagline.textContent = t.tagline;
+    impactLabelText.textContent = t.impactLabel;
+    plantBtn.textContent = t.plantBtn + ' ' + (seedCost()===0 ? t.plantFree : t.plantCost(seedCost()));
+    adBtn.textContent = adBtn._loading ? t.adBtnLoading : t.adBtn;
+    offlineBtn.textContent = t.offlineBtn;
+    $('navGardenLbl').textContent = t.navGarden;
+    $('navShopLbl').textContent = t.navShop;
+    $('navRankLbl').textContent = t.navRank;
+    $('navVoteLbl').textContent = t.navVote;
+    mapHint.textContent = t.mapHint;
+    mapCloseBtn.textContent = t.mapClose;
+    confirmYes.textContent = t.confirmYes;
+    confirmNo.textContent = t.confirmNo;
+    roundupTitle.textContent = t.roundupTitle;
+    roundupYes.textContent = t.roundupYes;
+    roundupNo.textContent = t.roundupNo;
+    rankTabTime.textContent = t.rank.tabTime;
+    rankTabMoney.textContent = t.rank.tabMoney;
+    gardenNameTag.textContent = gardenDef(active).name;
+    langPl.classList.toggle('active', LANG==='pl');
+    langEn.classList.toggle('active', LANG==='en');
+  }
+
+  /* ---- stats/boosts render ---- */
+  function renderStats(){
+    var t = T();
+    dobroEl.textContent = fmt(dobro);
+    heartsEl.textContent = fmt(hearts);
+    var mIdx = milestoneIdx;
+    if(mIdx < MILESTONE_T.length){
+      var base = mIdx>0 ? MILESTONE_T[mIdx-1] : 0;
+      var target = MILESTONE_T[mIdx];
+      var pct = Math.min(100, Math.round((allTime-base)/(target-base)*100));
+      impactBar.style.width = pct+'%';
+      impactLabel.innerHTML = MILESTONE_ICON[mIdx] + ' ' + fmt(allTime) + ' / ' + target;
+    } else {
+      impactBar.style.width = '100%';
+      impactLabel.innerHTML = '🏆 ' + fmt(allTime);
+    }
+    boostsEl.innerHTML = '';
+    [['water','💧'],['fertilizer','🌿'],['growlamp','☀️×2']].forEach(function(d){
+      if(boostActive(d[0])){
+        var left = Math.max(0, Math.round((activeBoosts[d[0]]-Date.now())/1000));
+        var mm = Math.floor(left/60), ss = left%60;
+        var chip = document.createElement('span'); chip.className='boost-chip';
+        chip.textContent = d[1] + ' ' + mm + ':' + (ss<10?'0':'')+ss;
+        boostsEl.appendChild(chip);
+      }
+    });
+    if(honeyStacks>0){ var hc=document.createElement('span'); hc.className='boost-chip'; hc.textContent='🍯 +'+(honeyStacks*5)+'%'; boostsEl.appendChild(hc); }
+    gardenNameTag.textContent = gardenDef(active).name;
+    plantBtn.textContent = t.plantBtn + ' ' + (seedCost()===0 ? t.plantFree : t.plantCost(seedCost()));
+  }
+
+  function seedCost(){ var g = ensureGarden(active); if(g.seeds<3) return 0; return Math.round(5*Math.pow(1.18, g.seeds-3)); }
+
+  function renderGrid(){
+    var g = ensureGarden(active);
+    gridEl.innerHTML = '';
+    for(var i=0;i<g.board.length;i++){
+      var val = g.board[i]; var info = levelInfo(val);
+      var cell = document.createElement('div');
+      cell.className = 'cell'+(val?' filled':'')+(info&&info.secret?' secret':'')+(selected===i?' selected':'');
+      if(info){
+        var tt = info.lvl/MAX_LEVEL;
+        cell.style.background = 'color-mix(in srgb, var(--surface-2) '+Math.round((1-tt)*70+20)+'%, '+(info.secret?'var(--violet-soft)':'var(--gold-soft)')+')';
+        cell.innerHTML = emojiFor(active, info) + '<span class="lvl">'+info.lvl+'</span>';
+      }
+      cell.setAttribute('role','button'); cell.setAttribute('tabindex','0');
+      cell.addEventListener('click', (function(idx){ return function(){ onCellTap(idx); }; })(i));
+      gridEl.appendChild(cell);
+    }
+  }
+
+  function onCellTap(i){
+    var t = T(); var g = ensureGarden(active); var val = g.board[i];
+    if(selected===null){ if(val) selected=i; renderGrid(); return; }
+    if(selected===i){ selected=null; renderGrid(); return; }
+    var selVal = g.board[selected];
+    if(val===0){ g.board[i]=selVal; g.board[selected]=0; selected=null; renderGrid(); return; }
+    if(val===selVal){
+      var info = levelInfo(val);
+      if(info.lvl >= MAX_LEVEL){ toast(t.toast.maxSameLine); selected=null; renderGrid(); return; }
+      var newLvl = info.lvl+1; var makeSecret = info.secret;
+      if(!makeSecret){
+        if(secretGuaranteed){ makeSecret=true; secretGuaranteed=false; }
+        else if(newLvl>=6 && Math.random()<0.12){ makeSecret=true; }
+      }
+      g.board[i] = newLvl + (makeSecret?SECRET_OFFSET:0);
+      g.board[selected] = 0;
+      var bonus = newLvl*3*mergeBonusMult();
+      dobro += bonus; addAllTime(bonus);
+      selected = null; renderGrid(); renderStats();
+      if(makeSecret && !info.secret) toast(t.toast.secretSpawn, 3000);
+      if(newLvl===MAX_LEVEL) toast(t.toast.maxReached, 3000);
+      return;
+    }
+    selected = i; renderGrid();
+  }
+
+  function plantSeed(){
+    var t = T(); var g = ensureGarden(active); var cost = seedCost();
+    if(cost>dobro){ toast(t.toast.notEnoughSoft); return; }
+    var empties=[]; for(var i=0;i<g.board.length;i++) if(g.board[i]===0) empties.push(i);
+    if(!empties.length){ toast(t.toast.gridFull); return; }
+    dobro -= cost;
+    var idx = empties[Math.floor(Math.random()*empties.length)];
+    g.board[idx]=1; g.seeds++; renderGrid(); renderStats();
+  }
+
+  var adLoading=false;
+  function watchAd(){
+    if(adLoading) return; var t = T();
+    adLoading = true; adBtn._loading = true; adBtn.textContent = t.adBtnLoading;
+    setTimeout(function(){
+      hearts += 10; adLoading=false; adBtn._loading=false; adBtn.textContent = T().adBtn;
+      renderStats(); toast(T().toast.adReward, 3100);
+    }, 1100);
+  }
+
+  function simulateOffline(){
+    var perSec = totalProduction(active); var earned = perSec*3600;
+    dobro += earned; addAllTime(earned); renderStats();
+    toast(T().toast.offline(fmt(earned)), 3400);
+  }
+
+  function resetCombo(){ combo=1; comboEl.classList.remove('show'); }
+  function bumpCombo(){
+    combo = Math.min(6, combo+1); comboEl.textContent = T().comboLabel(combo);
+    comboEl.classList.add('show'); clearTimeout(comboResetTimer); comboResetTimer = setTimeout(resetCombo, 2600);
+  }
+
+  function spawnFruit(){
+    if(screen !== 'garden') return;
+    var prod = totalProduction(active); if(prod<=0) return;
+    var chance = Math.min(0.75, 0.15+prod/40); if(Math.random()>chance) return;
+    var isGold = Math.random()<0.12;
+    var el = document.createElement('div'); el.className='fruit'+(isGold?' gold':'');
+    el.textContent = isGold ? gardenDef(active).secret : '🪙';
+    var left = 10+Math.random()*80; el.style.left = left+'%'; el.style.top='-8%';
+    fruitLayer.appendChild(el);
+    var duration = 2200+Math.random()*1000;
+    requestAnimationFrame(function(){ el.style.transition='top '+duration+'ms linear'; el.style.top='108%'; });
+    var caught=false;
+    el.addEventListener('click', function(){
+      if(caught) return; caught=true;
+      var value = Math.round((isGold?15:2)*combo*(1+prod*0.05));
+      dobro += value; addAllTime(value); bumpCombo();
+      var plus = document.createElement('div'); plus.className='float-plus'; plus.textContent='+'+value;
+      plus.style.left = el.style.left; plus.style.top = el.style.top;
+      fruitLayer.appendChild(plus); setTimeout(function(){ plus.remove(); }, 950);
+      el.style.transition='opacity .15s ease'; el.style.opacity='0';
+      renderStats(); setTimeout(function(){ el.remove(); }, 160);
+    });
+    setTimeout(function(){ if(!caught){ el.remove(); resetCombo(); } }, duration+60);
+  }
+
+  /* ---- map ---- */
+  function renderMap(){
+    mapStrip.innerHTML = '';
+    var showCount = unlockedMax + 2;
+    for(var i=0;i<=showCount;i++){
+      var def = gardenDef(i); var g = ensureGarden(i);
+      var card = document.createElement('div');
+      card.className = 'garden-card'+(i===active?' active':'')+(!g.unlocked?' locked':'');
+      var statusTxt = g.unlocked ? (i===active ? (LANG==='pl'?'Aktywny':'Active') : (LANG==='pl'?'Otwarty':'Unlocked')) : ('🌾 '+fmt(def.cost));
+      card.innerHTML = '<span class="gicon">'+def.plants[def.plants.length-1]+'</span><span class="gname">'+def.name+'</span><span class="gcost">'+statusTxt+'</span>';
+      card.addEventListener('click', (function(idx){ return function(){ onGardenCardTap(idx); }; })(i));
+      mapStrip.appendChild(card);
+    }
+  }
+  function onGardenCardTap(i){
+    var t = T(); var g = ensureGarden(i);
+    if(g.unlocked){ active=i; selected=null; switchScreen('garden'); renderAll(); return; }
+    var def = gardenDef(i);
+    confirmTitle.textContent = t.confirmTitle(def.name);
+    confirmText.textContent = t.confirmText(fmt(def.cost));
+    confirmModal.classList.add('show');
+    confirmYes.onclick = function(){
+      confirmModal.classList.remove('show');
+      if(dobro < def.cost){ toast(t.toast.notEnoughForGarden); return; }
+      dobro -= def.cost; g.unlocked = true; unlockedMax = Math.max(unlockedMax, i);
+      active = i; selected = null; switchScreen('garden'); renderAll();
+      toast(t.toast.gardenUnlocked(def.name), 2700);
+    };
+    confirmNo.onclick = function(){ confirmModal.classList.remove('show'); };
+  }
+
+  /* ---- shop ---- */
+  function buyHard(cost){ if(hearts<cost){ toast(T().toast.notEnoughHeart); return false; } hearts-=cost; return true; }
+  function maybeRoundup(){
+    var t = T();
+    roundupText.textContent = t.roundupText(extraDonated);
+    roundupModal.classList.add('show');
+    roundupYes.onclick = function(){ extraDonated += 2; roundupModal.classList.remove('show'); toast(T().toast.roundupThanks); renderShop(); };
+    roundupNo.onclick = function(){ roundupModal.classList.remove('show'); };
+  }
+
+  function renderShop(){
+    var t = T(); var s = t.shop;
+    shopScroll.innerHTML = '';
+    function cat(title){ var d=document.createElement('div'); d.className='shop-cat'; d.textContent=title; shopScroll.appendChild(d); }
+    function item(html){ var d=document.createElement('div'); d.className='shop-item'; d.innerHTML=html; shopScroll.appendChild(d); return d; }
+
+    cat(s.catFree);
+    item('<div class="row1"><div class="name">'+s.water.name+'</div><button id="buyWater">15 🌾</button></div><div class="desc">'+s.water.desc+'</div>')
+      .querySelector('button').onclick = function(){
+        if(dobro<15){ toast(t.toast.notEnoughSoft); return; }
+        dobro-=15; addBoost('water', 10*60*1000); renderAll(); toast(t.toast.boosterOn(s.water.name));
+      };
+
+    cat(s.catHeart);
+    [{key:'fertilizer',id:'fertilizer',cost:12,ms:20*60*1000}, {key:'growlamp',id:'growlamp',cost:25,ms:60*60*1000}].forEach(function(b){
+      var def = s[b.key];
+      var el = item('<div class="row1"><div class="name">'+def.name+'</div><button>'+b.cost+' 💛</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+      el.querySelector('button').onclick = function(bb,dd){ return function(){ if(buyHard(bb.cost)){ addBoost(bb.id, bb.ms); renderAll(); toast(t.toast.boosterOn(dd.name)); } }; }(b, def);
+    });
+    var bioEl = item('<div class="row1"><div class="name">'+s.bio.name+'</div><button id="buyBio">8 💛</button></div><div class="desc">'+s.bio.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    bioEl.querySelector('button').onclick = function(){
+      var g = ensureGarden(active); var candidates=[];
+      for(var i=0;i<g.board.length;i++){ var info=levelInfo(g.board[i]); if(info && info.lvl<MAX_LEVEL) candidates.push(i); }
+      if(!candidates.length){ toast(t.toast.noCandidates); return; }
+      if(!buyHard(8)) return;
+      var idx = candidates[Math.floor(Math.random()*candidates.length)];
+      var info = levelInfo(g.board[idx]);
+      g.board[idx] = (info.lvl+1) + (info.secret?SECRET_OFFSET:0);
+      renderAll(); toast(t.toast.instantGrowth);
+    };
+    var rareEl = item('<div class="row1"><div class="name">'+s.rareSeed.name+'</div><button id="buyRare">20 💛</button></div><div class="desc">'+s.rareSeed.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    rareEl.querySelector('button').onclick = function(){
+      if(secretGuaranteed){ toast(t.toast.alreadyGuaranteed); return; }
+      if(!buyHard(20)) return;
+      secretGuaranteed = true; toast(t.toast.guaranteeReady);
+    };
+
+    cat(s.catSupport);
+    var honeyPrice = [9,15,19,25,29][Math.min(honeyStacks,4)];
+    var honeyEl = item('<div class="row1"><div class="name">'+s.honey.name+(honeyStacks>0?' (+'+honeyStacks*5+'%)':'')+'</div><button id="buyHoney" '+(honeyStacks>=5?'disabled':'')+'>'+(honeyStacks>=5?s.max:honeyPrice+' zł')+'</button></div><div class="desc">'+s.honey.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    if(honeyStacks<5) honeyEl.querySelector('button').onclick = function(){ honeyStacks++; renderAll(); toast(t.toast.honeyApplied); maybeRoundup(); };
+
+    var heartsPackEl = item('<div class="row1"><div class="name">'+s.heartsPack.name+'</div><button id="buyHeartsPack">19 zł</button></div><div class="desc">'+s.heartsPack.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    heartsPackEl.querySelector('button').onclick = function(){ hearts+=50; renderAll(); toast(t.toast.heartsBought); maybeRoundup(); };
+
+    cat(s.catCosmetic);
+    [['sunset','skinSunset',9],['midnight','skinMidnight',12]].forEach(function(row){
+      var key=row[0], defKey=row[1], price=row[2];
+      var owned = skins[key]; var def = s[defKey];
+      var el = item('<div class="row1"><div class="name">'+def.name+'</div><button '+(owned?'disabled':'')+'>'+(owned?s.owned:price+' zł')+'</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityCosmetic+'</div>');
+      if(!owned) el.querySelector('button').onclick = function(){ skins[key]=true; renderAll(); toast(t.toast.skinApplied(def.name)); maybeRoundup(); };
+    });
+  }
+
+  /* ---- leaderboard ---- */
+  function renderRank(){
+    var t = T(); var r = t.rank;
+    rankBanner.innerHTML = r.banner;
+    rankTabTime.classList.toggle('active', rankTab==='time');
+    rankTabMoney.classList.toggle('active', rankTab==='money');
+    var data = rankTab==='time' ? LB_TIME : LB_MONEY;
+    var unit = rankTab==='time' ? r.unitAds : r.unitPln;
+    var medals = ['🥇','🥈','🥉'];
+    rankList.innerHTML = '';
+    for(var i=0;i<data.length;i++){
+      var row = document.createElement('div'); row.className='rank-row';
+      row.innerHTML = '<span class="rank-medal">'+(medals[i]||('#'+(i+1)))+'</span><span class="rank-name">'+LB_NAMES[i]+'</span><span class="rank-val">'+fmt(data[i])+unit+'</span>';
+      rankList.appendChild(row);
+    }
+    var yourVal = rankTab==='time' ? YOUR_ADS : YOUR_PLN;
+    rankYou.innerHTML = r.you(YOUR_RANK, YOUR_TOTAL, fmt(yourVal), unit);
+  }
+
+  /* ---- voting ---- */
+  function renderVote(){
+    var t = T(); var v = t.vote;
+    voteNote.textContent = v.note;
+    voteList.innerHTML = '';
+    var totalVotes = v.candidates.reduce(function(s,c,idx){ return s + (votes[idx]||0) + 10+idx*4; }, 0);
+    v.candidates.forEach(function(c, idx){
+      var base = 10+idx*4;
+      var count = base + (votes[idx]||0);
+      var pct = Math.round(count/totalVotes*100);
+      var card = document.createElement('div'); card.className='vote-card';
+      card.innerHTML = '<div class="vname">'+c.name+'</div><div class="vdesc">'+c.desc+'</div>'+
+        '<div class="vote-bar"><span style="width:'+pct+'%"></span></div>'+
+        '<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:10.5px; color:var(--ink-dim); font-weight:700;">'+pct+'%</span><button '+(votedAlready?'disabled':'')+'>'+(votedAlready?v.voted:v.voteBtn)+'</button></div>';
+      card.querySelector('button').addEventListener('click', function(ci, cc){ return function(){
+        if(votedAlready) return;
+        votes[ci] = (votes[ci]||0)+1; votedAlready = true;
+        toast(T().toast.voted(cc.name)); renderVote();
+      }; }(idx, c));
+      voteList.appendChild(card);
+    });
+    var past = document.createElement('div'); past.className='past-recipient';
+    past.innerHTML = '<b>'+v.pastTitle+':</b><br>'+v.past;
+    voteList.appendChild(past);
+  }
+
+  /* ---- navigation ---- */
+  function switchScreen(s){
+    screen = s;
+    viewGarden.style.display = s==='garden' ? '' : 'none';
+    viewMap.style.display = s==='map' ? '' : 'none';
+    viewShop.style.display = s==='shop' ? '' : 'none';
+    viewRank.style.display = s==='rank' ? '' : 'none';
+    viewVote.style.display = s==='vote' ? '' : 'none';
+    navGarden.classList.toggle('active', s==='garden');
+    navShop.classList.toggle('active', s==='shop');
+    navRank.classList.toggle('active', s==='rank');
+    navVote.classList.toggle('active', s==='vote');
+    if(s==='map') renderMap();
+    if(s==='shop') renderShop();
+    if(s==='rank') renderRank();
+    if(s==='vote') renderVote();
+  }
+  navGarden.addEventListener('click', function(){ switchScreen('garden'); });
+  navShop.addEventListener('click', function(){ switchScreen('shop'); });
+  navRank.addEventListener('click', function(){ switchScreen('rank'); });
+  navVote.addEventListener('click', function(){ switchScreen('vote'); });
+  mapOpenBtn.addEventListener('click', function(){ switchScreen('map'); });
+  mapCloseBtn.addEventListener('click', function(){ switchScreen('garden'); });
+  rankTabTime.addEventListener('click', function(){ rankTab='time'; renderRank(); });
+  rankTabMoney.addEventListener('click', function(){ rankTab='money'; renderRank(); });
+
+  plantBtn.addEventListener('click', plantSeed);
+  adBtn.addEventListener('click', watchAd);
+  offlineBtn.addEventListener('click', simulateOffline);
+  langPl.addEventListener('click', function(){ LANG='pl'; applyStatic(); renderAll(); });
+  langEn.addEventListener('click', function(){ LANG='en'; applyStatic(); renderAll(); });
+
+  function renderAll(){
+    applyStatic(); renderStats();
+    if(screen==='garden') renderGrid();
+    if(screen==='map') renderMap();
+    if(screen==='shop') renderShop();
+    if(screen==='rank') renderRank();
+    if(screen==='vote') renderVote();
+  }
+
+  renderAll();
+  setInterval(function(){
+    var perSec = totalProduction(active);
+    if(perSec>0){ dobro += perSec; addAllTime(perSec); }
+    renderStats();
+  }, 1000);
+  setInterval(spawnFruit, 1400);
+})();
+</script>

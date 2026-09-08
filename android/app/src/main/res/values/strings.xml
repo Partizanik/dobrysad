@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GoodGarden</string>
+    <string name="title_activity_main">GoodGarden</string>
+    <string name="package_name">com.goodgarden.app</string>
+    <string name="custom_url_scheme">com.goodgarden.app</string>
+</resources>
