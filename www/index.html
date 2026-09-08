@@ -288,6 +288,7 @@
 
   .header-logo{display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 2px;}
   .header-logo svg{width:22px; height:22px; flex-shrink:0;}
+  .impact-logo-icon{width:12px; height:12px; vertical-align:-1.5px;}
   .header-logo .word{font-family:'PT Serif',serif; font-weight:700; font-size:17px; color:var(--leaf-deep);}
   .head-actions{position:absolute; top:2px; right:10px; display:flex; gap:5px;}
   .head-actions button{border:none; background:var(--surface-2); border:1px solid var(--line); border-radius:999px; width:24px; height:24px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-dim);}
@@ -911,6 +912,9 @@
   var MAX_LEVEL = 9, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
+  /* the live "Wspólne dobro" readout always shows our own kindness mark — the exact same
+     #ic-logo symbol as the splash screen, reused as-is, never redrawn or altered. */
+  var IMPACT_ICON_SVG = '<svg class="impact-logo-icon"><use href="#ic-logo"/></svg> ';
 
   function gardenDef(n){
     var t = T();
@@ -1130,10 +1134,10 @@
       var target = MILESTONE_T[mIdx];
       var pct = Math.min(100, Math.round((allTime-base)/(target-base)*100));
       impactBar.style.width = pct+'%';
-      impactLabel.innerHTML = MILESTONE_ICON[mIdx] + ' ' + fmt(allTime) + ' / ' + target;
+      impactLabel.innerHTML = IMPACT_ICON_SVG + fmt(allTime) + ' / ' + target;
     } else {
       impactBar.style.width = '100%';
-      impactLabel.innerHTML = '🏆 ' + fmt(allTime);
+      impactLabel.innerHTML = IMPACT_ICON_SVG + fmt(allTime);
     }
     boostsEl.innerHTML = '';
     [['automerge','⚙️']].forEach(function(d){
