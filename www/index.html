@@ -97,7 +97,12 @@
   @media (prefers-reduced-motion:reduce){ .bar > span{transition:none;} }
 
   .grid-wrap{position:relative; margin-bottom:10px;}
-  .grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; background:var(--bg-2); border:1px solid var(--line); border-radius:16px; padding:8px;}
+  .grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; background:var(--bg-2); border:1px solid var(--line); border-radius:16px; padding:8px; perspective:600px;}
+  /* a real Y-axis flip (not just a scale bounce) on the cell that a merge lands on — the
+     perspective on .grid above gives it actual foreshortening instead of looking flat. */
+  @keyframes mergePop{ 0%{transform:scale(.72) rotateY(0deg);} 60%{transform:scale(1.16) rotateY(200deg);} 100%{transform:scale(1) rotateY(360deg);} }
+  .cell.merge-pop{ animation:mergePop .42s ease-out; }
+  @media (prefers-reduced-motion:reduce){ .cell.merge-pop{ animation:none; } }
   .cell{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:19px; background:var(--surface-2); border:1.5px dashed var(--line); cursor:pointer; user-select:none; transition:transform .12s ease, box-shadow .12s ease; position:relative; touch-action:none;}
   @media (prefers-reduced-motion:reduce){ .cell{transition:none;} }
   /* a raised "tile" look — a bright inset edge along the top and a soft shadow along the
@@ -128,9 +133,12 @@
   .bp-row .bpcount{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
   .bp-row button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:8px; padding:5px 10px; font-size:10.5px; cursor:pointer; white-space:nowrap;}
 
-  .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px;}
-  .fruit{position:absolute; font-size:20px; top:-8%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, opacity .2s ease;}
-  .fruit.gold{font-size:24px;}
+  .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px; perspective:400px;}
+  .fruit{position:absolute; font-size:20px; top:-8%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, opacity .2s ease; animation:coinSpin 1.1s linear infinite;}
+  .fruit.gold{font-size:24px; animation-duration:.85s;}
+  /* falling coins/fruit tumble like an actual coin instead of sliding down flat */
+  @keyframes coinSpin{ 0%{transform:translateX(-50%) rotateY(0deg);} 100%{transform:translateX(-50%) rotateY(360deg);} }
+  @media (prefers-reduced-motion:reduce){ .fruit{ animation:none; } }
   .float-plus{position:absolute; font-weight:800; font-size:13px; color:var(--gold-ink); pointer-events:none; animation:floatUp 900ms ease-out forwards;}
   @keyframes floatUp{ from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-32px);} }
   .combo{position:absolute; top:6px; left:50%; transform:translateX(-50%); background:var(--coral); color:#fff; font-weight:800; font-size:11px; border-radius:999px; padding:3px 10px; opacity:0; transition:opacity .2s ease; z-index:3;}
@@ -544,7 +552,7 @@
   var LANG = 'pl';
   var I18N = {
     pl: {
-      tagline: 'Pomagaj, oglądając reklamy — za darmo',
+      tagline: 'Pomagaj za darmo oglądając reklamy',
       gardenLabelSuffix: '',
       impactLabel: 'Wspólne dobro (cały świat)',
       plantFree: '(za darmo)',
@@ -1284,6 +1292,7 @@
       if(info.lvl >= MAX_LEVEL){ toast(t.toast.maxSameLine); sfx('deny'); selected=null; renderGrid(); return; }
       var res = mergePair(g, i, selected);
       selected = null; renderGrid(); renderStats();
+      var mergedEl = gridEl.children[i]; if(mergedEl) mergedEl.classList.add('merge-pop');
       announceMerge(res);
       return;
     }
