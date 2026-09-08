@@ -1,4 +1,4 @@
-package com.goodgarden.app;
+package com.dobrysad.app;
 
 import com.getcapacitor.BridgeActivity;
 

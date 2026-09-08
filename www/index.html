@@ -1,4 +1,4 @@
-<title>GoodGarden</title>
+<title>Dobry Sad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -105,6 +105,11 @@
   .cell.selected{box-shadow:0 0 0 2px var(--focus) inset; transform:scale(0.94);}
   .cell:active{transform:scale(0.92);}
   .cell .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
+  .cell.growing{cursor:default;}
+  .cell .grow{position:absolute; left:14%; right:14%; bottom:3px; height:3px; border-radius:2px; background:rgba(0,0,0,.18); overflow:hidden;}
+  .cell .grow i{display:block; height:100%; width:0%; background:var(--leaf); border-radius:2px;}
+  .cell.harvestable{box-shadow:0 0 0 2px var(--gold) inset, 0 0 10px 0 var(--gold-soft);}
+  .cell .pack{position:absolute; top:2px; left:3px; font-size:9px;}
 
   .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px;}
   .fruit{position:absolute; font-size:20px; top:-8%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, opacity .2s ease;}
@@ -148,6 +153,26 @@
   .garden-card .gname{font-size:10px; font-weight:700; line-height:1.25; display:block; margin-bottom:3px;}
   .garden-card .gcost{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
 
+  .section-title{font-size:11px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:var(--ink-dim); margin:14px 0 7px;}
+  .wh-wrap{border:1px solid var(--line); border-radius:14px; padding:10px 11px; background:var(--surface-2);}
+  .wh-wrap .bar{margin-bottom:4px;}
+  .wh-cap-text{font-size:10px; color:var(--ink-dim); font-weight:700; margin-bottom:8px;}
+  .wh-grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-bottom:9px;}
+  .wh-chip{text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:6px 2px; font-size:9.5px; font-weight:800;}
+  .wh-chip .wi{font-size:15px; display:block; margin-bottom:2px;}
+  .wh-actions{display:flex; gap:6px; margin-bottom:8px;}
+  .wh-actions button{flex:1; font-size:10px; padding:7px 4px;}
+  .wh-refine{display:flex; flex-direction:column; gap:6px;}
+  .wh-refine button{display:flex; justify-content:space-between; align-items:center; width:100%; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:700; font-size:10.5px; border-radius:9px; padding:7px 10px; cursor:pointer;}
+  .wh-refine button[disabled]{opacity:.45; cursor:default;}
+  .town-people{font-size:11.5px; font-weight:700; color:var(--leaf-deep); margin-bottom:8px;}
+  .build-item{border:1px solid var(--line); border-radius:13px; padding:9px 10px; margin-bottom:7px; background:var(--surface-2);}
+  .build-item .brow{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .build-item .bname{font-weight:700; font-size:12px; display:flex; gap:6px; align-items:center;}
+  .build-item .bcost{font-size:9.5px; color:var(--ink-dim); margin-top:4px; line-height:1.5;}
+  .build-item button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:8px; padding:6px 10px; font-size:11px; cursor:pointer; white-space:nowrap;}
+  .build-item button[disabled]{opacity:.4; cursor:default;}
+
   .shop-cat{font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--ink-dim); margin:10px 0 6px;}
   .shop-cat:first-child{margin-top:0;}
   .shop-item{border:1px solid var(--line); border-radius:13px; padding:8px 10px; margin-bottom:7px; background:var(--surface-2);}
@@ -157,6 +182,8 @@
   .shop-item .charity{font-size:9.5px; color:var(--leaf-deep); font-weight:700; margin-top:3px;}
   .shop-item button{border:none; background:var(--gold); color:var(--gold-ink); font-weight:800; border-radius:8px; padding:6px 9px; font-size:11px; cursor:pointer; white-space:nowrap;}
   .shop-item button[disabled]{opacity:.4;}
+  .tier-row{display:flex; gap:6px; margin-top:7px;}
+  .tier-row button{flex:1; border:none; background:var(--gold); color:var(--gold-ink); font-weight:800; border-radius:8px; padding:6px 3px; font-size:10px; cursor:pointer; line-height:1.3;}
   .scroll420{max-height:430px; overflow-y:auto; padding-right:2px;}
 
   .rank-banner{background:var(--blue-soft); border:1px solid var(--blue); border-radius:13px; padding:9px 11px; font-size:11px; color:var(--ink); line-height:1.5; margin-bottom:9px;}
@@ -195,12 +222,77 @@
   .note.stack b{color:var(--blue);}
   .note.warn{background:var(--gold-soft); border-color:var(--gold);}
   .note.warn b{color:var(--gold-ink);}
+
+  /* ---- logo marks (gradient stops via CSS so they follow the theme) ---- */
+  #heartGrad stop:nth-child(1){stop-color:var(--leaf);}
+  #heartGrad stop:nth-child(2){stop-color:var(--gold);}
+  #badgeGrad stop:nth-child(1){stop-color:var(--violet);}
+  #badgeGrad stop:nth-child(2){stop-color:#4a3878;}
+  :root[data-theme="dark"] #badgeGrad stop:nth-child(2){stop-color:#2d2350;}
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #badgeGrad stop:nth-child(2){stop-color:#2d2350;} }
+
+  .header-logo{display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 2px;}
+  .header-logo svg{width:22px; height:22px; flex-shrink:0;}
+  .header-logo .word{font-family:'PT Serif',serif; font-weight:700; font-size:17px; color:var(--leaf-deep);}
+  .head-actions{position:absolute; top:2px; right:10px; display:flex; gap:5px;}
+  .head-actions button{border:none; background:var(--surface-2); border:1px solid var(--line); border-radius:999px; width:24px; height:24px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-dim);}
+
+  /* ---- boot / splash sequence ---- */
+  .boot{position:absolute; inset:0; z-index:30; background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; cursor:pointer; transition:opacity .4s ease; border-radius:28px;}
+  .boot.hide{opacity:0; pointer-events:none;}
+  @media (prefers-reduced-motion:reduce){ .boot{transition:none;} }
+  .boot-stage{display:none; flex-direction:column; align-items:center; gap:14px; animation:bootIn .5s ease both;}
+  .boot-stage.on{display:flex;}
+  @keyframes bootIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion:reduce){ .boot-stage{animation:none;} }
+  .studio-badge svg{width:64px; height:64px;}
+  .studio-word{font-size:10.5px; font-weight:800; letter-spacing:.14em; color:var(--ink-dim); text-transform:uppercase;}
+  .game-logo-big svg{width:78px; height:78px;}
+  .game-word-big{font-family:'PT Serif',serif; font-weight:700; font-size:24px; color:var(--leaf-deep);}
+  .boot-tip{font-size:11.5px; color:var(--ink-dim); min-height:32px; max-width:26ch; line-height:1.5;}
+  .boot-bar{width:70%; max-width:180px; height:6px; border-radius:999px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line);}
+  .boot-bar > span{display:block; height:100%; width:0%; background:linear-gradient(90deg, var(--leaf), var(--gold)); transition:width .2s linear;}
+  .boot-cta{font-size:12px; font-weight:800; color:var(--leaf-deep); background:var(--gold-soft); border:1px solid var(--gold); border-radius:999px; padding:7px 14px; opacity:0; transition:opacity .3s ease;}
+  .boot-cta.show{opacity:1;}
+  .boot-final{font-size:13px; font-weight:700; color:var(--ink); max-width:24ch; line-height:1.45; opacity:0; transition:opacity .3s ease;}
+  .boot-final.show{opacity:1;}
+
+  /* ---- first-run tutorial hint ---- */
+  .tut-hint{position:absolute; inset:0; background:rgba(15,23,18,.4); border-radius:16px; display:flex; align-items:center; justify-content:center; padding:14px; z-index:4;}
+  .tut-hint-card{background:var(--surface); border:1px solid var(--gold); border-radius:14px; padding:12px; max-width:88%; text-align:center; box-shadow:0 14px 26px -10px var(--shadow);}
+  .tut-hint-card p{font-size:11.5px; color:var(--ink); margin:0 0 8px; line-height:1.5;}
+  .tut-hint-card button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:9px; padding:6px 14px; font-size:11px; cursor:pointer;}
 </style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="heartGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <symbol id="ic-logo" viewBox="0 0 64 64">
+      <path d="M32,16 C32,16 27,13 20,16 C6,22 10,38 32,54 C54,38 58,22 44,16 C37,13 32,16 32,16 Z" fill="url(#heartGrad)"/>
+      <path d="M32,20 C30,30 30,44 32,50" fill="none" stroke="var(--ink)" stroke-opacity="0.18" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M32,16 L32,7" stroke="var(--leaf-deep)" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="26.5" cy="8.5" rx="6" ry="3" fill="var(--leaf)" transform="rotate(-28 26.5 8.5)"/>
+      <ellipse cx="37.5" cy="8.5" rx="6" ry="3" fill="var(--leaf)" transform="rotate(28 37.5 8.5)"/>
+    </symbol>
+    <symbol id="ic-studio" viewBox="0 0 64 64">
+      <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#badgeGrad)"/>
+      <text x="32" y="39" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="20" fill="#fbfaf1">+48</text>
+      <text x="49" y="19" text-anchor="middle" font-size="13" fill="#f1dfab">✦</text>
+    </symbol>
+  </defs>
+</svg>
 
 <div class="page">
   <div class="top">
     <div>
-      <div class="brand"><h1>GoodGarden</h1><span class="badge">Demo · rynek PL</span></div>
+      <div class="brand"><h1>Dobry Sad</h1><span class="badge">Demo · rynek PL</span></div>
       <div class="subtitle">Wersja na rynek polski: pomoc głównie przez oglądanie reklam (za darmo dla gracza), zakupy opcjonalne, ranking i comiesięczne głosowanie na cel — wszystko widoczne na ekranie telefonu.</div>
     </div>
   </div>
@@ -210,11 +302,32 @@
       <div class="phone">
         <div class="statusbar">
           <span>9:41</span>
-          <div class="langsw"><button id="langPl" class="active">PL</button><button id="langEn">EN</button></div>
+          <div class="langsw">
+            <button id="soundToggle" title="Sound">🔊</button>
+            <button id="langPl" class="active">PL</button><button id="langEn">EN</button>
+          </div>
         </div>
         <div class="screen" id="screen">
 
-          <div class="game-title">🌱 GoodGarden</div>
+          <div class="boot" id="boot">
+            <div class="boot-stage on" id="bootStudio">
+              <div class="studio-badge"><svg><use href="#ic-studio"/></svg></div>
+              <div class="studio-word">+48 Gaming Studio</div>
+            </div>
+            <div class="boot-stage" id="bootGame">
+              <div class="game-logo-big"><svg><use href="#ic-logo"/></svg></div>
+              <div class="game-word-big">Dobry Sad</div>
+              <div class="boot-bar"><span id="bootBarFill"></span></div>
+              <div class="boot-tip" id="bootTip"></div>
+              <div class="boot-final" id="bootFinal"></div>
+              <div class="boot-cta" id="bootCta"></div>
+            </div>
+          </div>
+
+          <div class="header-logo"><svg><use href="#ic-logo"/></svg><span class="word">Dobry Sad</span></div>
+          <div class="head-actions">
+            <button id="infoBtn" title="Info">ℹ️</button>
+          </div>
           <div class="game-tagline" id="tagline"></div>
           <div class="garden-row">
             <button class="map-open" id="mapOpenBtn" title="Gardens map">🗺️</button>
@@ -238,7 +351,14 @@
               <div class="grid" id="grid"></div>
               <div class="fruit-layer" id="fruitLayer"></div>
               <div class="combo" id="combo"></div>
+              <div class="tut-hint" id="tutHint" style="display:none;">
+                <div class="tut-hint-card">
+                  <p id="tutHintText"></p>
+                  <button id="tutHintOk"></button>
+                </div>
+              </div>
             </div>
+            <button class="btn btn-ghost" id="waterAdBtn" style="display:none; margin-bottom:8px;"></button>
             <div class="actions">
               <button class="btn btn-coral btn-big" id="adBtn"></button>
               <button class="btn btn-primary" id="plantBtn"></button>
@@ -249,7 +369,24 @@
           <div id="viewMap" style="display:none;">
             <div style="font-size:11px; color:var(--ink-dim); margin-bottom:6px;" id="mapHint"></div>
             <div class="map-strip" id="mapStrip"></div>
-            <button class="btn btn-ghost" id="mapCloseBtn" style="width:100%; margin-top:4px;"></button>
+
+            <div class="section-title" id="whTitle"></div>
+            <div class="wh-wrap">
+              <div class="bar"><span id="whBar" style="width:0%"></span></div>
+              <div class="wh-cap-text" id="whCapText"></div>
+              <div class="wh-grid" id="whGrid"></div>
+              <div class="wh-actions">
+                <button class="btn btn-ghost" id="whWaterBtn"></button>
+                <button class="btn btn-ghost" id="whExpandBtn"></button>
+              </div>
+              <div class="wh-refine" id="whRefine"></div>
+            </div>
+
+            <div class="section-title" id="townTitle"></div>
+            <div class="town-people" id="townPeopleLine"></div>
+            <div class="scroll420" id="buildList"></div>
+
+            <button class="btn btn-ghost" id="mapCloseBtn" style="width:100%; margin-top:10px;"></button>
           </div>
 
           <div id="viewShop" style="display:none;"><div class="scroll420" id="shopScroll"></div></div>
@@ -286,6 +423,17 @@
                 <button class="btn btn-ghost" style="flex:1" id="confirmNo"></button>
                 <button class="btn btn-primary" style="flex:1" id="confirmYes"></button>
               </div>
+            </div>
+          </div>
+
+          <div class="modal-overlay" id="infoModal">
+            <div class="modal">
+              <h3 id="infoTitle"></h3>
+              <p id="infoP1"></p>
+              <p id="infoP2"></p>
+              <p id="infoP3"></p>
+              <p id="infoP4"></p>
+              <button class="btn btn-primary" style="width:100%" id="infoClose"></button>
             </div>
           </div>
 
@@ -343,6 +491,25 @@
       navGarden:'Ogród', navShop:'Sklep', navRank:'Ranking', navVote:'Głosy',
       mapHint: 'Przesuń, aby zobaczyć wszystkie ogrody — nowe otwierają się bez końca.',
       mapClose: '← Wróć do ogrodu',
+      whTitle: '📦 Magazyn surowców',
+      whCapText: function(total, cap){ return total + ' / ' + cap + ' — pojemność magazynu'; },
+      whWaterBtn: '📺 Obejrzyj reklamę i zdobądź wodę',
+      whWaterBtnLoading: '⏳ Wyświetlanie reklamy...',
+      whExpandBtn: function(cap){ return '📺 Powiększ magazyn (do ' + (cap+20) + ')'; },
+      whExpandBtnLoading: '⏳ Wyświetlanie reklamy...',
+      refineLabel: function(need, fromIcon, toIcon){ return need + ' ' + fromIcon + ' → 1 ' + toIcon; },
+      townTitle: '🏘️ Miasteczko dobra',
+      townPeopleLine: function(n){ return n>0 ? ('Mieszkańcy: ' + n + ' — każdy dodaje trochę Dobra co sekundę.') : 'Zbuduj pierwszy obiekt, żeby zamieszkali w nim ludzie.'; },
+      buildBtn: 'Buduj',
+      buildCost: 'Koszt',
+      peopleUnit: 'mieszk.',
+      buildings: {
+        senior: {name:'Dom Seniora', desc:'Opieka i ciepły posiłek dla starszych osób.'},
+        orphan: {name:'Dom Dziecka', desc:'Bezpieczny dom dla dzieci bez opieki.'},
+        hospital: {name:'Szpital', desc:'Leczenie dla tych, których na nie nie stać.'},
+        hospice: {name:'Hospicjum', desc:'Godna opieka w ostatnim etapie życia.'},
+        shelter: {name:'Schronisko dla Zwierząt', desc:'Dom dla porzuconych zwierząt.'}
+      },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Otwórz', confirmNo:'Anuluj',
       confirmTitle: function(name){ return 'Otworzyć „' + name + '"?'; },
@@ -350,7 +517,26 @@
       roundupTitle: 'Dziękujemy za wsparcie 💛',
       roundupText: function(extra){ return 'Chcesz zaokrąglić tę wpłatę na rzecz fundacji? Dotychczas dodatkowo przekazano: ' + extra + ' zł.'; },
       roundupYes: 'Zaokrąglij (+2 zł)', roundupNo:'Nie teraz',
-      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Leśna Gęstwina','Ogród Kwiatowy','Oaza'],
+      bootStudio: '+48 Gaming Studio',
+      bootTips: [
+        'Wskazówka: połącz dwie takie same rośliny obok siebie, aby je ulepszyć.',
+        'Odblokowuj nowe ogrody na mapie świata 🗺️ — jest ich nieskończenie wiele.',
+        'Sekretne rośliny świecą na fioletowo — zbieraj je osobno!',
+        'Łap spadające monety i owoce, by zbudować combo 🔥.'
+      ],
+      bootFinal: 'Rób dobro za darmo — oglądaj reklamy 📺',
+      bootCta: 'Dotknij, aby zacząć',
+      tutHintText: '👆 Stuknij roślinę, a potem drugą taką samą obok — połączą się w wyższy poziom.',
+      tutHintOk: 'Rozumiem',
+      waterAdBtn: '💧 Podlej i przyspiesz (obejrzyj reklamę)',
+      waterAdBtnLoading: '⏳ Podlewanie (reklama)...',
+      infoTitle: 'Jak to działa',
+      infoP1: '📺 Oglądanie reklam jest głównym sposobem pomagania — jest darmowe dla Ciebie, a przychód z reklam trafia do funduszu.',
+      infoP2: '💛 Zakupy w sklepie są całkowicie opcjonalne. Tylko zakupy oznaczone „trafia do fundacji" faktycznie zasilają fundusz — 🌾 Dobro zdobyte samą grą to zwykła ekonomia gry.',
+      infoP3: '🏆 Ranking pokazuje najbardziej zaangażowane osoby wg czasu i wg wsparcia — każdy wynik się liczy, nie tylko czołówka.',
+      infoP4: '🌱 Po połączeniu roślina przez chwilę rośnie, zanim znów można ją połączyć — ręczne łączenie jest zawsze darmowe. Auto-łączenie w sklepie to tylko opcjonalna oszczędność czasu.',
+      infoClose: 'Zamknij',
+      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom'],
       adjectives: ['Zagadkowy','Kryształowy','Księżycowy','Słoneczny','Szmaragdowy','Niebiański','Magiczny','Pradawny','Bajkowy','Tęczowy'],
       nouns: ['ogród','oaza','las','wyspa','park','zakątek','raj','kryształowy ogród'],
       milestones: ['zestaw warzyw','jeden obiad','20 litrów wody','podręcznik','prawdziwe drzewo','zabawka','wizyta u lekarza','dzień w szkole','miesiąc dachu nad głową dla rodziny'],
@@ -366,6 +552,15 @@
         offline: function(v){ return '🕐 Pod Twoją nieobecność ogród zarobił ' + v + ' Dobra.'; },
         noCandidates: 'Brak roślin, które można przyspieszyć.',
         alreadyGuaranteed: 'Masz już nieużytą gwarancję.',
+        stillGrowing: function(s){ return '🌱 Jeszcze rośnie — zostało ' + s + ' s.'; },
+        watered: '💧 Podlano! Wszystkie rosnące rośliny dojrzały.',
+        warehouseFull: '📦 Magazyn pełny — powiększ go, żeby zbierać więcej.',
+        harvested: function(n, icon){ return '📺 Zebrano +' + n + ' ' + icon + '! Trafiło do magazynu.'; },
+        gotWater: function(n){ return '📺 Dzięki! +' + n + ' 💧 wody w magazynie.'; },
+        warehouseExpanded: function(cap){ return '📦 Magazyn powiększony do ' + cap + '!'; },
+        notEnoughMaterial: 'Za mało surowców w magazynie.',
+        refined: function(icon){ return '📺 Przetworzono! +1 ' + icon + '.'; },
+        built: function(name){ return '🏗️ Zbudowano: ' + name + '! Nowi mieszkańcy zwiększają Dobro.'; },
         boosterOn: function(name){ return name + ' aktywowany!'; },
         instantGrowth: '🧪 Roślina natychmiast urosła o poziom!',
         guaranteeReady: '🌟 Gotowe — następne połączenie da sekretną roślinę!',
@@ -384,7 +579,8 @@
         catCosmetic: 'Dekoracje — tylko dla wyglądu',
         water: {name:'💧 Podlewanie', desc:'+25% dochodu ogrodu na 10 minut.'},
         fertilizer: {name:'🌿 Nawóz', desc:'+40% bonusu za połączenie na 20 minut.'},
-        growlamp: {name:'☀️ Lampa wzrostu ×2', desc:'Podwaja cały dochód ogrodu na 60 minut.'},
+        growlamp: {name:'☀️ Lampa wzrostu ×2', desc:'Podwaja cały dochód ogrodu na wybrany czas.'},
+        automerge: {name:'⚙️ Auto-łączenie', desc:'Dojrzałe rośliny łączą się same przez 30 minut — bez klikania. Ręczne łączenie zawsze zostaje darmowe.'},
         bio: {name:'🧪 Bio-aktywator', desc:'Natychmiast podnosi losową roślinę o 1 poziom.'},
         rareSeed: {name:'🌟 Rzadkie nasiono', desc:'Następne udane połączenie gwarantowanie da sekretną roślinę.'},
         honey: {name:'🍯 Miód pszczeli', desc:'Stały bonus +5% do dochodu (maks. 5 zakupów = +25%).'},
@@ -427,6 +623,25 @@
       navGarden:'Garden', navShop:'Shop', navRank:'Rank', navVote:'Vote',
       mapHint: 'Scroll to see every garden — new ones unlock forever.',
       mapClose: '← Back to garden',
+      whTitle: '📦 Materials Warehouse',
+      whCapText: function(total, cap){ return total + ' / ' + cap + ' — warehouse capacity'; },
+      whWaterBtn: '📺 Watch an ad for water',
+      whWaterBtnLoading: '⏳ Showing ad...',
+      whExpandBtn: function(cap){ return '📺 Expand warehouse (to ' + (cap+20) + ')'; },
+      whExpandBtnLoading: '⏳ Showing ad...',
+      refineLabel: function(need, fromIcon, toIcon){ return need + ' ' + fromIcon + ' → 1 ' + toIcon; },
+      townTitle: '🏘️ Town of Good',
+      townPeopleLine: function(n){ return n>0 ? ('Residents: ' + n + ' — each adds a little Good every second.') : 'Build your first building to move people in.'; },
+      buildBtn: 'Build',
+      buildCost: 'Cost',
+      peopleUnit: 'residents',
+      buildings: {
+        senior: {name:'Nursing Home', desc:'Care and a warm meal for elderly people.'},
+        orphan: {name:'Orphanage', desc:'A safe home for children without care.'},
+        hospital: {name:'Hospital', desc:'Treatment for those who cannot afford it.'},
+        hospice: {name:'Hospice', desc:'Dignified care in life’s final stage.'},
+        shelter: {name:'Animal Shelter', desc:'A home for abandoned animals.'}
+      },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Unlock', confirmNo:'Cancel',
       confirmTitle: function(name){ return 'Unlock "' + name + '"?'; },
@@ -434,7 +649,26 @@
       roundupTitle: 'Thank you for your support 💛',
       roundupText: function(extra){ return 'Want to round up this purchase for the foundation? Extra given so far: ' + extra + ' PLN.'; },
       roundupYes: 'Round up (+2 PLN)', roundupNo:'Not now',
-      gardenNames: ['Garden of Hope','Tropical Garden','Forest Thicket','Flower Garden','Oasis'],
+      bootStudio: '+48 Gaming Studio',
+      bootTips: [
+        'Tip: merge two matching plants next to each other to upgrade them.',
+        'Unlock new gardens on the world map 🗺️ — there is no limit to how many.',
+        'Secret plants glow purple — collect them separately!',
+        'Catch falling coins and fruit to build a combo 🔥.'
+      ],
+      bootFinal: 'Do good for free — watch ads 📺',
+      bootCta: 'Tap to start',
+      tutHintText: '👆 Tap a plant, then tap another matching one next to it — they merge into a higher level.',
+      tutHintOk: 'Got it',
+      waterAdBtn: '💧 Water & speed up (watch an ad)',
+      waterAdBtnLoading: '⏳ Watering (ad)...',
+      infoTitle: 'How it works',
+      infoP1: '📺 Watching ads is the main way to help — it costs you nothing, and the ad revenue goes to the fund.',
+      infoP2: '💛 Shop purchases are entirely optional. Only items marked "goes to the foundation" actually fund the cause — 🌾 Good earned just by playing is regular game economy.',
+      infoP3: '🏆 The leaderboard shows the most engaged people by time and by support — every contribution counts, not just the top spots.',
+      infoP4: '🌱 After merging, a plant grows for a short moment before it can merge again — merging by hand is always free. Auto-Merge in the shop is just an optional time-saver.',
+      infoClose: 'Close',
+      gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry'],
       adjectives: ['Mysterious','Crystal','Moonlit','Sunny','Emerald','Heavenly','Magic','Ancient','Fairytale','Rainbow'],
       nouns: ['garden','oasis','forest','island','park','corner','paradise','crystal garden'],
       milestones: ['a box of vegetables','one meal','20 liters of water','a school textbook','a real tree planted','a toy','a doctor visit','a day of school','a month of rent for a family'],
@@ -450,6 +684,15 @@
         offline: function(v){ return '🕐 While you were away your garden earned ' + v + ' Good.'; },
         noCandidates: 'No plants available to speed up.',
         alreadyGuaranteed: 'You already have an unused guarantee.',
+        stillGrowing: function(s){ return '🌱 Still growing — ' + s + 's left.'; },
+        watered: '💧 Watered! All growing plants are now ready.',
+        warehouseFull: '📦 Warehouse full — expand it to collect more.',
+        harvested: function(n, icon){ return '📺 Harvested +' + n + ' ' + icon + '! Added to the warehouse.'; },
+        gotWater: function(n){ return '📺 Thanks! +' + n + ' 💧 water in the warehouse.'; },
+        warehouseExpanded: function(cap){ return '📦 Warehouse expanded to ' + cap + '!'; },
+        notEnoughMaterial: 'Not enough materials in the warehouse.',
+        refined: function(icon){ return '📺 Refined! +1 ' + icon + '.'; },
+        built: function(name){ return '🏗️ Built: ' + name + '! New residents boost Good.'; },
         boosterOn: function(name){ return name + ' activated!'; },
         instantGrowth: '🧪 A plant instantly grew a level!',
         guaranteeReady: '🌟 Ready — your next merge will be secret!',
@@ -468,7 +711,8 @@
         catCosmetic: 'Decorations — cosmetic only',
         water: {name:'💧 Watering', desc:'+25% garden income for 10 minutes.'},
         fertilizer: {name:'🌿 Fertilizer', desc:'+40% merge bonus for 20 minutes.'},
-        growlamp: {name:'☀️ Grow lamp ×2', desc:'Doubles the whole garden income for 60 minutes.'},
+        growlamp: {name:'☀️ Grow lamp ×2', desc:'Doubles the whole garden income for the time you choose.'},
+        automerge: {name:'⚙️ Auto-Merge', desc:'Ready plants merge themselves for 30 minutes — no tapping needed. Manual merging always stays free.'},
         bio: {name:'🧪 Bio-activator', desc:'Instantly levels up a random plant by 1.'},
         rareSeed: {name:'🌟 Rare seed', desc:'Your next successful merge is guaranteed to be a secret plant.'},
         honey: {name:'🍯 Bee honey', desc:'Permanent +5% income bonus (max 5 purchases = +25%).'},
@@ -507,13 +751,16 @@
   var CURATED_PLANTS = [
     ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🌳','✨'],
     ['🌰','🌱','🍃','🌿','🍌','🍍','🥥','🌴','🏝️'],
-    ['🌰','🌱','🌿','🍄','🦔','🌲','🦉','🏔️','🌌'],
+    ['🌰','🌱','🌿','🪴','🌲','🌳','🌳','🪵','🪵'],
     ['🌰','🌱','🌿','🌼','🌷','🌹','🪷','🌸','🌈'],
-    ['🌰','🌵','🌵','🦎','🐫','💎','🏜️','🌅','✨']
+    ['🪨','🪨','⛏️','⛏️','⚒️','💎','💎','⚙️','🔩']
   ];
-  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','🔥'];
+  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','💠'];
   var CURATED_COST = [0,600,1500,3000,6000];
-  var MAX_LEVEL = 9, SECRET_OFFSET = 100;
+  /* gardens that yield raw materials once a plant reaches max level (tap a matured max-level
+     plant to harvest it into the warehouse via a short ad, instead of merging it further) */
+  var HARVESTABLE_GARDENS = {2:'wood', 4:'stone'};
+  var MAX_LEVEL = 9, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
 
@@ -538,15 +785,37 @@
   var screen = 'garden'; var rankTab = 'time'; var votes = {}; var votedAlready = false;
   var skins = {sunset:false, midnight:false};
 
+  /* ---- materials warehouse & town (charity buildings) ---- */
+  var warehouse = {water:0, wood:0, stone:0, iron:0, nails:0};
+  var warehouseCap = 40;
+  var MATERIAL_ICON = {water:'💧', wood:'🪵', stone:'🪨', iron:'⚙️', nails:'🔩'};
+  var REFINE = {iron:{from:'stone', need:5}, nails:{from:'iron', need:3}};
+  var BUILDINGS = [
+    {key:'senior', icon:'🏠', people:4, cost:{wood:15, nails:8, water:10}},
+    {key:'orphan', icon:'🧸', people:5, cost:{wood:12, stone:8, water:10}},
+    {key:'hospital', icon:'🏥', people:8, cost:{stone:20, iron:10, nails:10, water:20}},
+    {key:'hospice', icon:'🕊️', people:3, cost:{wood:18, stone:10, water:15}},
+    {key:'shelter', icon:'🐾', people:2, cost:{wood:8, stone:5, water:8}}
+  ];
+  var townBuilt = {}; var townPeople = 0;
+  function buildingCount(key){ return townBuilt[key]||0; }
+  function buildingCost(def){
+    var n = buildingCount(def.key), mult = Math.pow(1.35, n), out = {};
+    for(var k in def.cost) out[k] = Math.ceil(def.cost[k]*mult);
+    return out;
+  }
+  function canAfford(cost){ for(var k in cost){ if((warehouse[k]||0) < cost[k]) return false; } return true; }
+
   function newBoard(){ return new Array(25).fill(0); }
   function ensureGarden(n){
     if(!gardens[n]){
-      gardens[n] = {board:newBoard(), seeds:0, unlocked:false};
+      gardens[n] = {board:newBoard(), readyAt:new Array(25).fill(0), seeds:0, unlocked:false};
       if(n===0){ gardens[n].unlocked = true; gardens[n].board[6]=1; gardens[n].board[7]=1; gardens[n].board[13]=2; gardens[n].seeds=3; }
     }
     return gardens[n];
   }
   ensureGarden(0);
+  function isReady(g, i){ return !g.board[i] || Date.now() >= (g.readyAt[i]||0); }
 
   /* mock leaderboard data (demo only) */
   var LB_TIME = [342,298,276,251,230,214,201,190];
@@ -560,16 +829,22 @@
   var impactLabel=$('impactLabel'), impactBar=$('impactBar'), impactLabelText=$('impactLabelText');
   var gridEl=$('grid'), fruitLayer=$('fruitLayer'), comboEl=$('combo');
   var toastEl=$('toast'), gardenNameTag=$('gardenNameTag'), tagline=$('tagline');
-  var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn');
+  var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn'), waterAdBtn=$('waterAdBtn');
   var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
   var navGarden=$('navGarden'), navShop=$('navShop'), navRank=$('navRank'), navVote=$('navVote');
   var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn');
+  var whTitle=$('whTitle'), whBar=$('whBar'), whCapText=$('whCapText'), whGrid=$('whGrid'), whWaterBtn=$('whWaterBtn'), whExpandBtn=$('whExpandBtn'), whRefine=$('whRefine');
+  var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), buildList=$('buildList');
   var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
   var roundupModal=$('roundupModal'), roundupTitle=$('roundupTitle'), roundupText=$('roundupText'), roundupYes=$('roundupYes'), roundupNo=$('roundupNo');
   var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
   var voteNote=$('voteNote'), voteList=$('voteList');
-  var langPl=$('langPl'), langEn=$('langEn');
+  var langPl=$('langPl'), langEn=$('langEn'), soundToggle=$('soundToggle');
+  var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta');
+  var infoBtn=$('infoBtn'), infoModal=$('infoModal'), infoTitle=$('infoTitle'), infoP1=$('infoP1'), infoP2=$('infoP2'), infoP3=$('infoP3'), infoP4=$('infoP4'), infoClose=$('infoClose');
+  var tutHint=$('tutHint'), tutHintText=$('tutHintText'), tutHintOk=$('tutHintOk');
   var selected = null;
+  var soundOn = true, audioCtx = null, tutorialShown = false;
 
   function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
   function toast(msg, ms){
@@ -587,12 +862,13 @@
   function levelInfo(cellVal){ if(cellVal===0) return null; var secret = cellVal>SECRET_OFFSET; var lvl = secret?cellVal-SECRET_OFFSET:cellVal; return {lvl:lvl, secret:secret}; }
   function emojiFor(gardenIdx, info){ var g = gardenDef(gardenIdx); return info.secret ? g.secret : g.plants[info.lvl-1]; }
   function production(gardenIdx, cellVal){ var info = levelInfo(cellVal); if(!info) return 0; var base = Math.pow(info.lvl,1.7)*0.35; if(info.secret) base*=1.5; return base; }
-  function totalProduction(gardenIdx){ var g = ensureGarden(gardenIdx); var sum=0; for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, g.board[i]); return sum * productionMult(); }
+  function totalProduction(gardenIdx){ var g = ensureGarden(gardenIdx); var sum=0; for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, g.board[i]); return sum * productionMult() + townPeople*0.4; }
 
   function checkMilestone(){
     while(milestoneIdx < MILESTONE_T.length && allTime >= MILESTONE_T[milestoneIdx]){
       var t = T();
       toast(t.milestoneToast(MILESTONE_ICON[milestoneIdx], MILESTONE_T[milestoneIdx], t.milestones[milestoneIdx]), 3300);
+      sfx('milestone');
       milestoneIdx++;
     }
   }
@@ -622,6 +898,14 @@
     gardenNameTag.textContent = gardenDef(active).name;
     langPl.classList.toggle('active', LANG==='pl');
     langEn.classList.toggle('active', LANG==='en');
+    infoTitle.textContent = t.infoTitle;
+    infoP1.textContent = t.infoP1;
+    infoP2.textContent = t.infoP2;
+    infoP3.textContent = t.infoP3;
+    infoP4.textContent = t.infoP4;
+    infoClose.textContent = t.infoClose;
+    tutHintText.textContent = t.tutHintText;
+    tutHintOk.textContent = t.tutHintOk;
   }
 
   /* ---- stats/boosts render ---- */
@@ -641,7 +925,7 @@
       impactLabel.innerHTML = '🏆 ' + fmt(allTime);
     }
     boostsEl.innerHTML = '';
-    [['water','💧'],['fertilizer','🌿'],['growlamp','☀️×2']].forEach(function(d){
+    [['water','💧'],['fertilizer','🌿'],['growlamp','☀️×2'],['automerge','⚙️']].forEach(function(d){
       if(boostActive(d[0])){
         var left = Math.max(0, Math.round((activeBoosts[d[0]]-Date.now())/1000));
         var mm = Math.floor(left/60), ss = left%60;
@@ -662,40 +946,73 @@
     gridEl.innerHTML = '';
     for(var i=0;i<g.board.length;i++){
       var val = g.board[i]; var info = levelInfo(val);
+      var ready = isReady(g,i);
+      var harvestable = info && ready && info.lvl>=MAX_LEVEL && HARVESTABLE_GARDENS[active];
       var cell = document.createElement('div');
-      cell.className = 'cell'+(val?' filled':'')+(info&&info.secret?' secret':'')+(selected===i?' selected':'');
+      cell.className = 'cell'+(val?' filled':'')+(info&&info.secret?' secret':'')+(selected===i?' selected':'')+(val&&!ready?' growing':'')+(harvestable?' harvestable':'');
       if(info){
         var tt = info.lvl/MAX_LEVEL;
         cell.style.background = 'color-mix(in srgb, var(--surface-2) '+Math.round((1-tt)*70+20)+'%, '+(info.secret?'var(--violet-soft)':'var(--gold-soft)')+')';
-        cell.innerHTML = emojiFor(active, info) + '<span class="lvl">'+info.lvl+'</span>';
+        var growHTML = '';
+        if(!ready){
+          var pct = Math.max(2, Math.min(100, Math.round((1-(g.readyAt[i]-Date.now())/MATURE_MS)*100)));
+          growHTML = '<span class="grow"><i style="width:'+pct+'%"></i></span>';
+        }
+        var packHTML = harvestable ? '<span class="pack">📦</span>' : '';
+        cell.innerHTML = emojiFor(active, info) + '<span class="lvl">'+info.lvl+'</span>' + growHTML + packHTML;
       }
       cell.setAttribute('role','button'); cell.setAttribute('tabindex','0');
       cell.addEventListener('click', (function(idx){ return function(){ onCellTap(idx); }; })(i));
       gridEl.appendChild(cell);
     }
+    if(!waterAdLoading) waterAdBtn.textContent = T().waterAdBtn;
+    waterAdBtn.style.display = anyGrowing() ? '' : 'none';
+  }
+
+  /* merges board[a] and board[b] (same level) into a levelled-up plant at a; b becomes empty.
+     Shared by manual taps and the paid auto-merge booster. Returns info for feedback, or false if maxed. */
+  function mergePair(g, a, b){
+    var info = levelInfo(g.board[a]);
+    if(!info || info.lvl >= MAX_LEVEL) return false;
+    var newLvl = info.lvl+1; var makeSecret = info.secret;
+    if(!makeSecret){
+      if(secretGuaranteed){ makeSecret=true; secretGuaranteed=false; }
+      else if(newLvl>=6 && Math.random()<0.12){ makeSecret=true; }
+    }
+    g.board[a] = newLvl + (makeSecret?SECRET_OFFSET:0);
+    g.board[b] = 0;
+    g.readyAt[a] = Date.now() + MATURE_MS;
+    var bonus = newLvl*3*mergeBonusMult();
+    dobro += bonus; addAllTime(bonus);
+    return {newLvl:newLvl, makeSecret:makeSecret, wasSecret:info.secret};
+  }
+  function announceMerge(res){
+    var t = T();
+    sfx(res.makeSecret ? 'mergeSecret' : 'merge');
+    if(res.makeSecret && !res.wasSecret) toast(t.toast.secretSpawn, 3000);
+    if(res.newLvl===MAX_LEVEL) toast(t.toast.maxReached, 3000);
   }
 
   function onCellTap(i){
     var t = T(); var g = ensureGarden(active); var val = g.board[i];
+    if(val && !isReady(g,i)){
+      var secsLeft = Math.max(1, Math.ceil(((g.readyAt[i]||0)-Date.now())/1000));
+      toast(t.toast.stillGrowing(secsLeft)); sfx('deny'); return;
+    }
+    if(val && selected===null){
+      var maxInfo = levelInfo(val);
+      if(maxInfo.lvl>=MAX_LEVEL && HARVESTABLE_GARDENS[active]){ harvestCell(i); return; }
+    }
     if(selected===null){ if(val) selected=i; renderGrid(); return; }
     if(selected===i){ selected=null; renderGrid(); return; }
     var selVal = g.board[selected];
-    if(val===0){ g.board[i]=selVal; g.board[selected]=0; selected=null; renderGrid(); return; }
+    if(val===0){ g.board[i]=selVal; g.board[selected]=0; g.readyAt[i]=g.readyAt[selected]||0; g.readyAt[selected]=0; selected=null; renderGrid(); return; }
     if(val===selVal){
       var info = levelInfo(val);
-      if(info.lvl >= MAX_LEVEL){ toast(t.toast.maxSameLine); selected=null; renderGrid(); return; }
-      var newLvl = info.lvl+1; var makeSecret = info.secret;
-      if(!makeSecret){
-        if(secretGuaranteed){ makeSecret=true; secretGuaranteed=false; }
-        else if(newLvl>=6 && Math.random()<0.12){ makeSecret=true; }
-      }
-      g.board[i] = newLvl + (makeSecret?SECRET_OFFSET:0);
-      g.board[selected] = 0;
-      var bonus = newLvl*3*mergeBonusMult();
-      dobro += bonus; addAllTime(bonus);
+      if(info.lvl >= MAX_LEVEL){ toast(t.toast.maxSameLine); sfx('deny'); selected=null; renderGrid(); return; }
+      var res = mergePair(g, i, selected);
       selected = null; renderGrid(); renderStats();
-      if(makeSecret && !info.secret) toast(t.toast.secretSpawn, 3000);
-      if(newLvl===MAX_LEVEL) toast(t.toast.maxReached, 3000);
+      announceMerge(res);
       return;
     }
     selected = i; renderGrid();
@@ -703,12 +1020,118 @@
 
   function plantSeed(){
     var t = T(); var g = ensureGarden(active); var cost = seedCost();
-    if(cost>dobro){ toast(t.toast.notEnoughSoft); return; }
+    if(cost>dobro){ toast(t.toast.notEnoughSoft); sfx('deny'); return; }
     var empties=[]; for(var i=0;i<g.board.length;i++) if(g.board[i]===0) empties.push(i);
-    if(!empties.length){ toast(t.toast.gridFull); return; }
+    if(!empties.length){ toast(t.toast.gridFull); sfx('deny'); return; }
     dobro -= cost;
     var idx = empties[Math.floor(Math.random()*empties.length)];
-    g.board[idx]=1; g.seeds++; renderGrid(); renderStats();
+    g.board[idx]=1; g.readyAt[idx]=Date.now()+MATURE_MS; g.seeds++; renderGrid(); renderStats(); sfx('click');
+  }
+
+  /* ---- auto-merge (paid convenience — manual merging is always free) ---- */
+  function autoMergeStep(){
+    var g = ensureGarden(active);
+    for(var a=0;a<g.board.length;a++){
+      if(!g.board[a] || !isReady(g,a)) continue;
+      var infoA = levelInfo(g.board[a]); if(!infoA || infoA.lvl>=MAX_LEVEL) continue;
+      for(var b=a+1;b<g.board.length;b++){
+        if(g.board[b]===g.board[a] && isReady(g,b)){
+          var res = mergePair(g, a, b);
+          if(res){ announceMerge(res); return true; }
+        }
+      }
+    }
+    return false;
+  }
+
+  /* ---- free ad-based instant ripen ("water") ---- */
+  var waterAdLoading = false;
+  function anyGrowing(){
+    var g = ensureGarden(active);
+    for(var i=0;i<g.board.length;i++){ if(g.board[i] && !isReady(g,i)) return true; }
+    return false;
+  }
+  function watchWaterAd(){
+    if(waterAdLoading || !anyGrowing()) return;
+    var t = T();
+    waterAdLoading = true; waterAdBtn.textContent = t.waterAdBtnLoading;
+    setTimeout(function(){
+      var g = ensureGarden(active);
+      for(var i=0;i<g.board.length;i++){ if(g.board[i]) g.readyAt[i]=0; }
+      waterAdLoading = false; renderAll(); toast(T().toast.watered, 2700); sfx('ad');
+    }, 900);
+  }
+
+  /* ---- harvesting a matured max-level plant into a raw material (ad-based) ---- */
+  var harvestLoading = false;
+  function warehouseTotal(){ var s=0; for(var k in warehouse) s+=warehouse[k]; return s; }
+  function harvestCell(i){
+    if(harvestLoading) return;
+    var mat = HARVESTABLE_GARDENS[active]; if(!mat) return;
+    var room = warehouseCap - warehouseTotal();
+    if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
+    harvestLoading = true;
+    setTimeout(function(){
+      var g = ensureGarden(active);
+      var info = levelInfo(g.board[i]);
+      harvestLoading = false;
+      if(!info){ return; }
+      var amount = Math.min(info.secret?3:1, warehouseCap-warehouseTotal());
+      warehouse[mat] += amount;
+      g.board[i] = 0; g.readyAt[i] = 0;
+      renderAll();
+      toast(T().toast.harvested(amount, MATERIAL_ICON[mat]), 2600); sfx('harvest');
+    }, 900);
+  }
+
+  /* ---- water (needed by every building) — only obtainable by watching ads ---- */
+  var waterGenLoading = false;
+  function watchWaterGenAd(){
+    if(waterGenLoading) return;
+    var room = warehouseCap - warehouseTotal();
+    if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
+    waterGenLoading = true;
+    setTimeout(function(){
+      var amount = Math.min(12, warehouseCap-warehouseTotal());
+      warehouse.water += amount; waterGenLoading = false;
+      renderWarehouse(); toast(T().toast.gotWater(amount), 2400); sfx('ad');
+    }, 900);
+  }
+
+  /* ---- expand warehouse capacity (ad-based) ---- */
+  var expandLoading = false;
+  function expandWarehouse(){
+    if(expandLoading) return;
+    expandLoading = true;
+    setTimeout(function(){
+      warehouseCap += 20; expandLoading = false;
+      renderWarehouse(); toast(T().toast.warehouseExpanded(warehouseCap), 2400); sfx('unlock');
+    }, 900);
+  }
+
+  /* ---- refine one material into the next (stone->iron->nails), ad-based ---- */
+  var refineLoading = {};
+  function refineMaterial(key){
+    var def = REFINE[key]; if(!def || refineLoading[key]) return;
+    if(warehouse[def.from] < def.need){ toast(T().toast.notEnoughMaterial); sfx('deny'); return; }
+    var room = warehouseCap - warehouseTotal();
+    if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
+    refineLoading[key] = true;
+    setTimeout(function(){
+      warehouse[def.from] -= def.need; warehouse[key] = (warehouse[key]||0)+1;
+      refineLoading[key] = false;
+      renderWarehouse(); toast(T().toast.refined(MATERIAL_ICON[key]), 2400); sfx('harvest');
+    }, 900);
+  }
+
+  /* ---- build a charity building from collected materials ---- */
+  function buildBuilding(key){
+    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def) return;
+    var cost = buildingCost(def);
+    if(!canAfford(cost)){ toast(T().toast.notEnoughMaterial); sfx('deny'); return; }
+    for(var k in cost) warehouse[k] -= cost[k];
+    townBuilt[key] = buildingCount(key)+1; townPeople += def.people;
+    renderWarehouse(); toast(T().toast.built(T().buildings[key].name), 3000); sfx('build');
   }
 
   var adLoading=false;
@@ -717,7 +1140,7 @@
     adLoading = true; adBtn._loading = true; adBtn.textContent = t.adBtnLoading;
     setTimeout(function(){
       hearts += 10; adLoading=false; adBtn._loading=false; adBtn.textContent = T().adBtn;
-      renderStats(); toast(T().toast.adReward, 3100);
+      renderStats(); toast(T().toast.adReward, 3100); sfx('ad');
     }, 1100);
   }
 
@@ -749,6 +1172,7 @@
       if(caught) return; caught=true;
       var value = Math.round((isGold?15:2)*combo*(1+prod*0.05));
       dobro += value; addAllTime(value); bumpCombo();
+      sfx(isGold ? 'gold' : 'coin');
       var plus = document.createElement('div'); plus.className='float-plus'; plus.textContent='+'+value;
       plus.style.left = el.style.left; plus.style.top = el.style.top;
       fruitLayer.appendChild(plus); setTimeout(function(){ plus.remove(); }, 950);
@@ -781,16 +1205,62 @@
     confirmModal.classList.add('show');
     confirmYes.onclick = function(){
       confirmModal.classList.remove('show');
-      if(dobro < def.cost){ toast(t.toast.notEnoughForGarden); return; }
+      if(dobro < def.cost){ toast(t.toast.notEnoughForGarden); sfx('deny'); return; }
       dobro -= def.cost; g.unlocked = true; unlockedMax = Math.max(unlockedMax, i);
       active = i; selected = null; switchScreen('garden'); renderAll();
-      toast(t.toast.gardenUnlocked(def.name), 2700);
+      toast(t.toast.gardenUnlocked(def.name), 2700); sfx('unlock');
     };
     confirmNo.onclick = function(){ confirmModal.classList.remove('show'); };
   }
 
+  /* ---- warehouse & town (materials + charity buildings) ---- */
+  function renderWarehouse(){
+    var t = T();
+    whTitle.textContent = t.whTitle;
+    var total = warehouseTotal();
+    whBar.style.width = Math.min(100, Math.round(total/warehouseCap*100)) + '%';
+    whCapText.textContent = t.whCapText(total, warehouseCap);
+    whGrid.innerHTML = '';
+    ['water','wood','stone','iron','nails'].forEach(function(k){
+      var chip = document.createElement('div'); chip.className = 'wh-chip';
+      chip.innerHTML = '<span class="wi">'+MATERIAL_ICON[k]+'</span>' + fmt(warehouse[k]);
+      whGrid.appendChild(chip);
+    });
+    whWaterBtn.textContent = waterGenLoading ? t.whWaterBtnLoading : t.whWaterBtn;
+    whExpandBtn.textContent = expandLoading ? t.whExpandBtnLoading : t.whExpandBtn(warehouseCap);
+    whRefine.innerHTML = '';
+    Object.keys(REFINE).forEach(function(key){
+      var def = REFINE[key];
+      var can = warehouse[def.from] >= def.need && warehouseTotal() < warehouseCap;
+      var btn = document.createElement('button');
+      btn.disabled = !can || !!refineLoading[key];
+      btn.innerHTML = '<span>'+t.refineLabel(def.need, MATERIAL_ICON[def.from], MATERIAL_ICON[key])+'</span><span>'+(refineLoading[key]?'⏳':'📺')+'</span>';
+      btn.onclick = function(){ refineMaterial(key); };
+      whRefine.appendChild(btn);
+    });
+
+    townTitle.textContent = t.townTitle;
+    townPeopleLine.textContent = t.townPeopleLine(townPeople);
+    buildList.innerHTML = '';
+    BUILDINGS.forEach(function(def){
+      var bt = t.buildings[def.key];
+      var cost = buildingCost(def);
+      var costParts = [];
+      for(var k in cost) costParts.push(MATERIAL_ICON[k]+' '+cost[k]);
+      var count = buildingCount(def.key);
+      var row = document.createElement('div'); row.className = 'build-item';
+      row.innerHTML = '<div class="brow"><div class="bname">'+def.icon+' '+bt.name+(count?' ×'+count:'')+'</div>'+
+        '<button '+(canAfford(cost)?'':'disabled')+'>'+t.buildBtn+'</button></div>'+
+        '<div class="bcost">'+bt.desc+'<br>'+t.buildCost+': '+costParts.join('  ·  ')+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
+      row.querySelector('button').onclick = function(k){ return function(){ buildBuilding(k); }; }(def.key);
+      buildList.appendChild(row);
+    });
+  }
+  whWaterBtn.addEventListener('click', watchWaterGenAd);
+  whExpandBtn.addEventListener('click', expandWarehouse);
+
   /* ---- shop ---- */
-  function buyHard(cost){ if(hearts<cost){ toast(T().toast.notEnoughHeart); return false; } hearts-=cost; return true; }
+  function buyHard(cost){ if(hearts<cost){ toast(T().toast.notEnoughHeart); sfx('deny'); return false; } hearts-=cost; return true; }
   function maybeRoundup(){
     var t = T();
     roundupText.textContent = t.roundupText(extraDonated);
@@ -808,48 +1278,62 @@
     cat(s.catFree);
     item('<div class="row1"><div class="name">'+s.water.name+'</div><button id="buyWater">15 🌾</button></div><div class="desc">'+s.water.desc+'</div>')
       .querySelector('button').onclick = function(){
-        if(dobro<15){ toast(t.toast.notEnoughSoft); return; }
-        dobro-=15; addBoost('water', 10*60*1000); renderAll(); toast(t.toast.boosterOn(s.water.name));
+        if(dobro<15){ toast(t.toast.notEnoughSoft); sfx('deny'); return; }
+        dobro-=15; addBoost('water', 10*60*1000); renderAll(); toast(t.toast.boosterOn(s.water.name)); sfx('buy');
       };
 
     cat(s.catHeart);
-    [{key:'fertilizer',id:'fertilizer',cost:12,ms:20*60*1000}, {key:'growlamp',id:'growlamp',cost:25,ms:60*60*1000}].forEach(function(b){
+    [{key:'fertilizer',id:'fertilizer',cost:12,ms:20*60*1000}, {key:'automerge',id:'automerge',cost:18,ms:30*60*1000}].forEach(function(b){
       var def = s[b.key];
       var el = item('<div class="row1"><div class="name">'+def.name+'</div><button>'+b.cost+' 💛</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
-      el.querySelector('button').onclick = function(bb,dd){ return function(){ if(buyHard(bb.cost)){ addBoost(bb.id, bb.ms); renderAll(); toast(t.toast.boosterOn(dd.name)); } }; }(b, def);
+      el.querySelector('button').onclick = function(bb,dd){ return function(){ if(buyHard(bb.cost)){ addBoost(bb.id, bb.ms); renderAll(); toast(t.toast.boosterOn(dd.name)); sfx('buy'); } }; }(b, def);
+    });
+    var glDef = s.growlamp;
+    var glEl = item('<div class="row1"><div class="name">'+glDef.name+'</div></div><div class="desc">'+glDef.desc+'</div>'+
+      '<div class="tier-row">'+
+        '<button data-ms="'+(10*60*1000)+'" data-cost="8">10 min<br>8 💛</button>'+
+        '<button data-ms="'+(30*60*1000)+'" data-cost="18">30 min<br>18 💛</button>'+
+        '<button data-ms="'+(24*60*60*1000)+'" data-cost="60">24 h<br>60 💛</button>'+
+      '</div><div class="charity">'+s.charityHeart+'</div>');
+    Array.prototype.forEach.call(glEl.querySelectorAll('.tier-row button'), function(btn){
+      btn.onclick = function(){
+        var ms = parseInt(btn.getAttribute('data-ms'),10), cost = parseInt(btn.getAttribute('data-cost'),10);
+        if(buyHard(cost)){ addBoost('growlamp', ms); renderAll(); toast(t.toast.boosterOn(glDef.name)); sfx('buy'); }
+      };
     });
     var bioEl = item('<div class="row1"><div class="name">'+s.bio.name+'</div><button id="buyBio">8 💛</button></div><div class="desc">'+s.bio.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
     bioEl.querySelector('button').onclick = function(){
       var g = ensureGarden(active); var candidates=[];
       for(var i=0;i<g.board.length;i++){ var info=levelInfo(g.board[i]); if(info && info.lvl<MAX_LEVEL) candidates.push(i); }
-      if(!candidates.length){ toast(t.toast.noCandidates); return; }
+      if(!candidates.length){ toast(t.toast.noCandidates); sfx('deny'); return; }
       if(!buyHard(8)) return;
       var idx = candidates[Math.floor(Math.random()*candidates.length)];
       var info = levelInfo(g.board[idx]);
       g.board[idx] = (info.lvl+1) + (info.secret?SECRET_OFFSET:0);
-      renderAll(); toast(t.toast.instantGrowth);
+      g.readyAt[idx] = Date.now() + MATURE_MS;
+      renderAll(); toast(t.toast.instantGrowth); sfx('buy');
     };
     var rareEl = item('<div class="row1"><div class="name">'+s.rareSeed.name+'</div><button id="buyRare">20 💛</button></div><div class="desc">'+s.rareSeed.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
     rareEl.querySelector('button').onclick = function(){
-      if(secretGuaranteed){ toast(t.toast.alreadyGuaranteed); return; }
+      if(secretGuaranteed){ toast(t.toast.alreadyGuaranteed); sfx('deny'); return; }
       if(!buyHard(20)) return;
-      secretGuaranteed = true; toast(t.toast.guaranteeReady);
+      secretGuaranteed = true; toast(t.toast.guaranteeReady); sfx('buy');
     };
 
     cat(s.catSupport);
     var honeyPrice = [9,15,19,25,29][Math.min(honeyStacks,4)];
     var honeyEl = item('<div class="row1"><div class="name">'+s.honey.name+(honeyStacks>0?' (+'+honeyStacks*5+'%)':'')+'</div><button id="buyHoney" '+(honeyStacks>=5?'disabled':'')+'>'+(honeyStacks>=5?s.max:honeyPrice+' zł')+'</button></div><div class="desc">'+s.honey.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
-    if(honeyStacks<5) honeyEl.querySelector('button').onclick = function(){ honeyStacks++; renderAll(); toast(t.toast.honeyApplied); maybeRoundup(); };
+    if(honeyStacks<5) honeyEl.querySelector('button').onclick = function(){ honeyStacks++; renderAll(); toast(t.toast.honeyApplied); sfx('buy'); maybeRoundup(); };
 
     var heartsPackEl = item('<div class="row1"><div class="name">'+s.heartsPack.name+'</div><button id="buyHeartsPack">19 zł</button></div><div class="desc">'+s.heartsPack.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
-    heartsPackEl.querySelector('button').onclick = function(){ hearts+=50; renderAll(); toast(t.toast.heartsBought); maybeRoundup(); };
+    heartsPackEl.querySelector('button').onclick = function(){ hearts+=50; renderAll(); toast(t.toast.heartsBought); sfx('buy'); maybeRoundup(); };
 
     cat(s.catCosmetic);
     [['sunset','skinSunset',9],['midnight','skinMidnight',12]].forEach(function(row){
       var key=row[0], defKey=row[1], price=row[2];
       var owned = skins[key]; var def = s[defKey];
       var el = item('<div class="row1"><div class="name">'+def.name+'</div><button '+(owned?'disabled':'')+'>'+(owned?s.owned:price+' zł')+'</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityCosmetic+'</div>');
-      if(!owned) el.querySelector('button').onclick = function(){ skins[key]=true; renderAll(); toast(t.toast.skinApplied(def.name)); maybeRoundup(); };
+      if(!owned) el.querySelector('button').onclick = function(){ skins[key]=true; renderAll(); toast(t.toast.skinApplied(def.name)); sfx('buy'); maybeRoundup(); };
     });
   }
 
@@ -889,7 +1373,7 @@
       card.querySelector('button').addEventListener('click', function(ci, cc){ return function(){
         if(votedAlready) return;
         votes[ci] = (votes[ci]||0)+1; votedAlready = true;
-        toast(T().toast.voted(cc.name)); renderVote();
+        toast(T().toast.voted(cc.name)); sfx('vote'); renderVote();
       }; }(idx, c));
       voteList.appendChild(card);
     });
@@ -910,30 +1394,147 @@
     navShop.classList.toggle('active', s==='shop');
     navRank.classList.toggle('active', s==='rank');
     navVote.classList.toggle('active', s==='vote');
-    if(s==='map') renderMap();
+    if(s==='map'){ renderMap(); renderWarehouse(); }
     if(s==='shop') renderShop();
     if(s==='rank') renderRank();
     if(s==='vote') renderVote();
   }
-  navGarden.addEventListener('click', function(){ switchScreen('garden'); });
-  navShop.addEventListener('click', function(){ switchScreen('shop'); });
-  navRank.addEventListener('click', function(){ switchScreen('rank'); });
-  navVote.addEventListener('click', function(){ switchScreen('vote'); });
-  mapOpenBtn.addEventListener('click', function(){ switchScreen('map'); });
-  mapCloseBtn.addEventListener('click', function(){ switchScreen('garden'); });
-  rankTabTime.addEventListener('click', function(){ rankTab='time'; renderRank(); });
-  rankTabMoney.addEventListener('click', function(){ rankTab='money'; renderRank(); });
+  navGarden.addEventListener('click', function(){ switchScreen('garden'); sfx('click'); });
+  navShop.addEventListener('click', function(){ switchScreen('shop'); sfx('click'); });
+  navRank.addEventListener('click', function(){ switchScreen('rank'); sfx('click'); });
+  navVote.addEventListener('click', function(){ switchScreen('vote'); sfx('click'); });
+  mapOpenBtn.addEventListener('click', function(){ switchScreen('map'); sfx('click'); });
+  mapCloseBtn.addEventListener('click', function(){ switchScreen('garden'); sfx('click'); });
+  rankTabTime.addEventListener('click', function(){ rankTab='time'; renderRank(); sfx('click'); });
+  rankTabMoney.addEventListener('click', function(){ rankTab='money'; renderRank(); sfx('click'); });
 
   plantBtn.addEventListener('click', plantSeed);
   adBtn.addEventListener('click', watchAd);
   offlineBtn.addEventListener('click', simulateOffline);
-  langPl.addEventListener('click', function(){ LANG='pl'; applyStatic(); renderAll(); });
-  langEn.addEventListener('click', function(){ LANG='en'; applyStatic(); renderAll(); });
+  waterAdBtn.addEventListener('click', watchWaterAd);
+  langPl.addEventListener('click', function(){ LANG='pl'; applyStatic(); renderAll(); sfx('click'); });
+  langEn.addEventListener('click', function(){ LANG='en'; applyStatic(); renderAll(); sfx('click'); });
+
+  /* ---- sound engine (Web Audio API, synthesized — no external audio files) ---- */
+  function getAudioCtx(){
+    if(!soundOn) return null;
+    if(!audioCtx){
+      try{
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        audioCtx = new AC();
+      }catch(e){ return null; }
+    }
+    if(audioCtx.state === 'suspended'){ audioCtx.resume().catch(function(){}); }
+    return audioCtx;
+  }
+  function tone(freq, start, dur, type, peak){
+    var ctx = getAudioCtx(); if(!ctx) return;
+    try{
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime+start);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime+start);
+      gain.gain.linearRampToValueAtTime(peak||0.12, ctx.currentTime+start+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+start+dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime+start); osc.stop(ctx.currentTime+start+dur+0.03);
+    }catch(e){}
+  }
+  function sfx(name){
+    if(!soundOn) return;
+    switch(name){
+      case 'click': tone(520,0,0.05,'sine',0.05); break;
+      case 'merge': tone(420,0,0.09,'triangle',0.10); tone(630,0.05,0.12,'triangle',0.09); break;
+      case 'mergeSecret': tone(500,0,0.08,'triangle',0.10); tone(750,0.06,0.09,'triangle',0.09); tone(1000,0.12,0.14,'triangle',0.08); break;
+      case 'coin': tone(760,0,0.06,'square',0.05); tone(1020,0.05,0.08,'square',0.05); break;
+      case 'gold': tone(660,0,0.07,'square',0.06); tone(880,0.06,0.07,'square',0.06); tone(1180,0.12,0.12,'square',0.06); break;
+      case 'ad': tone(500,0,0.1,'sine',0.08); tone(700,0.09,0.1,'sine',0.08); tone(950,0.18,0.16,'sine',0.09); break;
+      case 'buy': tone(600,0,0.06,'triangle',0.08); tone(900,0.05,0.09,'triangle',0.07); break;
+      case 'unlock': tone(520,0,0.08,'sawtooth',0.05); tone(650,0.08,0.08,'sawtooth',0.05); tone(780,0.16,0.08,'sawtooth',0.05); tone(1040,0.24,0.18,'sawtooth',0.06); break;
+      case 'milestone': tone(523,0,0.1,'triangle',0.09); tone(659,0.1,0.1,'triangle',0.09); tone(784,0.2,0.1,'triangle',0.09); tone(1047,0.3,0.22,'triangle',0.09); break;
+      case 'vote': tone(700,0,0.07,'sine',0.07); tone(950,0.06,0.1,'sine',0.06); break;
+      case 'deny': tone(200,0,0.14,'sawtooth',0.05); break;
+      case 'boot': tone(440,0,0.12,'sine',0.07); tone(660,0.1,0.16,'sine',0.07); break;
+      case 'ready': tone(600,0,0.1,'sine',0.07); tone(900,0.1,0.18,'sine',0.08); break;
+      case 'harvest': tone(480,0,0.09,'triangle',0.09); tone(720,0.09,0.1,'triangle',0.08); tone(960,0.18,0.14,'triangle',0.08); break;
+      case 'build': tone(392,0,0.1,'sawtooth',0.06); tone(523,0.09,0.1,'sawtooth',0.06); tone(659,0.18,0.1,'sawtooth',0.06); tone(880,0.28,0.2,'sawtooth',0.07); break;
+    }
+  }
+  soundToggle.addEventListener('click', function(){
+    soundOn = !soundOn;
+    soundToggle.textContent = soundOn ? '🔊' : '🔇';
+    if(soundOn) sfx('click');
+  });
+
+  /* ---- boot / splash sequence ---- */
+  var bootStage = 'studio', bootTipIdx = 0, bootTipTimer = null, bootBarTimer = null, bootAutoTimer = null;
+  function showBootTip(){
+    var tips = T().bootTips;
+    bootTip.textContent = tips[bootTipIdx % tips.length];
+    bootTipIdx++;
+  }
+  function enterLoadingStage(){
+    if(bootStage !== 'studio') return;
+    bootStage = 'loading';
+    bootStudio.classList.remove('on');
+    bootGame.classList.add('on');
+    sfx('boot');
+    showBootTip();
+    bootTipTimer = setInterval(showBootTip, 1100);
+    var pct = 0;
+    bootBarTimer = setInterval(function(){
+      pct += 7 + Math.random()*7;
+      if(pct>=100){ pct=100; bootBarFill.style.width='100%'; clearInterval(bootBarTimer); onBootLoaded(); return; }
+      bootBarFill.style.width = pct+'%';
+    }, 140);
+  }
+  function onBootLoaded(){
+    if(bootStage==='ready' || bootStage==='done') return;
+    bootStage = 'ready';
+    clearInterval(bootTipTimer);
+    bootTip.style.display = 'none';
+    bootFinalEl.textContent = T().bootFinal;
+    bootFinalEl.classList.add('show');
+    bootCta.textContent = T().bootCta;
+    bootCta.classList.add('show');
+    sfx('ready');
+  }
+  function skipBootToReady(){
+    clearInterval(bootTipTimer); clearInterval(bootBarTimer);
+    bootBarFill.style.width = '100%';
+    onBootLoaded();
+  }
+  function finishBoot(){
+    bootStage = 'done';
+    var ctx = getAudioCtx();
+    if(ctx && ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
+    boot.classList.add('hide');
+    setTimeout(function(){ boot.style.display='none'; maybeShowTutorial(); }, 420);
+  }
+  boot.addEventListener('click', function(){
+    if(bootStage==='studio'){ clearTimeout(bootAutoTimer); enterLoadingStage(); }
+    else if(bootStage==='loading'){ skipBootToReady(); }
+    else if(bootStage==='ready'){ finishBoot(); }
+  });
+  bootAutoTimer = setTimeout(function(){ if(bootStage==='studio') enterLoadingStage(); }, 1500);
+
+  /* ---- first-run tutorial hint ---- */
+  function maybeShowTutorial(){
+    if(tutorialShown) return;
+    tutorialShown = true;
+    if(screen==='garden'){ tutHint.style.display = 'flex'; }
+  }
+  tutHintOk.addEventListener('click', function(){ tutHint.style.display='none'; sfx('click'); });
+
+  /* ---- info modal ---- */
+  infoBtn.addEventListener('click', function(){ infoModal.classList.add('show'); sfx('click'); });
+  infoClose.addEventListener('click', function(){ infoModal.classList.remove('show'); });
 
   function renderAll(){
     applyStatic(); renderStats();
     if(screen==='garden') renderGrid();
-    if(screen==='map') renderMap();
+    if(screen==='map'){ renderMap(); renderWarehouse(); }
     if(screen==='shop') renderShop();
     if(screen==='rank') renderRank();
     if(screen==='vote') renderVote();
@@ -943,7 +1544,9 @@
   setInterval(function(){
     var perSec = totalProduction(active);
     if(perSec>0){ dobro += perSec; addAllTime(perSec); }
+    if(boostActive('automerge')) autoMergeStep();
     renderStats();
+    if(screen==='garden') renderGrid();
   }, 1000);
   setInterval(spawnFruit, 1400);
 })();

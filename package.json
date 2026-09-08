@@ -1,7 +1,7 @@
 {
-  "name": "goodgarden",
-  "version": "0.1.0",
-  "description": "GoodGarden — idle-merge charity game (Poland market, PL/EN)",
+  "name": "dobry-sad",
+  "version": "0.2.0",
+  "description": "Dobry Sad — idle-merge charity game (Poland market, PL/EN)",
   "scripts": {
     "sync": "cap sync android",
     "open:android": "cap open android"
