@@ -390,7 +390,6 @@
               <div class="bp-title" id="bpTitle"></div>
               <div class="bp-list" id="bpList"></div>
             </div>
-            <button class="btn btn-ghost" id="waterAdBtn" style="display:none; margin-bottom:8px;"></button>
             <div class="actions">
               <button class="btn btn-coral btn-big" id="adBtn"></button>
               <button class="btn btn-primary" id="plantBtn"></button>
@@ -601,8 +600,6 @@
       bootCta: 'Dotknij, aby zacząć',
       tutHintText: '👆 Stuknij roślinę, a potem drugą taką samą obok — połączą się w wyższy poziom.',
       tutHintOk: 'Rozumiem',
-      waterAdBtn: '💧 Podlej i przyspiesz (obejrzyj reklamę)',
-      waterAdBtnLoading: '⏳ Podlewanie (reklama)...',
       watchAdShort: '📺 Reklama',
       watchAdShortLoading: '⏳...',
       infoTitle: 'Jak to działa',
@@ -634,7 +631,7 @@
         noCandidates: 'Brak roślin, które można przyspieszyć.',
         alreadyGuaranteed: 'Masz już nieużytą gwarancję.',
         stillGrowing: function(s){ return '🌱 Jeszcze rośnie — zostało ' + s + ' s.'; },
-        watered: '💧 Podlano! Jedna roślina dojrzała.',
+        instantGrown: '⚡ Gotowe! Roślina od razu dojrzała.',
         warehouseFull: '📦 Magazyn pełny — powiększ go, żeby zbierać więcej.',
         harvested: function(n, icon){ return '📺 Zebrano +' + n + ' ' + icon + '! Trafiło do magazynu.'; },
         gotWater: function(n){ return '📺 Dzięki! +' + n + ' 💧 wody w magazynie.'; },
@@ -663,6 +660,7 @@
         catSupport: 'Wsparcie projektu — złotówki (demo)',
         catCosmetic: 'Dekoracje — tylko dla wyglądu',
         water: {name:'💧 Podlewanie', desc:'+25% dochodu ogrodu na 10 minut.'},
+        growboost: {name:'⚡ Szybki wzrost', desc:'Ładunek na później: dotknij rosnącą roślinę i użyj go, aby od razu skończyła rosnąć — bez czekania na kolejną reklamę.'},
         fertilizer: {name:'🌿 Nawóz', desc:'+40% bonusu za połączenie na 20 minut.'},
         growlamp: {name:'☀️ Lampa wzrostu ×2', desc:'Podwaja cały dochód ogrodu na wybrany czas.'},
         automerge: {name:'⚙️ Auto-łączenie', desc:'Dojrzałe rośliny łączą się same przez 30 minut — bez klikania. Ręczne łączenie zawsze zostaje darmowe.'},
@@ -765,8 +763,6 @@
       bootCta: 'Tap to start',
       tutHintText: '👆 Tap a plant, then tap another matching one next to it — they merge into a higher level.',
       tutHintOk: 'Got it',
-      waterAdBtn: '💧 Water & speed up (watch an ad)',
-      waterAdBtnLoading: '⏳ Watering (ad)...',
       watchAdShort: '📺 Ad',
       watchAdShortLoading: '⏳...',
       infoTitle: 'How it works',
@@ -798,7 +794,7 @@
         noCandidates: 'No plants available to speed up.',
         alreadyGuaranteed: 'You already have an unused guarantee.',
         stillGrowing: function(s){ return '🌱 Still growing — ' + s + 's left.'; },
-        watered: '💧 Watered! One plant is now ready.',
+        instantGrown: '⚡ Done! The plant finished growing instantly.',
         warehouseFull: '📦 Warehouse full — expand it to collect more.',
         harvested: function(n, icon){ return '📺 Harvested +' + n + ' ' + icon + '! Added to the warehouse.'; },
         gotWater: function(n){ return '📺 Thanks! +' + n + ' 💧 water in the warehouse.'; },
@@ -827,6 +823,7 @@
         catSupport: 'Support the project — PLN (demo)',
         catCosmetic: 'Decorations — cosmetic only',
         water: {name:'💧 Watering', desc:'+25% garden income for 10 minutes.'},
+        growboost: {name:'⚡ Instant Growth', desc:'A charge for later: tap a growing plant and use it to finish growing right away — no waiting for another ad.'},
         fertilizer: {name:'🌿 Fertilizer', desc:'+40% merge bonus for 20 minutes.'},
         growlamp: {name:'☀️ Grow lamp ×2', desc:'Doubles the whole garden income for the time you choose.'},
         automerge: {name:'⚙️ Auto-Merge', desc:'Ready plants merge themselves for 30 minutes — no tapping needed. Manual merging always stays free.'},
@@ -975,7 +972,7 @@
   function isReady(g, i){ return !g.board[i] || Date.now() >= (g.readyAt[i]||0); }
 
   /* ---- per-plant boost charges (bought in the shop, applied to one chosen plant from the backpack) ---- */
-  var inventory = {water:0, fertilizer:0, growlamp10:0, growlamp30:0, growlampDay:0};
+  var inventory = {water:0, fertilizer:0, growlamp10:0, growlamp30:0, growlampDay:0, growboost:0};
   function cellBoostActive(g, i, key){ return g.cellBoosts[i] && g.cellBoosts[i][key] && g.cellBoosts[i][key] > Date.now(); }
   function applyCellBoost(g, i, key, ms){ if(!g.cellBoosts[i]) g.cellBoosts[i] = {}; g.cellBoosts[i][key] = Date.now()+ms; }
 
@@ -991,7 +988,7 @@
   var impactLabel=$('impactLabel'), impactBar=$('impactBar'), impactLabelText=$('impactLabelText');
   var gridEl=$('grid'), fruitLayer=$('fruitLayer'), comboEl=$('combo');
   var toastEl=$('toast'), gardenNameTag=$('gardenNameTag'), tagline=$('tagline');
-  var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn'), waterAdBtn=$('waterAdBtn');
+  var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn');
   var backpackPanel=$('backpackPanel'), bpTitle=$('bpTitle'), bpList=$('bpList');
   var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
   var navGarden=$('navGarden'), navShop=$('navShop'), navRank=$('navRank'), navVote=$('navVote');
@@ -1159,9 +1156,6 @@
       cell.addEventListener('pointerdown', (function(idx){ return function(ev){ onCellPointerDown(idx, ev); }; })(i));
       gridEl.appendChild(cell);
     }
-    if(!waterAdLoading) waterAdBtn.textContent = T().waterAdBtn;
-    waterAdBtn.style.display = anyGrowing() ? '' : 'none';
-    waterAdBtn.disabled = !hasWaterTarget();
     renderBackpack();
   }
 
@@ -1170,6 +1164,7 @@
     var t = T();
     var g = ensureGarden(active);
     var val = selected!==null ? g.board[selected] : 0;
+    var growing = !!val && !isReady(g, selected);
     var items = [
       {key:'water', label:t.shop.water.name, ms:10*60*1000},
       {key:'fertilizer', label:t.shop.fertilizer.name, ms:20*60*1000},
@@ -1177,6 +1172,12 @@
       {key:'growlamp30', label:t.shop.growlamp.name+' · 30 min', boostKey:'growlamp', ms:30*60*1000},
       {key:'growlampDay', label:t.shop.growlamp.name+' · 24 h', boostKey:'growlamp', ms:24*60*60*1000}
     ].filter(function(it){ return inventory[it.key]>0; });
+    /* the "instant growth" charge only makes sense — and only appears — while the selected
+       plant is still growing; it finishes that one plant right away instead of applying a
+       timed boost like the items above. */
+    if(growing && inventory.growboost>0){
+      items.unshift({key:'growboost', label:t.shop.growboost.name, instant:true});
+    }
 
     if(!val || !items.length){ backpackPanel.style.display='none'; return; }
     backpackPanel.style.display = '';
@@ -1187,6 +1188,12 @@
       row.innerHTML = '<span class="bpname">'+it.label+'</span><span class="bpcount">×'+inventory[it.key]+'</span><button>'+t.bpApply+'</button>';
       row.querySelector('button').onclick = function(){
         inventory[it.key]--;
+        if(it.instant){
+          if(g.board[selected] && !isReady(g, selected)) g.readyAt[selected] = 0;
+          selected = null;
+          renderAll(); toast(t.toast.instantGrown, 2400); sfx('ad');
+          return;
+        }
         applyCellBoost(g, selected, it.boostKey||it.key, it.ms);
         var applied = it.label; selected = null;
         renderGrid(); renderStats();
@@ -1229,9 +1236,9 @@
 
   function onCellTap(i){
     var t = T(); var g = ensureGarden(active); var val = g.board[i];
-    /* a growing (not-ready) plant can't merge or move yet, but tapping it picks it as the
-       target for the "Podlej i przyspiesz" button below — instead of that button watering
-       a random plant, it now only lights up for whichever one you've chosen. */
+    /* a growing (not-ready) plant can't merge or move yet, but tapping it selects it — if you
+       have an "⚡ Instant Growth" charge in your backpack, this is what surfaces it so you can
+       spend one to finish this specific plant right away. */
     if(val && !isReady(g,i)){
       var wasSelected = selected===i;
       selected = wasSelected ? null : i;
@@ -1375,32 +1382,13 @@
     return false;
   }
 
-  /* ---- free ad-based instant ripen ("water") ---- */
-  var waterAdLoading = false;
-  var shopWaterAdLoading = false;
-  function anyGrowing(){
-    var g = ensureGarden(active);
-    for(var i=0;i<g.board.length;i++){ if(g.board[i] && !isReady(g,i)) return true; }
-    return false;
-  }
-  /* the button only ever waters the sprout the player explicitly tapped — never a heuristic
-     guess — so it stays disabled until `selected` points at a real growing plant. */
-  function hasWaterTarget(){
-    var g = ensureGarden(active);
-    return selected!==null && !!g.board[selected] && !isReady(g, selected);
-  }
-  function watchWaterAd(){
-    if(waterAdLoading || !hasWaterTarget()) return;
-    var t = T();
-    var target = selected;
-    waterAdLoading = true; waterAdBtn.textContent = t.waterAdBtnLoading;
-    setTimeout(function(){
-      var g = ensureGarden(active);
-      if(g.board[target] && !isReady(g, target)) g.readyAt[target] = 0;
-      if(selected===target) selected = null;
-      waterAdLoading = false; renderAll(); toast(T().toast.watered, 2700); sfx('ad');
-    }, 900);
-  }
+  /* ---- growth-charge economy: watching an ad in the shop earns a "⚡ Instant Growth" charge
+     up front (any time — not tied to a specific plant), which sits in the backpack until you
+     tap a growing plant and spend it there for an instant finish. Doing the ad wait and the
+     actual "skip the wait" moment together never made sense once a rewarded ad (~20s) takes
+     about as long as the growth timer itself (24s) — stocking up charges in advance and
+     spending them instantly fixes that. ---- */
+  var shopWaterAdLoading = false, growBoostAdLoading = false;
 
   /* ---- harvesting a matured max-level plant into a raw material (ad-based) ---- */
   var harvestLoading = false;
@@ -1773,6 +1761,15 @@
           toast(t.toast.addedToBackpack(s.water.name)); sfx('ad');
         }, 900);
       };
+    item('<div class="row1"><div class="name">'+s.growboost.name+'</div><button id="buyGrowBoost">'+(growBoostAdLoading?t.watchAdShortLoading:t.watchAdShort)+'</button></div><div class="desc">'+s.growboost.desc+'</div>')
+      .querySelector('button').onclick = function(){
+        if(growBoostAdLoading) return;
+        growBoostAdLoading = true; renderShop();
+        setTimeout(function(){
+          growBoostAdLoading = false; inventory.growboost++; renderAll();
+          toast(t.toast.addedToBackpack(s.growboost.name)); sfx('ad');
+        }, 900);
+      };
 
     cat(s.catHeart);
     var fertDef = s.fertilizer;
@@ -1910,7 +1907,6 @@
   plantBtn.addEventListener('click', plantSeed);
   adBtn.addEventListener('click', watchAd);
   offlineBtn.addEventListener('click', simulateOffline);
-  waterAdBtn.addEventListener('click', watchWaterAd);
   langPl.addEventListener('click', function(){ LANG='pl'; applyStatic(); renderAll(); sfx('click'); });
   langEn.addEventListener('click', function(){ LANG='en'; applyStatic(); renderAll(); sfx('click'); });
 
