@@ -103,7 +103,10 @@
   .cell.filled{border-style:solid; border-color:transparent;}
   .cell.secret{box-shadow:0 0 0 2px var(--violet) inset, 0 0 10px 0 var(--violet-soft);}
   .cell.selected{box-shadow:0 0 0 2px var(--focus) inset; transform:scale(0.94);}
-  .cell.dragging{opacity:.45;}
+  .cell.dragging{opacity:.35;}
+  .cell.drop-target{box-shadow:0 0 0 2px var(--leaf) inset; background:var(--gold-soft);}
+  .drag-ghost{position:fixed; top:0; left:0; pointer-events:none; z-index:9999; font-size:19px; width:52px; height:52px; border-radius:9px; background:var(--surface-2); border:1.5px solid var(--leaf); box-shadow:0 8px 20px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; transform:translate(-50%,-50%) scale(1.12); opacity:.96;}
+  .drag-ghost .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
   .cell:active{transform:scale(0.92);}
   .cell .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
   .cell.growing{cursor:default;}
@@ -1059,7 +1062,7 @@
       }
       cell.setAttribute('role','button'); cell.setAttribute('tabindex','0');
       cell.addEventListener('click', (function(idx){ return function(){ onCellTap(idx); }; })(i));
-      cell.addEventListener('pointerdown', (function(idx){ return function(){ onCellPointerDown(idx); }; })(i));
+      cell.addEventListener('pointerdown', (function(idx){ return function(ev){ onCellPointerDown(idx, ev); }; })(i));
       gridEl.appendChild(cell);
     }
     if(!waterAdLoading) waterAdBtn.textContent = T().waterAdBtn;
@@ -1173,21 +1176,66 @@
     selected = i; renderGrid();
   }
 
-  /* ---- drag-and-drop merge: drag one plant onto a matching neighbor to merge them, or onto
-     an empty cell to move it — same underlying logic as tap-to-select, just a faster gesture.
-     Tap-to-select keeps working side by side with this (a plain tap never moves the pointer,
-     so it always falls through to the normal click handler below unaffected). ---- */
-  var dragFrom = null;
-  function onCellPointerDown(i){
+  /* ---- drag-and-drop merge: press a plant (selected or not) and drag it across the screen
+     onto a matching neighbor to merge them, or onto an empty cell to move it — a floating
+     ghost of the tile follows the finger/cursor so the drag is visible, and the cell under
+     the pointer lights up as the drop target. A plain tap (no real movement) never starts a
+     drag, so it always falls through to the normal click handler below unaffected — meaning
+     you can tap to select a sprout first and then, in a second gesture, pick it up and drag
+     it to where you want it merged. ---- */
+  var dragFrom = null, dragGhost = null, dragMoved = false, dragStartX = 0, dragStartY = 0, dragOverCell = null;
+  var DRAG_THRESHOLD = 6;
+  function onCellPointerDown(i, ev){
     var g = ensureGarden(active);
     if(!g.board[i] || !isReady(g,i)) return;
-    dragFrom = i;
-    var el = gridEl.children[i]; if(el) el.classList.add('dragging');
+    dragFrom = i; dragMoved = false; dragOverCell = null;
+    dragStartX = ev ? ev.clientX : 0; dragStartY = ev ? ev.clientY : 0;
   }
+  function ghostContentFrom(cellEl){
+    if(!cellEl) return '';
+    var clone = cellEl.cloneNode(true);
+    var strip = clone.querySelectorAll('.grow, .pack, .cboost');
+    for(var k=0;k<strip.length;k++) strip[k].remove();
+    return clone.innerHTML;
+  }
+  function moveDragGhost(x,y){
+    if(dragGhost) dragGhost.style.transform = 'translate('+x+'px,'+y+'px) translate(-50%,-50%) scale(1.12)';
+  }
+  window.addEventListener('pointermove', function(ev){
+    if(dragFrom===null) return;
+    if(!dragMoved){
+      var dx = ev.clientX-dragStartX, dy = ev.clientY-dragStartY;
+      if(Math.abs(dx)<=DRAG_THRESHOLD && Math.abs(dy)<=DRAG_THRESHOLD) return;
+      dragMoved = true;
+      var srcEl = gridEl.children[dragFrom];
+      if(srcEl) srcEl.classList.add('dragging');
+      dragGhost = document.createElement('div');
+      dragGhost.className = 'drag-ghost';
+      dragGhost.innerHTML = ghostContentFrom(srcEl);
+      document.body.appendChild(dragGhost);
+    }
+    moveDragGhost(ev.clientX, ev.clientY);
+    var target = document.elementFromPoint(ev.clientX, ev.clientY);
+    var cellEl = target && target.closest ? target.closest('.cell') : null;
+    if(cellEl && gridEl.contains(cellEl) && cellEl!==gridEl.children[dragFrom]){
+      if(dragOverCell!==cellEl){
+        if(dragOverCell) dragOverCell.classList.remove('drop-target');
+        cellEl.classList.add('drop-target');
+        dragOverCell = cellEl;
+      }
+    } else if(dragOverCell){
+      dragOverCell.classList.remove('drop-target');
+      dragOverCell = null;
+    }
+  });
   window.addEventListener('pointerup', function(ev){
     if(dragFrom===null) return;
     var from = dragFrom; dragFrom = null;
     var fromEl = gridEl.children[from]; if(fromEl) fromEl.classList.remove('dragging');
+    if(dragOverCell){ dragOverCell.classList.remove('drop-target'); dragOverCell = null; }
+    if(dragGhost){ dragGhost.remove(); dragGhost = null; }
+    var wasDrag = dragMoved; dragMoved = false;
+    if(!wasDrag) return; /* plain tap — the click handler below runs normally */
     var target = document.elementFromPoint(ev.clientX, ev.clientY);
     var cellEl = target && target.closest ? target.closest('.cell') : null;
     if(!cellEl || !gridEl.contains(cellEl)) return;
