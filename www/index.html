@@ -234,8 +234,6 @@
   .note.warn b{color:var(--gold-ink);}
 
   /* ---- logo marks (gradient stops via CSS so they follow the theme) ---- */
-  #heartGrad stop:nth-child(1){stop-color:var(--leaf);}
-  #heartGrad stop:nth-child(2){stop-color:var(--gold);}
   #badgeGrad stop:nth-child(1){stop-color:var(--violet);}
   #badgeGrad stop:nth-child(2){stop-color:#4a3878;}
   :root[data-theme="dark"] #badgeGrad stop:nth-child(2){stop-color:#2d2350;}
@@ -276,22 +274,18 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <linearGradient id="heartGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"></stop>
-      <stop offset="100%"></stop>
-    </linearGradient>
     <linearGradient id="badgeGrad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%"></stop>
       <stop offset="100%"></stop>
     </linearGradient>
     <symbol id="ic-logo" viewBox="0 0 64 64">
-      <path d="M32,7 C51,14 55,35 32,59 C9,35 13,14 32,7 Z" fill="url(#heartGrad)"/>
-      <path d="M32,15 C26,27 27,45 32,55" fill="none" stroke="var(--ink)" stroke-opacity="0.16" stroke-width="1.4" stroke-linecap="round"/>
-      <path d="M32,59 L32,61.5" stroke="var(--leaf-deep)" stroke-width="2" stroke-linecap="round"/>
+      <!-- "finger heart" gesture, drawn as two crossed bands rather than a plain heart -->
+      <path d="M 36 48 C 8 36, 6 16, 23 11 C 27 9.5, 30 11.5, 32 16" fill="none" stroke="var(--leaf)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 28 48 C 56 36, 58 16, 41 11 C 37 9.5, 34 11.5, 32 16" fill="none" stroke="var(--gold)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="ic-studio" viewBox="0 0 64 64">
       <circle cx="32" cy="32" r="30" fill="url(#badgeGrad)"/>
-      <text x="32" y="40" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="21" fill="#fbfaf1">+48</text>
+      <text x="32" y="39" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="19" fill="#fbfaf1">GS</text>
     </symbol>
   </defs>
 </svg>
@@ -319,7 +313,7 @@
           <div class="boot" id="boot">
             <div class="boot-stage on" id="bootStudio">
               <div class="studio-badge"><svg><use href="#ic-studio"/></svg></div>
-              <div class="studio-word">+48 Gaming Studio</div>
+              <div class="studio-word">Game Studio</div>
             </div>
             <div class="boot-stage" id="bootGame">
               <div class="game-logo-big"><svg><use href="#ic-logo"/></svg></div>
@@ -542,7 +536,7 @@
       roundupTitle: 'Dziękujemy za wsparcie 💛',
       roundupText: function(extra){ return 'Chcesz zaokrąglić tę wpłatę na rzecz fundacji? Dotychczas dodatkowo przekazano: ' + extra + ' zł.'; },
       roundupYes: 'Zaokrąglij (+2 zł)', roundupNo:'Nie teraz',
-      bootStudio: '+48 Gaming Studio',
+      bootStudio: 'Game Studio',
       bootTips: [
         'Wskazówka: połącz dwie takie same rośliny obok siebie, aby je ulepszyć.',
         'Odblokowuj nowe ogrody na mapie świata 🗺️ — jest ich nieskończenie wiele.',
@@ -692,7 +686,7 @@
       roundupTitle: 'Thank you for your support 💛',
       roundupText: function(extra){ return 'Want to round up this purchase for the foundation? Extra given so far: ' + extra + ' PLN.'; },
       roundupYes: 'Round up (+2 PLN)', roundupNo:'Not now',
-      bootStudio: '+48 Gaming Studio',
+      bootStudio: 'Game Studio',
       bootTips: [
         'Tip: merge two matching plants next to each other to upgrade them.',
         'Unlock new gardens on the world map 🗺️ — there is no limit to how many.',
