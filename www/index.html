@@ -1,7 +1,7 @@
 <title>Dobry Sad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#eef2e3; --bg-2:#e4ead4; --surface:#fbfaf1; --surface-2:#e8e3ce;
@@ -82,7 +82,9 @@
   .game-tagline{text-align:center; font-size:10px; color:var(--ink-dim); margin-bottom:8px;}
   .garden-row{display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:8px;}
   .garden-row .sup{font-size:10.5px; background:var(--gold-soft); color:var(--gold-ink); border-radius:999px; padding:3px 9px; font-weight:800;}
-  .map-open{border:none; background:var(--violet-soft); color:var(--violet); border-radius:999px; width:24px; height:24px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .map-open{font-family:'Baloo 2', 'Manrope', sans-serif; letter-spacing:.01em; border:none; background:var(--surface-2); color:var(--ink); border-radius:999px; height:30px; padding:0 12px 0 8px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 0 rgba(0,0,0,.14), 0 4px 8px -3px var(--shadow); transition:transform .12s, box-shadow .12s;}
+  .map-open:active{transform:translateY(2px); box-shadow:0 0 0 rgba(0,0,0,.14), 0 1px 3px -1px var(--shadow);}
+  .mo-icon{width:20px; height:20px; flex-shrink:0; filter:drop-shadow(0 1px 1px rgba(0,0,0,.25));}
 
   .stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
   .stat{background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:7px 10px; display:flex; align-items:center; gap:7px;}
@@ -161,7 +163,7 @@
   /* buttons get a small "resting height" (a solid bottom edge) that compresses flat on press —
      a classic cheap-to-render 3D push-button feel, all box-shadow/transform, no extra paint
      cost worth worrying about on low-end phones. */
-  .btn{border:none; border-radius:12px; padding:10px 12px; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s ease, transform .1s ease, box-shadow .1s ease; box-shadow:0 3px 0 rgba(0,0,0,.14), 0 5px 10px -3px var(--shadow);}
+  .btn{font-family:'Baloo 2', 'Manrope', sans-serif; letter-spacing:.01em; border:none; border-radius:12px; padding:10px 12px; font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s ease, transform .1s ease, box-shadow .1s ease; box-shadow:0 3px 0 rgba(0,0,0,.14), 0 5px 10px -3px var(--shadow);}
   .btn:hover{filter:brightness(1.06);}
   .btn:active{filter:brightness(0.96); transform:translateY(3px); box-shadow:0 0 0 rgba(0,0,0,.14), 0 1px 3px -1px var(--shadow);}
   .btn[disabled]{box-shadow:none;}
@@ -190,7 +192,7 @@
   .settings-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line);}
   .settings-row:last-of-type{border-bottom:none;}
   .settings-row span{font-size:12.5px; font-weight:600;}
-  .switch{border:1.5px solid var(--line); background:var(--surface-2); border-radius:999px; padding:5px 12px; font-size:11px; font-weight:800; cursor:pointer; min-width:66px;}
+  .switch{font-family:'Baloo 2', 'Manrope', sans-serif; border:1.5px solid var(--line); background:var(--surface-2); border-radius:999px; padding:5px 12px; font-size:11.5px; font-weight:700; cursor:pointer; min-width:66px;}
   .switch.on{background:var(--leaf); border-color:var(--leaf); color:#fff;}
 
   .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px;}
@@ -298,6 +300,12 @@
   #badgeGrad stop:nth-child(2){stop-color:#4a3878;}
   :root[data-theme="dark"] #badgeGrad stop:nth-child(2){stop-color:#2d2350;}
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #badgeGrad stop:nth-child(2){stop-color:#2d2350;} }
+  #cityGrad stop:nth-child(1){stop-color:var(--blue);}
+  #cityGrad stop:nth-child(2){stop-color:#1c4a6e;}
+  :root[data-theme="dark"] #cityGrad stop:nth-child(2){stop-color:#123449;}
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #cityGrad stop:nth-child(2){stop-color:#123449;} }
+  #mapGrad stop:nth-child(1){stop-color:var(--leaf);}
+  #mapGrad stop:nth-child(2){stop-color:var(--leaf-deep);}
 
   .header-logo{display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 2px;}
   .header-logo svg{width:22px; height:22px; flex-shrink:0;}
@@ -321,7 +329,7 @@
   .boot-tip{font-size:11.5px; color:var(--ink-dim); min-height:32px; max-width:26ch; line-height:1.5;}
   .boot-bar{width:70%; max-width:180px; height:6px; border-radius:999px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line);}
   .boot-bar > span{display:block; height:100%; width:0%; background:linear-gradient(90deg, var(--leaf), var(--gold)); transition:width .2s linear;}
-  .boot-cta{font-size:12px; font-weight:800; color:var(--leaf-deep); background:var(--gold-soft); border:1px solid var(--gold); border-radius:999px; padding:7px 14px; opacity:0; transition:opacity .3s ease;}
+  .boot-cta{font-family:'Baloo 2', 'Manrope', sans-serif; font-size:13px; font-weight:700; color:var(--leaf-deep); background:var(--gold-soft); border:1px solid var(--gold); border-radius:999px; padding:7px 14px; opacity:0; transition:opacity .3s ease;}
   .boot-cta.show{opacity:1;}
   .boot-final{font-size:13px; font-weight:700; color:var(--ink); max-width:24ch; line-height:1.45; opacity:0; transition:opacity .3s ease;}
   .boot-final.show{opacity:1;}
@@ -347,6 +355,46 @@
     <symbol id="ic-studio" viewBox="0 0 64 64">
       <circle cx="32" cy="32" r="30" fill="url(#badgeGrad)"/>
       <text x="32" y="40" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="21" fill="#fbfaf1">+48</text>
+    </symbol>
+    <linearGradient id="cityGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <linearGradient id="mapGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <!-- custom glossy nav icons (gradient fill + a bright highlight sliver), replacing the
+       generic 🏙️/🗺️ keyboard emoji so these two buttons read as our own icon set. -->
+    <symbol id="ic-city" viewBox="0 0 64 64">
+      <rect x="7" y="30" width="15" height="27" rx="3" fill="url(#cityGrad)"/>
+      <rect x="24" y="16" width="16" height="41" rx="3" fill="url(#cityGrad)"/>
+      <rect x="42" y="24" width="15" height="33" rx="3" fill="url(#cityGrad)"/>
+      <rect x="24" y="16" width="16" height="7" rx="3" fill="#fff" opacity=".28"/>
+      <rect x="10" y="35" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="16" y="35" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="10" y="43" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="16" y="43" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="27" y="26" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="33" y="26" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="27" y="34" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="33" y="34" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="27" y="42" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="33" y="42" width="4" height="4" rx="1" fill="#fff" opacity=".55"/>
+      <rect x="45" y="30" width="4" height="4" rx="1" fill="#fff" opacity=".5"/>
+      <rect x="51" y="30" width="4" height="4" rx="1" fill="#fff" opacity=".5"/>
+      <rect x="45" y="38" width="4" height="4" rx="1" fill="#fff" opacity=".5"/>
+      <rect x="51" y="38" width="4" height="4" rx="1" fill="#fff" opacity=".5"/>
+    </symbol>
+    <symbol id="ic-map" viewBox="0 0 64 64">
+      <rect x="7" y="7" width="50" height="50" rx="12" fill="url(#mapGrad)"/>
+      <rect x="7" y="7" width="50" height="16" rx="12" fill="#fff" opacity=".22"/>
+      <circle cx="23" cy="24" r="7" fill="#fff" opacity=".85"/>
+      <circle cx="41" cy="24" r="7" fill="#fff" opacity=".85"/>
+      <circle cx="23" cy="42" r="7" fill="#fff" opacity=".85"/>
+      <circle cx="41" cy="42" r="7" fill="#fff" opacity=".85"/>
+      <path d="M23 20 q3 -5 0 -8 q-3 3 0 8" fill="var(--leaf)"/>
+      <path d="M41 20 q3 -5 0 -8 q-3 3 0 8" fill="var(--leaf)"/>
     </symbol>
   </defs>
 </svg>
@@ -392,8 +440,8 @@
           </div>
           <div class="game-tagline" id="tagline"></div>
           <div class="garden-row">
-            <button class="map-open" id="cityOpenBtn" title="Town">🏙️</button>
-            <button class="map-open" id="mapOpenBtn" title="Gardens map">🗺️</button>
+            <button class="map-open" id="cityOpenBtn"><svg class="mo-icon"><use href="#ic-city"/></svg><span id="cityOpenLbl"></span></button>
+            <button class="map-open" id="mapOpenBtn"><svg class="mo-icon"><use href="#ic-map"/></svg><span id="mapOpenLbl"></span></button>
             <span class="sup" id="gardenNameTag"></span>
           </div>
 
@@ -519,7 +567,6 @@
               <h3 id="settingsTitle"></h3>
               <div class="settings-row"><span id="settingsMusicLabel"></span><button class="switch" id="musicToggleBtn"></button></div>
               <div class="settings-row"><span id="settingsSfxLabel"></span><button class="switch" id="sfxToggleBtn"></button></div>
-              <div class="settings-row"><span id="settingsMasterLabel"></span><button class="switch" id="masterToggleBtn"></button></div>
               <button class="btn btn-primary" style="width:100%; margin-top:10px;" id="settingsClose"></button>
             </div>
           </div>
@@ -576,6 +623,7 @@
       adBtnLoading: '⏳ Wyświetlanie reklamy (demo)...',
       offlineBtn: '🕐 Symulacja: godzina offline',
       navGarden:'Ogród', navShop:'Sklep', navRank:'Ranking', navVote:'Głosy',
+      cityOpenBtn:'Miasto', mapOpenBtn:'Ogrody',
       mapHint: 'Przesuń, aby zobaczyć wszystkie ogrody — nowe otwierają się bez końca.',
       mapClose: '← Wróć do ogrodu',
       bpTitle: '🎒 Plecak — zastosuj na wybranej roślinie',
@@ -631,7 +679,7 @@
         'Sekretne rośliny świecą na fioletowo — zbieraj je osobno!',
         'Łap spadające monety i owoce, by zbudować combo 🔥.'
       ],
-      bootFinal: 'Rób dobro za darmo — oglądaj reklamy 📺',
+      bootFinal: 'Rób dobro za darmo',
       bootCta: 'Dotknij, aby zacząć',
       tutHintText: '👆 Stuknij roślinę, a potem drugą taką samą obok — połączą się w wyższy poziom.',
       tutHintOk: 'Rozumiem',
@@ -646,7 +694,6 @@
       settingsTitle: '🔊 Dźwięk',
       settingsMusic: 'Muzyka w tle',
       settingsSfx: 'Dźwięki gry',
-      settingsMaster: 'Cały dźwięk',
       settingsOn: 'Włączone', settingsOff: 'Wyłączone',
       settingsClose: 'Zamknij',
       gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom','Huta Szkła','Kuźnia'],
@@ -739,6 +786,7 @@
       adBtnLoading: '⏳ Showing ad (demo)...',
       offlineBtn: '🕐 Simulate: 1 hour offline',
       navGarden:'Garden', navShop:'Shop', navRank:'Rank', navVote:'Vote',
+      cityOpenBtn:'Town', mapOpenBtn:'Gardens',
       mapHint: 'Scroll to see every garden — new ones unlock forever.',
       mapClose: '← Back to garden',
       bpTitle: '🎒 Backpack — apply to the selected plant',
@@ -794,7 +842,7 @@
         'Secret plants glow purple — collect them separately!',
         'Catch falling coins and fruit to build a combo 🔥.'
       ],
-      bootFinal: 'Do good for free — watch ads 📺',
+      bootFinal: 'Do good for free',
       bootCta: 'Tap to start',
       tutHintText: '👆 Tap a plant, then tap another matching one next to it — they merge into a higher level.',
       tutHintOk: 'Got it',
@@ -809,7 +857,6 @@
       settingsTitle: '🔊 Sound',
       settingsMusic: 'Background music',
       settingsSfx: 'Game sounds',
-      settingsMaster: 'All sound',
       settingsOn: 'On', settingsOff: 'Off',
       settingsClose: 'Close',
       gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry','Glass Foundry','Ironworks'],
@@ -1040,13 +1087,28 @@
   var voteNote=$('voteNote'), voteList=$('voteList');
   var langPl=$('langPl'), langEn=$('langEn'), soundToggle=$('soundToggle');
   var settingsModal=$('settingsModal'), settingsTitleEl=$('settingsTitle'), settingsClose=$('settingsClose');
-  var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel'), settingsMasterLabel=$('settingsMasterLabel');
-  var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn'), masterToggleBtn=$('masterToggleBtn');
+  var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel');
+  var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn');
   var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta');
   var infoBtn=$('infoBtn'), infoModal=$('infoModal'), infoTitle=$('infoTitle'), infoP1=$('infoP1'), infoP2=$('infoP2'), infoP3=$('infoP3'), infoP4=$('infoP4'), infoClose=$('infoClose');
   var tutHint=$('tutHint'), tutHintText=$('tutHintText'), tutHintOk=$('tutHintOk');
   var selected = null;
-  var soundOn = true, musicOn = true, sfxOn = true, audioCtx = null, tutorialShown = false;
+  var musicOn = true, sfxOn = true, audioCtx = null, tutorialShown = false;
+  /* remember the music/sfx switches between launches — a player who turns off music
+     shouldn't have to do it again every time they reopen the game */
+  var SOUND_PREFS_KEY = 'dobrySadSoundPrefs';
+  (function loadSoundPrefs(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(SOUND_PREFS_KEY) || 'null');
+      if(saved){
+        if(typeof saved.music === 'boolean') musicOn = saved.music;
+        if(typeof saved.sfx === 'boolean') sfxOn = saved.sfx;
+      }
+    }catch(e){}
+  })();
+  function saveSoundPrefs(){
+    try{ localStorage.setItem(SOUND_PREFS_KEY, JSON.stringify({ music: musicOn, sfx: sfxOn })); }catch(e){}
+  }
 
   function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
   function fmtLeft(ms){ var s=Math.max(0,Math.round(ms/1000)), mm=Math.floor(s/60), ss=s%60; return mm+':'+(ss<10?'0':'')+ss; }
@@ -1114,6 +1176,8 @@
     $('navShopLbl').textContent = t.navShop;
     $('navRankLbl').textContent = t.navRank;
     $('navVoteLbl').textContent = t.navVote;
+    $('cityOpenLbl').textContent = t.cityOpenBtn;
+    $('mapOpenLbl').textContent = t.mapOpenBtn;
     mapHint.textContent = t.mapHint;
     mapCloseBtn.textContent = t.mapClose;
     confirmYes.textContent = t.confirmYes;
@@ -1994,7 +2058,6 @@
 
   /* ---- sound engine (Web Audio API, synthesized — no external audio files) ---- */
   function getAudioCtx(){
-    if(!soundOn) return null;
     if(!audioCtx){
       try{
         var AC = window.AudioContext || window.webkitAudioContext;
@@ -2019,7 +2082,7 @@
     }catch(e){}
   }
   function sfx(name){
-    if(!soundOn || !sfxOn) return;
+    if(!sfxOn) return;
     switch(name){
       case 'click': tone(520,0,0.05,'sine',0.05); break;
       case 'merge': tone(420,0,0.09,'triangle',0.10); tone(630,0.05,0.12,'triangle',0.09); break;
@@ -2064,43 +2127,88 @@
   }
   function scheduleMusicBar(){
     if(!musicRunning) return;
-    if(soundOn && musicOn){
+    if(musicOn){
       var chord = MUSIC_CHORDS[musicChordIdx % MUSIC_CHORDS.length];
       musicChordIdx++;
       chord.forEach(function(freq, idx){ musicNote(freq, idx*0.18, MUSIC_BAR_S-0.5, 0.02 - idx*0.003); });
     }
     musicTimer = setTimeout(scheduleMusicBar, MUSIC_BAR_S*1000);
   }
-  /* a very quiet, looping bed of filtered noise under the chords — plain white noise (equal
-     energy at every frequency) reads as a harsh "hiss"; running it through a low lowpass
-     filter cuts the sharp high end and leaves something closer to rain/wind/ocean noise,
-     which is what actually reads as calming rather than just quiet. */
-  var noiseSource = null, noiseFilter = null, noiseGain = null;
+  /* a very quiet, looping "nature" bed under the chords — three filtered-noise layers standing
+     in for rain, sea and wind (there are no audio files here, everything is synthesized from
+     noise + filters), each kept well under the melody's own volume so it adds atmosphere
+     without ever competing with the tune. */
+  var natureBed = null;
+  function makeNoiseBuffer(ctx, seconds){
+    var bufferSize = Math.floor(ctx.sampleRate*seconds);
+    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for(var i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+    return buffer;
+  }
   function startNoiseBed(){
-    var ctx = getAudioCtx(); if(!ctx || noiseSource) return;
+    var ctx = getAudioCtx(); if(!ctx || natureBed) return;
     try{
-      var seconds = 3;
-      var bufferSize = Math.floor(ctx.sampleRate*seconds);
-      var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      var data = buffer.getChannelData(0);
-      for(var i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
-      noiseSource = ctx.createBufferSource();
-      noiseSource.buffer = buffer; noiseSource.loop = true;
-      noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 650; noiseFilter.Q.value = 0.25;
-      noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      noiseSource.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
-      noiseSource.start();
-      noiseGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime+3);
+      var bed = { nodes: [] };
+      var master = ctx.createGain();
+      master.gain.setValueAtTime(0.0001, ctx.currentTime);
+      master.connect(ctx.destination);
+      bed.master = master;
+
+      // sea: slow lowpass noise swell, gain breathes in and out like waves washing the shore
+      var seaSrc = ctx.createBufferSource();
+      seaSrc.buffer = makeNoiseBuffer(ctx, 4); seaSrc.loop = true;
+      var seaFilter = ctx.createBiquadFilter();
+      seaFilter.type = 'lowpass'; seaFilter.frequency.value = 480; seaFilter.Q.value = 0.3;
+      var seaGain = ctx.createGain(); seaGain.gain.value = 0.013;
+      var seaLfo = ctx.createOscillator(); seaLfo.frequency.value = 0.09;
+      var seaLfoGain = ctx.createGain(); seaLfoGain.gain.value = 0.007;
+      seaLfo.connect(seaLfoGain); seaLfoGain.connect(seaGain.gain);
+      seaSrc.connect(seaFilter); seaFilter.connect(seaGain); seaGain.connect(master);
+      seaSrc.start(); seaLfo.start();
+      bed.nodes.push(seaSrc, seaLfo);
+
+      // wind: bandpass noise whose center frequency drifts slowly, like gusts rising and falling
+      var windSrc = ctx.createBufferSource();
+      windSrc.buffer = makeNoiseBuffer(ctx, 5); windSrc.loop = true;
+      var windFilter = ctx.createBiquadFilter();
+      windFilter.type = 'bandpass'; windFilter.frequency.value = 500; windFilter.Q.value = 0.6;
+      var windLfo = ctx.createOscillator(); windLfo.frequency.value = 0.045;
+      var windLfoGain = ctx.createGain(); windLfoGain.gain.value = 220;
+      windLfo.connect(windLfoGain); windLfoGain.connect(windFilter.frequency);
+      var windGain = ctx.createGain(); windGain.gain.value = 0.007;
+      windSrc.connect(windFilter); windFilter.connect(windGain); windGain.connect(master);
+      windSrc.start(); windLfo.start();
+      bed.nodes.push(windSrc, windLfo);
+
+      // rain: bright, narrow-band noise with a faint shimmer so it reads as a steady patter
+      var rainSrc = ctx.createBufferSource();
+      rainSrc.buffer = makeNoiseBuffer(ctx, 3); rainSrc.loop = true;
+      var rainHi = ctx.createBiquadFilter();
+      rainHi.type = 'highpass'; rainHi.frequency.value = 2200; rainHi.Q.value = 0.5;
+      var rainLo = ctx.createBiquadFilter();
+      rainLo.type = 'lowpass'; rainLo.frequency.value = 7000;
+      var rainGain = ctx.createGain(); rainGain.gain.value = 0.005;
+      var rainLfo = ctx.createOscillator(); rainLfo.frequency.value = 5.5;
+      var rainLfoGain = ctx.createGain(); rainLfoGain.gain.value = 0.0012;
+      rainLfo.connect(rainLfoGain); rainLfoGain.connect(rainGain.gain);
+      rainSrc.connect(rainHi); rainHi.connect(rainLo); rainLo.connect(rainGain); rainGain.connect(master);
+      rainSrc.start(); rainLfo.start();
+      bed.nodes.push(rainSrc, rainLfo);
+
+      master.gain.linearRampToValueAtTime(1, ctx.currentTime+3);
+      natureBed = bed;
     }catch(e){}
   }
   function stopNoiseBed(){
-    var src = noiseSource, gn = noiseGain, ctx = audioCtx;
-    if(!src){ return; }
-    try{ if(gn && ctx) gn.gain.linearRampToValueAtTime(0.0001, ctx.currentTime+0.6); }catch(e){}
-    setTimeout(function(){ try{ src.stop(); src.disconnect(); }catch(e){} try{ if(gn) gn.disconnect(); }catch(e){} }, 700);
-    noiseSource = null; noiseFilter = null; noiseGain = null;
+    var bed = natureBed, ctx = audioCtx;
+    if(!bed){ return; }
+    try{ if(ctx) bed.master.gain.linearRampToValueAtTime(0.0001, ctx.currentTime+0.6); }catch(e){}
+    setTimeout(function(){
+      bed.nodes.forEach(function(n){ try{ n.stop(); }catch(e){} try{ n.disconnect(); }catch(e){} });
+      try{ bed.master.disconnect(); }catch(e){}
+    }, 700);
+    natureBed = null;
   }
   function startMusic(){
     if(musicRunning) return;
@@ -2114,35 +2222,28 @@
     stopNoiseBed();
   }
 
-  /* ---- sound settings: one window holding all three switches (music / sfx / everything) ---- */
+  /* ---- sound settings: music and game sounds toggle independently, each remembered
+     between launches via saveSoundPrefs()/loadSoundPrefs() above ---- */
   function renderSettings(){
     var t = T();
     settingsTitleEl.textContent = t.settingsTitle;
     settingsMusicLabel.textContent = t.settingsMusic;
     settingsSfxLabel.textContent = t.settingsSfx;
-    settingsMasterLabel.textContent = t.settingsMaster;
     musicToggleBtn.textContent = musicOn ? t.settingsOn : t.settingsOff;
     musicToggleBtn.className = 'switch' + (musicOn ? ' on' : '');
     sfxToggleBtn.textContent = sfxOn ? t.settingsOn : t.settingsOff;
     sfxToggleBtn.className = 'switch' + (sfxOn ? ' on' : '');
-    masterToggleBtn.textContent = soundOn ? t.settingsOn : t.settingsOff;
-    masterToggleBtn.className = 'switch' + (soundOn ? ' on' : '');
     settingsClose.textContent = t.settingsClose;
-    soundToggle.textContent = soundOn ? '🔊' : '🔇';
+    soundToggle.textContent = (musicOn || sfxOn) ? '🔊' : '🔇';
   }
   soundToggle.addEventListener('click', function(){ renderSettings(); settingsModal.classList.add('show'); });
   settingsClose.addEventListener('click', function(){ settingsModal.classList.remove('show'); });
   musicToggleBtn.addEventListener('click', function(){
     musicOn = !musicOn;
-    if(musicOn && soundOn) startMusic(); else stopMusic();
-    renderSettings(); sfx('click');
+    if(musicOn) startMusic(); else stopMusic();
+    renderSettings(); sfx('click'); saveSoundPrefs();
   });
-  sfxToggleBtn.addEventListener('click', function(){ sfxOn = !sfxOn; renderSettings(); if(sfxOn) sfx('click'); });
-  masterToggleBtn.addEventListener('click', function(){
-    soundOn = !soundOn;
-    if(soundOn && musicOn) startMusic(); else stopMusic();
-    renderSettings(); if(soundOn) sfx('click');
-  });
+  sfxToggleBtn.addEventListener('click', function(){ sfxOn = !sfxOn; renderSettings(); if(sfxOn) sfx('click'); saveSoundPrefs(); });
 
   /* ---- boot / splash sequence ---- */
   var bootStage = 'studio', bootTipIdx = 0, bootTipTimer = null, bootBarTimer = null, bootAutoTimer = null;
@@ -2186,7 +2287,7 @@
     bootStage = 'done';
     var ctx = getAudioCtx();
     if(ctx && ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
-    if(soundOn && musicOn) startMusic();
+    if(musicOn) startMusic();
     boot.classList.add('hide');
     setTimeout(function(){ boot.style.display='none'; maybeShowTutorial(); }, 420);
   }
