@@ -157,6 +157,29 @@
   .modal{background:var(--surface); border-radius:16px; padding:14px; width:100%; max-width:280px; border:1px solid var(--line); box-shadow:0 20px 40px -12px var(--shadow); max-height:85vh; overflow:auto;}
   .modal h3{margin:0 0 8px; font-size:15px;}
   .modal p{margin:0 0 8px; font-size:11.5px; color:var(--ink-dim); line-height:1.5;}
+  .settings-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line);}
+  .settings-row:last-of-type{border-bottom:none;}
+  .settings-row span{font-size:12.5px; font-weight:600;}
+  .switch{border:1.5px solid var(--line); background:var(--surface-2); border-radius:999px; padding:5px 12px; font-size:11px; font-weight:800; cursor:pointer; min-width:66px;}
+  .switch.on{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+
+  .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px;}
+  .city-map-svg{width:100%; height:auto; display:block;}
+  .city-road{stroke:var(--line); stroke-width:6; stroke-linecap:round;}
+  .city-road-dash{stroke:var(--surface); stroke-width:1.5; stroke-dasharray:5 5;}
+  .city-connector{stroke:var(--line); stroke-width:2; stroke-dasharray:2 2;}
+  .city-node{fill:var(--gold-soft); stroke:var(--gold); stroke-width:1.5;}
+  .city-node.inactive{fill:var(--surface-2); stroke:var(--ink-dim); opacity:.55;}
+  .city-badge{font-size:7px; font-weight:800; fill:var(--coral);}
+  .city-ped{fill:var(--leaf);}
+  .city-map-hint{font-size:11px; color:var(--ink-dim); text-align:center; padding:18px 8px;}
+  @keyframes cityWalk0{ 0%{cx:14px;} 50%{cx:286px;} 100%{cx:14px;} }
+  @keyframes cityWalk1{ 0%{cx:286px;} 50%{cx:14px;} 100%{cx:286px;} }
+  @keyframes cityWalk2{ 0%{cx:100px;} 50%{cx:220px;} 100%{cx:100px;} }
+  .city-ped0{ animation:cityWalk0 15s linear infinite; }
+  .city-ped1{ animation:cityWalk1 11s linear infinite; }
+  .city-ped2{ animation:cityWalk2 8.5s linear infinite; }
+  @media (prefers-reduced-motion:reduce){ .city-ped0,.city-ped1,.city-ped2{ animation:none; } }
 
   .map-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:4px;}
   .garden-card{flex:0 0 auto; width:96px; border-radius:14px; padding:9px 8px; text-align:center; border:1.5px solid var(--line); background:var(--surface-2); cursor:pointer;}
@@ -394,6 +417,16 @@
             <div class="section-title" id="townTitle"></div>
             <div class="town-people" id="townPeopleLine"></div>
             <div class="town-people" id="townFoodLine" style="color:var(--coral); display:none;"></div>
+
+            <div class="section-title" id="cityMapTitle"></div>
+            <div class="city-map-wrap">
+              <svg class="city-map-svg" id="cityMapSvg" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet">
+                <g id="cityRoadGroup"></g>
+                <g id="cityPedGroup"></g>
+              </svg>
+              <div class="city-map-hint" id="cityMapHint"></div>
+            </div>
+
             <div class="scroll420" id="buildList"></div>
 
             <button class="btn btn-ghost" id="mapCloseBtn" style="width:100%; margin-top:10px;"></button>
@@ -444,6 +477,16 @@
               <p id="infoP3"></p>
               <p id="infoP4"></p>
               <button class="btn btn-primary" style="width:100%" id="infoClose"></button>
+            </div>
+          </div>
+
+          <div class="modal-overlay" id="settingsModal">
+            <div class="modal">
+              <h3 id="settingsTitle"></h3>
+              <div class="settings-row"><span id="settingsMusicLabel"></span><button class="switch" id="musicToggleBtn"></button></div>
+              <div class="settings-row"><span id="settingsSfxLabel"></span><button class="switch" id="sfxToggleBtn"></button></div>
+              <div class="settings-row"><span id="settingsMasterLabel"></span><button class="switch" id="masterToggleBtn"></button></div>
+              <button class="btn btn-primary" style="width:100%; margin-top:10px;" id="settingsClose"></button>
             </div>
           </div>
 
@@ -514,6 +557,9 @@
       townPeopleLine: function(n){ return n>0 ? ('Mieszkańcy: ' + n + ' — każdy dodaje trochę Dobra co sekundę.') : 'Zbuduj pierwszy obiekt, żeby zamieszkali w nim ludzie.'; },
       townFoodWarn: '🍎 Brak jedzenia! Mieszkańcy nie pomagają, dopóki nie zbierzesz owoców w Ogrodzie Nadziei lub Tropikalnym.',
       bankTitle: '🏦 Bank — wymień nadmiar jedzenia',
+      cityMapTitle: '🗺️ Mapa miasta',
+      cityMapEmpty: 'Zbuduj pierwszy dom, a pojawi się na mapie razem z drogą.',
+      cityMapInactive: ' (wynajem wygasł)',
       buildBtn: 'Buduj',
       buildRentBtn: 'Wynajmij na miesiąc',
       buildRenewBtn: 'Przedłuż o miesiąc',
@@ -523,12 +569,17 @@
       buildRentExpired: '📅 Najem wygasł — przedłuż, żeby mieszkańcy wrócili.',
       peopleUnit: 'mieszk.',
       buildings: {
+        needyhome: {name:'Dom dla Potrzebujących', desc:'Pierwszy dach nad głową dla rodzin, które go nie mają — najtańsza i najważniejsza budowla w mieście.'},
         senior: {name:'Dom Seniora', desc:'Opieka i ciepły posiłek dla starszych osób.'},
         orphan: {name:'Dom Dziecka', desc:'Bezpieczny dom dla dzieci bez opieki.'},
         hospital: {name:'Szpital', desc:'Leczenie dla tych, których na nie nie stać.'},
         hospice: {name:'Hospicjum', desc:'Godna opieka w ostatnim etapie życia.'},
         shelter: {name:'Schronisko dla Zwierząt', desc:'Dom dla porzuconych zwierząt.'},
         library: {name:'Biblioteka', desc:'Bezpłatny dostęp do książek i nauki dla całej okolicy.'},
+        cafe: {name:'Kawiarnia', desc:'Miejsce spotkań mieszkańców przy filiżance kawy.'},
+        restaurant: {name:'Restauracja', desc:'Ciepłe posiłki i praca dla mieszkańców miasta.'},
+        cinema: {name:'Kino', desc:'Rozrywka i kultura dla całej społeczności.'},
+        mall: {name:'Centrum Handlowe', desc:'Sklepy i usługi w jednym miejscu — serce miejskiej infrastruktury.'},
         foodbank: {name:'Bank Żywności', desc:'Codzienne paczki żywnościowe dla potrzebujących rodzin. Finansowany wyłącznie z realnych wpłat.'},
         mobileclinic: {name:'Mobilna Klinika', desc:'Objazdowa opieka medyczna dla wsi bez dostępu do lekarza. Wynajmowana co miesiąc z realnych wpłat.'}
       },
@@ -560,7 +611,13 @@
       infoP3: '🏆 Ranking pokazuje najbardziej zaangażowane osoby wg czasu i wg wsparcia — każdy wynik się liczy, nie tylko czołówka.',
       infoP4: '🌱 Po połączeniu roślina przez chwilę rośnie, zanim znów można ją połączyć — ręczne łączenie jest zawsze darmowe. Auto-łączenie w sklepie to tylko opcjonalna oszczędność czasu.',
       infoClose: 'Zamknij',
-      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom','Huta Szkła'],
+      settingsTitle: '🔊 Dźwięk',
+      settingsMusic: 'Muzyka w tle',
+      settingsSfx: 'Dźwięki gry',
+      settingsMaster: 'Cały dźwięk',
+      settingsOn: 'Włączone', settingsOff: 'Wyłączone',
+      settingsClose: 'Zamknij',
+      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom','Huta Szkła','Kuźnia'],
       adjectives: ['Zagadkowy','Kryształowy','Księżycowy','Słoneczny','Szmaragdowy','Niebiański','Magiczny','Pradawny','Bajkowy','Tęczowy'],
       nouns: ['ogród','oaza','las','wyspa','park','zakątek','raj','kryształowy ogród'],
       milestones: ['zestaw warzyw','jeden obiad','20 litrów wody','podręcznik','prawdziwe drzewo','zabawka','wizyta u lekarza','dzień w szkole','miesiąc dachu nad głową dla rodziny'],
@@ -664,6 +721,9 @@
       townPeopleLine: function(n){ return n>0 ? ('Residents: ' + n + ' — each adds a little Good every second.') : 'Build your first building to move people in.'; },
       townFoodWarn: '🍎 Out of food! Residents stop helping until you harvest fruit in Garden of Hope or Tropical Garden.',
       bankTitle: '🏦 Bank — trade surplus food',
+      cityMapTitle: '🗺️ City map',
+      cityMapEmpty: 'Build your first house and it will appear on the map along with a road.',
+      cityMapInactive: ' (rent expired)',
       buildBtn: 'Build',
       buildRentBtn: 'Rent for a month',
       buildRenewBtn: 'Renew for a month',
@@ -673,12 +733,17 @@
       buildRentExpired: '📅 Rent expired — renew it to bring the residents back.',
       peopleUnit: 'residents',
       buildings: {
+        needyhome: {name:'Home for the Needy', desc:'A first roof over the head for families who have none — the cheapest and most essential building in town.'},
         senior: {name:'Nursing Home', desc:'Care and a warm meal for elderly people.'},
         orphan: {name:'Orphanage', desc:'A safe home for children without care.'},
         hospital: {name:'Hospital', desc:'Treatment for those who cannot afford it.'},
         hospice: {name:'Hospice', desc:'Dignified care in life’s final stage.'},
         shelter: {name:'Animal Shelter', desc:'A home for abandoned animals.'},
         library: {name:'Library', desc:'Free access to books and learning for the whole area.'},
+        cafe: {name:'Café', desc:'A cozy place for residents to meet over coffee.'},
+        restaurant: {name:'Restaurant', desc:'Warm meals and jobs for the town\'s residents.'},
+        cinema: {name:'Cinema', desc:'Entertainment and culture for the whole community.'},
+        mall: {name:'Shopping Mall', desc:'Shops and services under one roof — the heart of city infrastructure.'},
         foodbank: {name:'Food Bank', desc:'Daily food parcels for families in need. Funded only by real donations.'},
         mobileclinic: {name:'Mobile Clinic', desc:'Traveling medical care for villages with no doctor nearby. Rented monthly from real donations.'}
       },
@@ -710,7 +775,13 @@
       infoP3: '🏆 The leaderboard shows the most engaged people by time and by support — every contribution counts, not just the top spots.',
       infoP4: '🌱 After merging, a plant grows for a short moment before it can merge again — merging by hand is always free. Auto-Merge in the shop is just an optional time-saver.',
       infoClose: 'Close',
-      gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry','Glass Foundry'],
+      settingsTitle: '🔊 Sound',
+      settingsMusic: 'Background music',
+      settingsSfx: 'Game sounds',
+      settingsMaster: 'All sound',
+      settingsOn: 'On', settingsOff: 'Off',
+      settingsClose: 'Close',
+      gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry','Glass Foundry','Ironworks'],
       adjectives: ['Mysterious','Crystal','Moonlit','Sunny','Emerald','Heavenly','Magic','Ancient','Fairytale','Rainbow'],
       nouns: ['garden','oasis','forest','island','park','corner','paradise','crystal garden'],
       milestones: ['a box of vegetables','one meal','20 liters of water','a school textbook','a real tree planted','a toy','a doctor visit','a day of school','a month of rent for a family'],
@@ -797,19 +868,28 @@
   var CURATED_PLANTS = [
     ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🍎','🍎'],
     ['🌰','🌱','🍃','🌿','🍌','🍍','🥥','🥥','🥥'],
-    ['🌰','🌱','🌿','🎋','🌲','🪾','🌳','🌳','🌳'],
+    /* wood: seed → sprout → young stem → leafless tree → full tree, then it just keeps being
+       a (harvestable) full tree for the remaining levels — no unrelated plants mixed in. */
+    ['🌰','🌱','🪴','🪾','🌳','🌳','🌳','🌳','🌳'],
     ['🌰','🌱','🌿','🌼','🌷','🌹','🪷','🌸','🌈'],
-    ['🪨','⛰️','🗻','🔶','🔷','💎','💎','💎','💎'],
-    ['🏖️','🏜️','🔥','🧊','🔮','🪟','🍾','🥂','🏺']
+    /* stone: pebble → hillside → mountain → volcanic rock → the gemstone found deep inside,
+       then that gemstone repeats as the harvestable top tier. */
+    ['🪨','⛰️','🗻','🌋','💎','💎','💎','💎','💎'],
+    ['🏖️','🏜️','🔥','🧊','🔮','🪟','🍾','🥂','🏺'],
+    /* iron: raw ore → mined outcrop → smelting heat → the magnet (iron's own signature) →
+       machined gear → hardware → wrought chain → forged shield → finished blade. */
+    ['🪨','⛰️','🔥','🧲','⚙️','🔩','⛓️','🛡️','🗡️']
   ];
-  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','⚡','❄️'];
-  var CURATED_COST = [0,600,1500,3000,6000,12000];
+  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','⚡','❄️','🧭'];
+  var CURATED_COST = [0,600,1500,3000,6000,12000,22000];
   /* gardens that yield raw materials once a plant reaches max level (tap a matured max-level
      plant to harvest it into the warehouse via a short ad, instead of merging it further):
      Ogród Nadziei & Ogród Tropikalny grow food (fed to town residents — see FOOD_PER_PERSON),
-     Gaj Drzewny grows wood (→ planks), Kamieniołom grows stone (→ iron → nails),
-     Huta Szkła grows sand (→ glass). Ogród Kwiatowy stays a pure decorative/Dobro garden. */
-  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'sand'};
+     Gaj Drzewny grows wood (→ planks), Kamieniołom grows stone (→ nails via iron),
+     Huta Szkła grows sand (→ glass), Kuźnia grows iron directly (also buildable via
+     stone → iron refining, see REFINE — two paths into the same warehouse count).
+     Ogród Kwiatowy stays a pure decorative/Dobro garden. */
+  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'sand', 6:'iron'};
   var MAX_LEVEL = 9, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
@@ -848,12 +928,22 @@
   var FOOD_PER_PERSON = 0.03; /* Dobro/sec worth of 🍎 each resident eats — keeps the town from running forever on one harvest */
   var cityFed = true;
   var BUILDINGS = [
+    /* the primary, cheapest building — basic shelter, so residents have somewhere to live
+       before any other building goes up. Deliberately the smallest material ask in the list. */
+    {key:'needyhome', icon:'🏘️', people:6, cost:{wood:6, water:6}},
     {key:'senior', icon:'🏠', people:4, cost:{wood:15, nails:8, water:10}},
     {key:'orphan', icon:'🧸', people:5, cost:{wood:12, stone:8, water:10}},
     {key:'hospital', icon:'🏥', people:8, cost:{stone:20, iron:10, nails:10, plank:6, glass:4, water:20}},
     {key:'hospice', icon:'🕊️', people:3, cost:{wood:18, stone:10, water:15}},
     {key:'shelter', icon:'🐾', people:2, cost:{wood:8, stone:5, water:8}},
     {key:'library', icon:'📚', people:3, cost:{plank:10, glass:6, nails:4, water:12}},
+    /* everyday city infrastructure — more people, and each pulls from more gardens than the
+       one before it, so the town keeps needing every garden as it grows (per the "bigger
+       building → more varied materials" rule). */
+    {key:'cafe', icon:'☕', people:3, cost:{wood:10, glass:5, water:10}},
+    {key:'restaurant', icon:'🍽️', people:4, cost:{wood:14, stone:8, nails:6, water:15}},
+    {key:'cinema', icon:'🎬', people:6, cost:{stone:16, iron:10, glass:12, nails:8, water:18}},
+    {key:'mall', icon:'🏬', people:10, cost:{stone:25, iron:15, glass:20, plank:15, nails:12, water:25}},
     {key:'foodbank', icon:'🥫', people:6, moneyOnly:true, moneyCost:49},
     {key:'mobileclinic', icon:'🚐', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
   ];
@@ -908,16 +998,20 @@
   var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn'), cityOpenBtn=$('cityOpenBtn');
   var whTitle=$('whTitle'), whBar=$('whBar'), whCapText=$('whCapText'), whGrid=$('whGrid'), whWaterBtn=$('whWaterBtn'), whExpandBtn=$('whExpandBtn'), whRefine=$('whRefine');
   var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine'), buildList=$('buildList');
+  var cityMapTitleEl=$('cityMapTitle'), cityMapSvg=$('cityMapSvg'), cityMapHint=$('cityMapHint'), cityRoadGroup=$('cityRoadGroup'), cityPedGroup=$('cityPedGroup');
   var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
   var roundupModal=$('roundupModal'), roundupTitle=$('roundupTitle'), roundupText=$('roundupText'), roundupYes=$('roundupYes'), roundupNo=$('roundupNo');
   var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
   var voteNote=$('voteNote'), voteList=$('voteList');
   var langPl=$('langPl'), langEn=$('langEn'), soundToggle=$('soundToggle');
+  var settingsModal=$('settingsModal'), settingsTitleEl=$('settingsTitle'), settingsClose=$('settingsClose');
+  var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel'), settingsMasterLabel=$('settingsMasterLabel');
+  var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn'), masterToggleBtn=$('masterToggleBtn');
   var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta');
   var infoBtn=$('infoBtn'), infoModal=$('infoModal'), infoTitle=$('infoTitle'), infoP1=$('infoP1'), infoP2=$('infoP2'), infoP3=$('infoP3'), infoP4=$('infoP4'), infoClose=$('infoClose');
   var tutHint=$('tutHint'), tutHintText=$('tutHintText'), tutHintOk=$('tutHintOk');
   var selected = null;
-  var soundOn = true, audioCtx = null, tutorialShown = false;
+  var soundOn = true, musicOn = true, sfxOn = true, audioCtx = null, tutorialShown = false;
 
   function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
   function fmtLeft(ms){ var s=Math.max(0,Math.round(ms/1000)), mm=Math.floor(s/60), ss=s%60; return mm+':'+(ss<10?'0':'')+ss; }
@@ -1468,7 +1562,7 @@
   /* ---- map ---- */
   function renderMap(){
     mapStrip.innerHTML = '';
-    var showCount = unlockedMax + 2;
+    var showCount = unlockedMax + 3;
     for(var i=0;i<=showCount;i++){
       var def = gardenDef(i); var g = ensureGarden(i);
       var card = document.createElement('div');
@@ -1497,6 +1591,84 @@
   }
 
   /* ---- warehouse & town (materials + charity buildings) ---- */
+  /* ---- city map: purchased buildings placed along an auto-drawn road, with a few residents
+     always strolling along it. Rebuilding the whole map only when the set of built buildings
+     actually changes (not on every 1s tick) keeps the pedestrian animation running smoothly
+     instead of restarting every second. ---- */
+  var lastCityMapSig = null, cityPedsSpawned = false;
+  function cityMapSignature(){
+    return BUILDINGS.map(function(b){
+      var c = buildingCount(b.key); if(!c) return '';
+      var active = b.rentable ? !!(townRent[b.key] && townRent[b.key] > Date.now()) : true;
+      return b.key+':'+c+':'+(active?1:0);
+    }).join('|');
+  }
+  function renderCityMap(){
+    if(!cityMapSvg) return;
+    var t = T();
+    var NS = 'http://www.w3.org/2000/svg';
+    if(!cityPedsSpawned){
+      cityPedGroup.innerHTML = '';
+      [0,1,2].forEach(function(i){
+        var ped = document.createElementNS(NS,'circle');
+        ped.setAttribute('cy','60'); ped.setAttribute('r','2.6');
+        ped.setAttribute('class','city-ped city-ped'+i);
+        cityPedGroup.appendChild(ped);
+      });
+      cityPedsSpawned = true;
+    }
+    var sig = cityMapSignature();
+    if(sig === lastCityMapSig) return;
+    lastCityMapSig = sig;
+    var placed = BUILDINGS.filter(function(b){ return buildingCount(b.key) > 0; });
+    cityRoadGroup.innerHTML = '';
+    if(!placed.length){
+      cityMapHint.textContent = t.cityMapEmpty;
+      cityMapHint.style.display = '';
+      cityMapSvg.style.display = 'none';
+      return;
+    }
+    cityMapHint.style.display = 'none';
+    cityMapSvg.style.display = '';
+    var W = 300, roadY = 60;
+    function line(x1,y1,x2,y2,cls){
+      var el = document.createElementNS(NS,'line');
+      el.setAttribute('x1',x1); el.setAttribute('y1',y1); el.setAttribute('x2',x2); el.setAttribute('y2',y2);
+      el.setAttribute('class',cls); cityRoadGroup.appendChild(el); return el;
+    }
+    line(14, roadY, W-14, roadY, 'city-road');
+    line(14, roadY, W-14, roadY, 'city-road-dash');
+    var n = placed.length, spacing = (W-28)/(n+1);
+    placed.forEach(function(def, idx){
+      var x = 14 + spacing*(idx+1);
+      var above = idx % 2 === 0;
+      var by = above ? roadY - 32 : roadY + 32;
+      line(x, roadY, x, by, 'city-connector');
+      var active = def.rentable ? !!(townRent[def.key] && townRent[def.key] > Date.now()) : true;
+      var circle = document.createElementNS(NS,'circle');
+      circle.setAttribute('cx',x); circle.setAttribute('cy',by); circle.setAttribute('r','12');
+      circle.setAttribute('class','city-node'+(active?'':' inactive'));
+      var bt = t.buildings[def.key];
+      var titleEl = document.createElementNS(NS,'title');
+      titleEl.textContent = bt.name + (active?'':t.cityMapInactive);
+      circle.appendChild(titleEl);
+      cityRoadGroup.appendChild(circle);
+      var label = document.createElementNS(NS,'text');
+      label.setAttribute('x',x); label.setAttribute('y',by+4.5);
+      label.setAttribute('text-anchor','middle'); label.setAttribute('font-size','12');
+      label.textContent = def.icon;
+      cityRoadGroup.appendChild(label);
+      var count = buildingCount(def.key);
+      if(count > 1){
+        var badge = document.createElementNS(NS,'text');
+        badge.setAttribute('x',x+11); badge.setAttribute('y', above ? by-10 : by+22);
+        badge.setAttribute('text-anchor','middle'); badge.setAttribute('class','city-badge');
+        badge.textContent = '×'+count;
+        cityRoadGroup.appendChild(badge);
+      }
+    });
+  }
+
   function renderWarehouse(){
     var t = T();
     whTitle.textContent = t.whTitle;
@@ -1539,6 +1711,8 @@
     townPeopleLine.textContent = t.townPeopleLine(totalResidents());
     if(!cityFed && totalResidents()>0){ townFoodLine.textContent = t.townFoodWarn; townFoodLine.style.display=''; }
     else { townFoodLine.style.display='none'; }
+    cityMapTitleEl.textContent = t.cityMapTitle;
+    renderCityMap();
     buildList.innerHTML = '';
     BUILDINGS.forEach(function(def){
       var bt = t.buildings[def.key];
@@ -1767,7 +1941,7 @@
     }catch(e){}
   }
   function sfx(name){
-    if(!soundOn) return;
+    if(!soundOn || !sfxOn) return;
     switch(name){
       case 'click': tone(520,0,0.05,'sine',0.05); break;
       case 'merge': tone(420,0,0.09,'triangle',0.10); tone(630,0.05,0.12,'triangle',0.09); break;
@@ -1786,10 +1960,77 @@
       case 'build': tone(392,0,0.1,'sawtooth',0.06); tone(523,0.09,0.1,'sawtooth',0.06); tone(659,0.18,0.1,'sawtooth',0.06); tone(880,0.28,0.2,'sawtooth',0.07); break;
     }
   }
-  soundToggle.addEventListener('click', function(){
-    soundOn = !soundOn;
+  /* ---- background music: a slow, quiet 4-chord pad loop (Web Audio, no external file) —
+     meant to sit under the game unobtrusively and give it a recognizable "sound", not to
+     demand attention. Independently mutable from sound effects and from the master switch. ---- */
+  var MUSIC_CHORDS = [
+    [261.63, 329.63, 392.00, 493.88], /* Cmaj7 */
+    [220.00, 261.63, 329.63, 392.00], /* Am7   */
+    [174.61, 220.00, 261.63, 349.23], /* Fmaj7 */
+    [196.00, 246.94, 293.66, 392.00]  /* G6    */
+  ];
+  var musicTimer = null, musicChordIdx = 0, musicRunning = false;
+  var MUSIC_BAR_S = 4.8;
+  function musicNote(freq, start, dur, peak){
+    var ctx = getAudioCtx(); if(!ctx) return;
+    try{
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime+start);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime+start);
+      gain.gain.linearRampToValueAtTime(peak, ctx.currentTime+start+1.1);
+      gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime+start+dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime+start); osc.stop(ctx.currentTime+start+dur+0.05);
+    }catch(e){}
+  }
+  function scheduleMusicBar(){
+    if(!musicRunning) return;
+    if(soundOn && musicOn){
+      var chord = MUSIC_CHORDS[musicChordIdx % MUSIC_CHORDS.length];
+      musicChordIdx++;
+      chord.forEach(function(freq, idx){ musicNote(freq, idx*0.18, MUSIC_BAR_S-0.5, 0.02 - idx*0.003); });
+    }
+    musicTimer = setTimeout(scheduleMusicBar, MUSIC_BAR_S*1000);
+  }
+  function startMusic(){
+    if(musicRunning) return;
+    musicRunning = true;
+    scheduleMusicBar();
+  }
+  function stopMusic(){
+    musicRunning = false;
+    if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+  }
+
+  /* ---- sound settings: one window holding all three switches (music / sfx / everything) ---- */
+  function renderSettings(){
+    var t = T();
+    settingsTitleEl.textContent = t.settingsTitle;
+    settingsMusicLabel.textContent = t.settingsMusic;
+    settingsSfxLabel.textContent = t.settingsSfx;
+    settingsMasterLabel.textContent = t.settingsMaster;
+    musicToggleBtn.textContent = musicOn ? t.settingsOn : t.settingsOff;
+    musicToggleBtn.className = 'switch' + (musicOn ? ' on' : '');
+    sfxToggleBtn.textContent = sfxOn ? t.settingsOn : t.settingsOff;
+    sfxToggleBtn.className = 'switch' + (sfxOn ? ' on' : '');
+    masterToggleBtn.textContent = soundOn ? t.settingsOn : t.settingsOff;
+    masterToggleBtn.className = 'switch' + (soundOn ? ' on' : '');
+    settingsClose.textContent = t.settingsClose;
     soundToggle.textContent = soundOn ? '🔊' : '🔇';
-    if(soundOn) sfx('click');
+  }
+  soundToggle.addEventListener('click', function(){ renderSettings(); settingsModal.classList.add('show'); });
+  settingsClose.addEventListener('click', function(){ settingsModal.classList.remove('show'); });
+  musicToggleBtn.addEventListener('click', function(){
+    musicOn = !musicOn;
+    if(musicOn && soundOn) startMusic(); else stopMusic();
+    renderSettings(); sfx('click');
+  });
+  sfxToggleBtn.addEventListener('click', function(){ sfxOn = !sfxOn; renderSettings(); if(sfxOn) sfx('click'); });
+  masterToggleBtn.addEventListener('click', function(){
+    soundOn = !soundOn;
+    if(soundOn && musicOn) startMusic(); else stopMusic();
+    renderSettings(); if(soundOn) sfx('click');
   });
 
   /* ---- boot / splash sequence ---- */
@@ -1834,6 +2075,7 @@
     bootStage = 'done';
     var ctx = getAudioCtx();
     if(ctx && ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
+    if(soundOn && musicOn) startMusic();
     boot.classList.add('hide');
     setTimeout(function(){ boot.style.display='none'; maybeShowTutorial(); }, 420);
   }
@@ -1842,7 +2084,7 @@
     else if(bootStage==='loading'){ skipBootToReady(); }
     else if(bootStage==='ready'){ finishBoot(); }
   });
-  bootAutoTimer = setTimeout(function(){ if(bootStage==='studio') enterLoadingStage(); }, 1500);
+  bootAutoTimer = setTimeout(function(){ if(bootStage==='studio') enterLoadingStage(); }, 2700);
 
   /* ---- first-run tutorial hint ---- */
   function maybeShowTutorial(){
