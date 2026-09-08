@@ -100,12 +100,16 @@
   .grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; background:var(--bg-2); border:1px solid var(--line); border-radius:16px; padding:8px;}
   .cell{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:19px; background:var(--surface-2); border:1.5px dashed var(--line); cursor:pointer; user-select:none; transition:transform .12s ease, box-shadow .12s ease; position:relative; touch-action:none;}
   @media (prefers-reduced-motion:reduce){ .cell{transition:none;} }
-  .cell.filled{border-style:solid; border-color:transparent;}
-  .cell.secret{box-shadow:0 0 0 2px var(--violet) inset, 0 0 10px 0 var(--violet-soft);}
+  /* a raised "tile" look — a bright inset edge along the top and a soft shadow along the
+     bottom give filled cells a puffy, tactile depth without any real 3D rendering. Cheap for
+     the GPU (just box-shadow/filter layers), so it costs nothing extra on weak devices. */
+  .cell.filled{border-style:solid; border-color:transparent; box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -3px 5px rgba(0,0,0,.13), 0 3px 5px -2px var(--shadow); filter:drop-shadow(0 1px 1px var(--shadow));}
+  .cell.secret{box-shadow:inset 0 2px 0 rgba(255,255,255,.4), 0 0 0 2px var(--violet) inset, 0 0 10px 0 var(--violet-soft);}
   .cell.selected{box-shadow:0 0 0 2px var(--focus) inset; transform:scale(0.94);}
   .cell.dragging{opacity:.35;}
   .cell.drop-target{box-shadow:0 0 0 2px var(--leaf) inset; background:var(--gold-soft);}
-  .drag-ghost{position:fixed; top:0; left:0; pointer-events:none; z-index:9999; font-size:19px; width:52px; height:52px; border-radius:9px; background:var(--surface-2); border:1.5px solid var(--leaf); box-shadow:0 8px 20px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; transform:translate(-50%,-50%) scale(1.12); opacity:.96;}
+  .cell.filled:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.25), inset 0 -1px 2px rgba(0,0,0,.15);}
+  .drag-ghost{position:fixed; top:0; left:0; pointer-events:none; z-index:9999; font-size:19px; width:52px; height:52px; border-radius:9px; background:var(--surface-2); border:1.5px solid var(--leaf); box-shadow:0 10px 22px -2px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; transform:translate(-50%,-50%) scale(1.14) rotate(-4deg); opacity:.96;}
   .drag-ghost .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
   .cell:active{transform:scale(0.92);}
   .cell .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
@@ -133,12 +137,17 @@
   .combo.show{opacity:1;}
 
   .actions{display:grid; gap:7px; margin-bottom:8px;}
-  .btn{border:none; border-radius:12px; padding:10px 12px; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s ease;}
-  .btn:hover{filter:brightness(1.06);} .btn:active{filter:brightness(0.96);}
+  /* buttons get a small "resting height" (a solid bottom edge) that compresses flat on press —
+     a classic cheap-to-render 3D push-button feel, all box-shadow/transform, no extra paint
+     cost worth worrying about on low-end phones. */
+  .btn{border:none; border-radius:12px; padding:10px 12px; font-weight:700; font-size:12.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s ease, transform .1s ease, box-shadow .1s ease; box-shadow:0 3px 0 rgba(0,0,0,.14), 0 5px 10px -3px var(--shadow);}
+  .btn:hover{filter:brightness(1.06);}
+  .btn:active{filter:brightness(0.96); transform:translateY(3px); box-shadow:0 0 0 rgba(0,0,0,.14), 0 1px 3px -1px var(--shadow);}
+  .btn[disabled]{box-shadow:none;}
   .btn-primary{background:var(--leaf); color:#fbfaf1;}
   .btn-gold{background:var(--gold-soft); color:var(--gold-ink); border:1px solid var(--gold);}
   .btn-coral{background:var(--coral-soft); color:var(--coral); border:1px solid var(--coral);}
-  .btn-ghost{background:transparent; color:var(--ink-dim); border:1px solid var(--line); font-weight:600;}
+  .btn-ghost{background:transparent; color:var(--ink-dim); border:1px solid var(--line); font-weight:600; box-shadow:0 2px 0 rgba(0,0,0,.06), 0 3px 6px -3px var(--shadow);}
   .btn-violet{background:var(--violet-soft); color:var(--violet); border:1px solid var(--violet);}
   .btn-blue{background:var(--blue-soft); color:var(--blue); border:1px solid var(--blue);}
   .btn[disabled]{opacity:.45; cursor:not-allowed; filter:none;}
@@ -165,13 +174,16 @@
 
   .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px;}
   .city-map-svg{width:100%; height:auto; display:block;}
-  .city-road{stroke:var(--line); stroke-width:6; stroke-linecap:round;}
+  .city-road{stroke:var(--line); stroke-width:6; stroke-linecap:round; filter:drop-shadow(0 2px 1px var(--shadow));}
   .city-road-dash{stroke:var(--surface); stroke-width:1.5; stroke-dasharray:5 5;}
   .city-connector{stroke:var(--line); stroke-width:2; stroke-dasharray:2 2;}
-  .city-node{fill:var(--gold-soft); stroke:var(--gold); stroke-width:1.5;}
+  /* a small offset "shine" circle (drawn separately in JS) plus a drop-shadow is enough to
+     read as a glossy raised button rather than a flat dot — cheap SVG filter, not real 3D. */
+  .city-node{fill:var(--gold-soft); stroke:var(--gold); stroke-width:1.5; filter:drop-shadow(0 2px 2px var(--shadow));}
   .city-node.inactive{fill:var(--surface-2); stroke:var(--ink-dim); opacity:.55;}
+  .city-node-shine{fill:rgba(255,255,255,.55); pointer-events:none;}
   .city-badge{font-size:7px; font-weight:800; fill:var(--coral);}
-  .city-ped{fill:var(--leaf);}
+  .city-ped{fill:var(--leaf); filter:drop-shadow(0 1px 1px var(--shadow));}
   .city-map-hint{font-size:11px; color:var(--ink-dim); text-align:center; padding:18px 8px;}
   @keyframes cityWalk0{ 0%{cx:14px;} 50%{cx:286px;} 100%{cx:14px;} }
   @keyframes cityWalk1{ 0%{cx:286px;} 50%{cx:14px;} 100%{cx:286px;} }
@@ -182,10 +194,11 @@
   @media (prefers-reduced-motion:reduce){ .city-ped0,.city-ped1,.city-ped2{ animation:none; } }
 
   .map-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:4px;}
-  .garden-card{flex:0 0 auto; width:96px; border-radius:14px; padding:9px 8px; text-align:center; border:1.5px solid var(--line); background:var(--surface-2); cursor:pointer;}
-  .garden-card.active{border-color:var(--leaf); background:var(--gold-soft);}
-  .garden-card.locked{opacity:.6;}
-  .garden-card .gicon{font-size:24px; display:block; margin-bottom:4px;}
+  .garden-card{flex:0 0 auto; width:96px; border-radius:14px; padding:9px 8px; text-align:center; border:1.5px solid var(--line); background:var(--surface-2); cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.08), 0 6px 12px -6px var(--shadow); transition:transform .1s ease, box-shadow .1s ease;}
+  .garden-card:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.08), 0 2px 5px -3px var(--shadow);}
+  .garden-card.active{border-color:var(--leaf); background:var(--gold-soft); box-shadow:0 3px 0 var(--gold), 0 6px 14px -6px var(--shadow);}
+  .garden-card.locked{opacity:.6; box-shadow:none;}
+  .garden-card .gicon{font-size:24px; display:block; margin-bottom:4px; filter:drop-shadow(0 2px 2px var(--shadow));}
   .garden-card .gname{font-size:10px; font-weight:700; line-height:1.25; display:block; margin-bottom:3px;}
   .garden-card .gcost{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
 
@@ -1300,7 +1313,7 @@
     return clone.innerHTML;
   }
   function moveDragGhost(x,y){
-    if(dragGhost) dragGhost.style.transform = 'translate('+x+'px,'+y+'px) translate(-50%,-50%) scale(1.12)';
+    if(dragGhost) dragGhost.style.transform = 'translate('+x+'px,'+y+'px) translate(-50%,-50%) scale(1.14) rotate(-4deg)';
   }
   window.addEventListener('pointermove', function(ev){
     if(dragFrom===null) return;
@@ -1641,6 +1654,13 @@
       titleEl.textContent = bt.name + (active?'':t.cityMapInactive);
       circle.appendChild(titleEl);
       cityRoadGroup.appendChild(circle);
+      if(active){
+        var shine = document.createElementNS(NS,'ellipse');
+        shine.setAttribute('cx', x-4); shine.setAttribute('cy', by-5);
+        shine.setAttribute('rx','4'); shine.setAttribute('ry','2.5');
+        shine.setAttribute('class','city-node-shine');
+        cityRoadGroup.appendChild(shine);
+      }
       var label = document.createElementNS(NS,'text');
       label.setAttribute('x',x); label.setAttribute('y',by+4.5);
       label.setAttribute('text-anchor','middle'); label.setAttribute('font-size','12');
@@ -1989,14 +2009,47 @@
     }
     musicTimer = setTimeout(scheduleMusicBar, MUSIC_BAR_S*1000);
   }
+  /* a very quiet, looping bed of filtered noise under the chords — plain white noise (equal
+     energy at every frequency) reads as a harsh "hiss"; running it through a low lowpass
+     filter cuts the sharp high end and leaves something closer to rain/wind/ocean noise,
+     which is what actually reads as calming rather than just quiet. */
+  var noiseSource = null, noiseFilter = null, noiseGain = null;
+  function startNoiseBed(){
+    var ctx = getAudioCtx(); if(!ctx || noiseSource) return;
+    try{
+      var seconds = 3;
+      var bufferSize = Math.floor(ctx.sampleRate*seconds);
+      var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      var data = buffer.getChannelData(0);
+      for(var i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+      noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = buffer; noiseSource.loop = true;
+      noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 650; noiseFilter.Q.value = 0.25;
+      noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      noiseSource.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
+      noiseSource.start();
+      noiseGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime+3);
+    }catch(e){}
+  }
+  function stopNoiseBed(){
+    var src = noiseSource, gn = noiseGain, ctx = audioCtx;
+    if(!src){ return; }
+    try{ if(gn && ctx) gn.gain.linearRampToValueAtTime(0.0001, ctx.currentTime+0.6); }catch(e){}
+    setTimeout(function(){ try{ src.stop(); src.disconnect(); }catch(e){} try{ if(gn) gn.disconnect(); }catch(e){} }, 700);
+    noiseSource = null; noiseFilter = null; noiseGain = null;
+  }
   function startMusic(){
     if(musicRunning) return;
     musicRunning = true;
     scheduleMusicBar();
+    startNoiseBed();
   }
   function stopMusic(){
     musicRunning = false;
     if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+    stopNoiseBed();
   }
 
   /* ---- sound settings: one window holding all three switches (music / sfx / everything) ---- */
