@@ -110,6 +110,15 @@
   .cell .grow i{display:block; height:100%; width:0%; background:var(--leaf); border-radius:2px;}
   .cell.harvestable{box-shadow:0 0 0 2px var(--gold) inset, 0 0 10px 0 var(--gold-soft);}
   .cell .pack{position:absolute; top:2px; left:3px; font-size:9px;}
+  .cell .cboost{position:absolute; top:2px; right:3px; font-size:7px; letter-spacing:-1px; line-height:1;}
+
+  .backpack-panel{border:1.5px solid var(--gold); border-radius:14px; padding:9px 10px; margin-bottom:8px; background:var(--gold-soft);}
+  .bp-title{font-size:10.5px; font-weight:800; color:var(--gold-ink); margin-bottom:6px;}
+  .bp-list{display:flex; flex-direction:column; gap:5px;}
+  .bp-row{display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:6px 9px;}
+  .bp-row .bpname{font-size:11px; font-weight:700;}
+  .bp-row .bpcount{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
+  .bp-row button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:8px; padding:5px 10px; font-size:10.5px; cursor:pointer; white-space:nowrap;}
 
   .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px;}
   .fruit{position:absolute; font-size:20px; top:-8%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, opacity .2s ease;}
@@ -275,16 +284,13 @@
       <stop offset="100%"></stop>
     </linearGradient>
     <symbol id="ic-logo" viewBox="0 0 64 64">
-      <path d="M32,16 C32,16 27,13 20,16 C6,22 10,38 32,54 C54,38 58,22 44,16 C37,13 32,16 32,16 Z" fill="url(#heartGrad)"/>
-      <path d="M32,20 C30,30 30,44 32,50" fill="none" stroke="var(--ink)" stroke-opacity="0.18" stroke-width="1.3" stroke-linecap="round"/>
-      <path d="M32,16 L32,7" stroke="var(--leaf-deep)" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="26.5" cy="8.5" rx="6" ry="3" fill="var(--leaf)" transform="rotate(-28 26.5 8.5)"/>
-      <ellipse cx="37.5" cy="8.5" rx="6" ry="3" fill="var(--leaf)" transform="rotate(28 37.5 8.5)"/>
+      <path d="M32,7 C51,14 55,35 32,59 C9,35 13,14 32,7 Z" fill="url(#heartGrad)"/>
+      <path d="M32,15 C26,27 27,45 32,55" fill="none" stroke="var(--ink)" stroke-opacity="0.16" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M32,59 L32,61.5" stroke="var(--leaf-deep)" stroke-width="2" stroke-linecap="round"/>
     </symbol>
     <symbol id="ic-studio" viewBox="0 0 64 64">
-      <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#badgeGrad)"/>
-      <text x="32" y="39" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="20" fill="#fbfaf1">+48</text>
-      <text x="49" y="19" text-anchor="middle" font-size="13" fill="#f1dfab">✦</text>
+      <circle cx="32" cy="32" r="30" fill="url(#badgeGrad)"/>
+      <text x="32" y="40" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="21" fill="#fbfaf1">+48</text>
     </symbol>
   </defs>
 </svg>
@@ -357,6 +363,10 @@
                   <button id="tutHintOk"></button>
                 </div>
               </div>
+            </div>
+            <div id="backpackPanel" class="backpack-panel" style="display:none;">
+              <div class="bp-title" id="bpTitle"></div>
+              <div class="bp-list" id="bpList"></div>
             </div>
             <button class="btn btn-ghost" id="waterAdBtn" style="display:none; margin-bottom:8px;"></button>
             <div class="actions">
@@ -491,6 +501,8 @@
       navGarden:'Ogród', navShop:'Sklep', navRank:'Ranking', navVote:'Głosy',
       mapHint: 'Przesuń, aby zobaczyć wszystkie ogrody — nowe otwierają się bez końca.',
       mapClose: '← Wróć do ogrodu',
+      bpTitle: '🎒 Plecak — zastosuj na wybranej roślinie',
+      bpApply: 'Zastosuj',
       whTitle: '📦 Magazyn surowców',
       whCapText: function(total, cap){ return total + ' / ' + cap + ' — pojemność magazynu'; },
       whWaterBtn: '📺 Obejrzyj reklamę i zdobądź wodę',
@@ -561,6 +573,8 @@
         notEnoughMaterial: 'Za mało surowców w magazynie.',
         refined: function(icon){ return '📺 Przetworzono! +1 ' + icon + '.'; },
         built: function(name){ return '🏗️ Zbudowano: ' + name + '! Nowi mieszkańcy zwiększają Dobro.'; },
+        addedToBackpack: function(name){ return '🎒 ' + name + ' trafiło do plecaka. Wybierz roślinę, żeby je zastosować.'; },
+        boosterApplied: function(name){ return '✅ ' + name + ' zastosowano na wybranej roślinie!'; },
         boosterOn: function(name){ return name + ' aktywowany!'; },
         instantGrowth: '🧪 Roślina natychmiast urosła o poziom!',
         guaranteeReady: '🌟 Gotowe — następne połączenie da sekretną roślinę!',
@@ -623,6 +637,8 @@
       navGarden:'Garden', navShop:'Shop', navRank:'Rank', navVote:'Vote',
       mapHint: 'Scroll to see every garden — new ones unlock forever.',
       mapClose: '← Back to garden',
+      bpTitle: '🎒 Backpack — apply to the selected plant',
+      bpApply: 'Apply',
       whTitle: '📦 Materials Warehouse',
       whCapText: function(total, cap){ return total + ' / ' + cap + ' — warehouse capacity'; },
       whWaterBtn: '📺 Watch an ad for water',
@@ -693,6 +709,8 @@
         notEnoughMaterial: 'Not enough materials in the warehouse.',
         refined: function(icon){ return '📺 Refined! +1 ' + icon + '.'; },
         built: function(name){ return '🏗️ Built: ' + name + '! New residents boost Good.'; },
+        addedToBackpack: function(name){ return '🎒 ' + name + ' added to your backpack. Select a plant to apply it.'; },
+        boosterApplied: function(name){ return '✅ ' + name + ' applied to the selected plant!'; },
         boosterOn: function(name){ return name + ' activated!'; },
         instantGrowth: '🧪 A plant instantly grew a level!',
         guaranteeReady: '🌟 Ready — your next merge will be secret!',
@@ -809,13 +827,18 @@
   function newBoard(){ return new Array(25).fill(0); }
   function ensureGarden(n){
     if(!gardens[n]){
-      gardens[n] = {board:newBoard(), readyAt:new Array(25).fill(0), seeds:0, unlocked:false};
+      gardens[n] = {board:newBoard(), readyAt:new Array(25).fill(0), cellBoosts:{}, seeds:0, unlocked:false};
       if(n===0){ gardens[n].unlocked = true; gardens[n].board[6]=1; gardens[n].board[7]=1; gardens[n].board[13]=2; gardens[n].seeds=3; }
     }
     return gardens[n];
   }
   ensureGarden(0);
   function isReady(g, i){ return !g.board[i] || Date.now() >= (g.readyAt[i]||0); }
+
+  /* ---- per-plant boost charges (bought in the shop, applied to one chosen plant from the backpack) ---- */
+  var inventory = {water:0, fertilizer:0, growlamp10:0, growlamp30:0, growlampDay:0};
+  function cellBoostActive(g, i, key){ return g.cellBoosts[i] && g.cellBoosts[i][key] && g.cellBoosts[i][key] > Date.now(); }
+  function applyCellBoost(g, i, key, ms){ if(!g.cellBoosts[i]) g.cellBoosts[i] = {}; g.cellBoosts[i][key] = Date.now()+ms; }
 
   /* mock leaderboard data (demo only) */
   var LB_TIME = [342,298,276,251,230,214,201,190];
@@ -830,6 +853,7 @@
   var gridEl=$('grid'), fruitLayer=$('fruitLayer'), comboEl=$('combo');
   var toastEl=$('toast'), gardenNameTag=$('gardenNameTag'), tagline=$('tagline');
   var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn'), waterAdBtn=$('waterAdBtn');
+  var backpackPanel=$('backpackPanel'), bpTitle=$('bpTitle'), bpList=$('bpList');
   var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
   var navGarden=$('navGarden'), navShop=$('navShop'), navRank=$('navRank'), navVote=$('navVote');
   var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn');
@@ -854,15 +878,30 @@
   }
 
   /* ---- boosts / multipliers ---- */
+  /* only "Auto-łączenie" is still a global timed boost — it automates the whole board rather
+     than multiplying output, so it doesn't create the same runaway-economy risk as a
+     board-wide income multiplier would. */
   function boostActive(key){ return activeBoosts[key] && activeBoosts[key] > Date.now(); }
   function addBoost(key, ms){ activeBoosts[key] = Date.now() + ms; }
-  function productionMult(){ var m = 1 + (boostActive('water')?0.25:0) + honeyStacks*0.05; if(boostActive('growlamp')) m*=2; return m; }
-  function mergeBonusMult(){ return 1 + (boostActive('fertilizer')?0.4:0); }
 
   function levelInfo(cellVal){ if(cellVal===0) return null; var secret = cellVal>SECRET_OFFSET; var lvl = secret?cellVal-SECRET_OFFSET:cellVal; return {lvl:lvl, secret:secret}; }
   function emojiFor(gardenIdx, info){ var g = gardenDef(gardenIdx); return info.secret ? g.secret : g.plants[info.lvl-1]; }
-  function production(gardenIdx, cellVal){ var info = levelInfo(cellVal); if(!info) return 0; var base = Math.pow(info.lvl,1.7)*0.35; if(info.secret) base*=1.5; return base; }
-  function totalProduction(gardenIdx){ var g = ensureGarden(gardenIdx); var sum=0; for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, g.board[i]); return sum * productionMult() + townPeople*0.4; }
+  /* every purchased water/fertilizer/grow-lamp charge is applied to ONE chosen plant from the
+     backpack (not the whole board) — this keeps a single purchase from instantly maxing the
+     whole garden. */
+  function production(gardenIdx, i){
+    var g = ensureGarden(gardenIdx); var info = levelInfo(g.board[i]); if(!info) return 0;
+    var base = Math.pow(info.lvl,1.7)*0.35; if(info.secret) base*=1.5;
+    var mult = 1;
+    if(cellBoostActive(g,i,'water')) mult += 0.25;
+    if(cellBoostActive(g,i,'growlamp')) mult *= 2;
+    return base*mult;
+  }
+  function totalProduction(gardenIdx){
+    var g = ensureGarden(gardenIdx); var sum=0;
+    for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, i);
+    return sum * (1+honeyStacks*0.05) + townPeople*0.4;
+  }
 
   function checkMilestone(){
     while(milestoneIdx < MILESTONE_T.length && allTime >= MILESTONE_T[milestoneIdx]){
@@ -925,7 +964,7 @@
       impactLabel.innerHTML = '🏆 ' + fmt(allTime);
     }
     boostsEl.innerHTML = '';
-    [['water','💧'],['fertilizer','🌿'],['growlamp','☀️×2'],['automerge','⚙️']].forEach(function(d){
+    [['automerge','⚙️']].forEach(function(d){
       if(boostActive(d[0])){
         var left = Math.max(0, Math.round((activeBoosts[d[0]]-Date.now())/1000));
         var mm = Math.floor(left/60), ss = left%60;
@@ -959,7 +998,9 @@
           growHTML = '<span class="grow"><i style="width:'+pct+'%"></i></span>';
         }
         var packHTML = harvestable ? '<span class="pack">📦</span>' : '';
-        cell.innerHTML = emojiFor(active, info) + '<span class="lvl">'+info.lvl+'</span>' + growHTML + packHTML;
+        var boostIcons = (cellBoostActive(g,i,'water')?'💧':'') + (cellBoostActive(g,i,'growlamp')?'☀️':'') + (cellBoostActive(g,i,'fertilizer')?'🌿':'');
+        var boostHTML = boostIcons ? '<span class="cboost">'+boostIcons+'</span>' : '';
+        cell.innerHTML = emojiFor(active, info) + '<span class="lvl">'+info.lvl+'</span>' + growHTML + packHTML + boostHTML;
       }
       cell.setAttribute('role','button'); cell.setAttribute('tabindex','0');
       cell.addEventListener('click', (function(idx){ return function(){ onCellTap(idx); }; })(i));
@@ -967,6 +1008,38 @@
     }
     if(!waterAdLoading) waterAdBtn.textContent = T().waterAdBtn;
     waterAdBtn.style.display = anyGrowing() ? '' : 'none';
+    renderBackpack();
+  }
+
+  /* ---- backpack: apply a bought charge to the currently selected plant ---- */
+  function renderBackpack(){
+    var t = T();
+    var g = ensureGarden(active);
+    var val = selected!==null ? g.board[selected] : 0;
+    var items = [
+      {key:'water', label:t.shop.water.name, ms:10*60*1000},
+      {key:'fertilizer', label:t.shop.fertilizer.name, ms:20*60*1000},
+      {key:'growlamp10', label:t.shop.growlamp.name+' · 10 min', boostKey:'growlamp', ms:10*60*1000},
+      {key:'growlamp30', label:t.shop.growlamp.name+' · 30 min', boostKey:'growlamp', ms:30*60*1000},
+      {key:'growlampDay', label:t.shop.growlamp.name+' · 24 h', boostKey:'growlamp', ms:24*60*60*1000}
+    ].filter(function(it){ return inventory[it.key]>0; });
+
+    if(!val || !items.length){ backpackPanel.style.display='none'; return; }
+    backpackPanel.style.display = '';
+    bpTitle.textContent = t.bpTitle;
+    bpList.innerHTML = '';
+    items.forEach(function(it){
+      var row = document.createElement('div'); row.className='bp-row';
+      row.innerHTML = '<span class="bpname">'+it.label+'</span><span class="bpcount">×'+inventory[it.key]+'</span><button>'+t.bpApply+'</button>';
+      row.querySelector('button').onclick = function(){
+        inventory[it.key]--;
+        applyCellBoost(g, selected, it.boostKey||it.key, it.ms);
+        var applied = it.label; selected = null;
+        renderGrid(); renderStats();
+        toast(t.toast.boosterApplied(applied), 2400); sfx('buy');
+      };
+      bpList.appendChild(row);
+    });
   }
 
   /* merges board[a] and board[b] (same level) into a levelled-up plant at a; b becomes empty.
@@ -979,10 +1052,12 @@
       if(secretGuaranteed){ makeSecret=true; secretGuaranteed=false; }
       else if(newLvl>=6 && Math.random()<0.12){ makeSecret=true; }
     }
+    var fertActive = cellBoostActive(g,a,'fertilizer') || cellBoostActive(g,b,'fertilizer');
     g.board[a] = newLvl + (makeSecret?SECRET_OFFSET:0);
     g.board[b] = 0;
     g.readyAt[a] = Date.now() + MATURE_MS;
-    var bonus = newLvl*3*mergeBonusMult();
+    if(g.cellBoosts[b]) delete g.cellBoosts[b];
+    var bonus = newLvl*3*(fertActive?1.4:1);
     dobro += bonus; addAllTime(bonus);
     return {newLvl:newLvl, makeSecret:makeSecret, wasSecret:info.secret};
   }
@@ -1279,26 +1354,29 @@
     item('<div class="row1"><div class="name">'+s.water.name+'</div><button id="buyWater">15 🌾</button></div><div class="desc">'+s.water.desc+'</div>')
       .querySelector('button').onclick = function(){
         if(dobro<15){ toast(t.toast.notEnoughSoft); sfx('deny'); return; }
-        dobro-=15; addBoost('water', 10*60*1000); renderAll(); toast(t.toast.boosterOn(s.water.name)); sfx('buy');
+        dobro-=15; inventory.water++; renderAll(); toast(t.toast.addedToBackpack(s.water.name)); sfx('buy');
       };
 
     cat(s.catHeart);
-    [{key:'fertilizer',id:'fertilizer',cost:12,ms:20*60*1000}, {key:'automerge',id:'automerge',cost:18,ms:30*60*1000}].forEach(function(b){
-      var def = s[b.key];
-      var el = item('<div class="row1"><div class="name">'+def.name+'</div><button>'+b.cost+' 💛</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
-      el.querySelector('button').onclick = function(bb,dd){ return function(){ if(buyHard(bb.cost)){ addBoost(bb.id, bb.ms); renderAll(); toast(t.toast.boosterOn(dd.name)); sfx('buy'); } }; }(b, def);
-    });
+    var fertDef = s.fertilizer;
+    var fertEl = item('<div class="row1"><div class="name">'+fertDef.name+'</div><button>12 💛</button></div><div class="desc">'+fertDef.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    fertEl.querySelector('button').onclick = function(){ if(buyHard(12)){ inventory.fertilizer++; renderAll(); toast(t.toast.addedToBackpack(fertDef.name)); sfx('buy'); } };
+
+    var amDef = s.automerge;
+    var amEl = item('<div class="row1"><div class="name">'+amDef.name+'</div><button>18 💛</button></div><div class="desc">'+amDef.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    amEl.querySelector('button').onclick = function(){ if(buyHard(18)){ addBoost('automerge', 30*60*1000); renderAll(); toast(t.toast.boosterOn(amDef.name)); sfx('buy'); } };
+
     var glDef = s.growlamp;
     var glEl = item('<div class="row1"><div class="name">'+glDef.name+'</div></div><div class="desc">'+glDef.desc+'</div>'+
       '<div class="tier-row">'+
-        '<button data-ms="'+(10*60*1000)+'" data-cost="8">10 min<br>8 💛</button>'+
-        '<button data-ms="'+(30*60*1000)+'" data-cost="18">30 min<br>18 💛</button>'+
-        '<button data-ms="'+(24*60*60*1000)+'" data-cost="60">24 h<br>60 💛</button>'+
+        '<button data-key="growlamp10" data-cost="8">10 min<br>8 💛</button>'+
+        '<button data-key="growlamp30" data-cost="18">30 min<br>18 💛</button>'+
+        '<button data-key="growlampDay" data-cost="60">24 h<br>60 💛</button>'+
       '</div><div class="charity">'+s.charityHeart+'</div>');
     Array.prototype.forEach.call(glEl.querySelectorAll('.tier-row button'), function(btn){
       btn.onclick = function(){
-        var ms = parseInt(btn.getAttribute('data-ms'),10), cost = parseInt(btn.getAttribute('data-cost'),10);
-        if(buyHard(cost)){ addBoost('growlamp', ms); renderAll(); toast(t.toast.boosterOn(glDef.name)); sfx('buy'); }
+        var key = btn.getAttribute('data-key'), cost = parseInt(btn.getAttribute('data-cost'),10);
+        if(buyHard(cost)){ inventory[key]++; renderAll(); toast(t.toast.addedToBackpack(glDef.name)); sfx('buy'); }
       };
     });
     var bioEl = item('<div class="row1"><div class="name">'+s.bio.name+'</div><button id="buyBio">8 💛</button></div><div class="desc">'+s.bio.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
