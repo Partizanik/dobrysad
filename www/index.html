@@ -98,11 +98,12 @@
 
   .grid-wrap{position:relative; margin-bottom:10px;}
   .grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; background:var(--bg-2); border:1px solid var(--line); border-radius:16px; padding:8px;}
-  .cell{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:19px; background:var(--surface-2); border:1.5px dashed var(--line); cursor:pointer; user-select:none; transition:transform .12s ease, box-shadow .12s ease; position:relative;}
+  .cell{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:19px; background:var(--surface-2); border:1.5px dashed var(--line); cursor:pointer; user-select:none; transition:transform .12s ease, box-shadow .12s ease; position:relative; touch-action:none;}
   @media (prefers-reduced-motion:reduce){ .cell{transition:none;} }
   .cell.filled{border-style:solid; border-color:transparent;}
   .cell.secret{box-shadow:0 0 0 2px var(--violet) inset, 0 0 10px 0 var(--violet-soft);}
   .cell.selected{box-shadow:0 0 0 2px var(--focus) inset; transform:scale(0.94);}
+  .cell.dragging{opacity:.45;}
   .cell:active{transform:scale(0.92);}
   .cell .lvl{position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:800; color:var(--ink-dim); font-variant-numeric:tabular-nums;}
   .cell.growing{cursor:default;}
@@ -166,7 +167,7 @@
   .wh-wrap{border:1px solid var(--line); border-radius:14px; padding:10px 11px; background:var(--surface-2);}
   .wh-wrap .bar{margin-bottom:4px;}
   .wh-cap-text{font-size:10px; color:var(--ink-dim); font-weight:700; margin-bottom:8px;}
-  .wh-grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-bottom:9px;}
+  .wh-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:9px;}
   .wh-chip{text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:6px 2px; font-size:9.5px; font-weight:800;}
   .wh-chip .wi{font-size:15px; display:block; margin-bottom:2px;}
   .wh-actions{display:flex; gap:6px; margin-bottom:8px;}
@@ -336,6 +337,7 @@
           </div>
           <div class="game-tagline" id="tagline"></div>
           <div class="garden-row">
+            <button class="map-open" id="cityOpenBtn" title="Town">🏙️</button>
             <button class="map-open" id="mapOpenBtn" title="Gardens map">🗺️</button>
             <span class="sup" id="gardenNameTag"></span>
           </div>
@@ -394,6 +396,7 @@
 
             <div class="section-title" id="townTitle"></div>
             <div class="town-people" id="townPeopleLine"></div>
+            <div class="town-people" id="townFoodLine" style="color:var(--coral); display:none;"></div>
             <div class="scroll420" id="buildList"></div>
 
             <button class="btn btn-ghost" id="mapCloseBtn" style="width:100%; margin-top:10px;"></button>
@@ -512,15 +515,25 @@
       refineLabel: function(need, fromIcon, toIcon){ return need + ' ' + fromIcon + ' → 1 ' + toIcon; },
       townTitle: '🏘️ Miasteczko dobra',
       townPeopleLine: function(n){ return n>0 ? ('Mieszkańcy: ' + n + ' — każdy dodaje trochę Dobra co sekundę.') : 'Zbuduj pierwszy obiekt, żeby zamieszkali w nim ludzie.'; },
+      townFoodWarn: '🍎 Brak jedzenia! Mieszkańcy nie pomagają, dopóki nie zbierzesz owoców w Ogrodzie Nadziei lub Tropikalnym.',
+      bankTitle: '🏦 Bank — wymień nadmiar jedzenia',
       buildBtn: 'Buduj',
+      buildRentBtn: 'Wynajmij na miesiąc',
+      buildRenewBtn: 'Przedłuż o miesiąc',
       buildCost: 'Koszt',
+      buildMoneyTag: '💳 Tylko za realną wpłatę — nie zużywa surowców z ogrodów',
+      buildRentTag: function(left){ return '📅 Wynajęte — zostało: ' + left; },
+      buildRentExpired: '📅 Najem wygasł — przedłuż, żeby mieszkańcy wrócili.',
       peopleUnit: 'mieszk.',
       buildings: {
         senior: {name:'Dom Seniora', desc:'Opieka i ciepły posiłek dla starszych osób.'},
         orphan: {name:'Dom Dziecka', desc:'Bezpieczny dom dla dzieci bez opieki.'},
         hospital: {name:'Szpital', desc:'Leczenie dla tych, których na nie nie stać.'},
         hospice: {name:'Hospicjum', desc:'Godna opieka w ostatnim etapie życia.'},
-        shelter: {name:'Schronisko dla Zwierząt', desc:'Dom dla porzuconych zwierząt.'}
+        shelter: {name:'Schronisko dla Zwierząt', desc:'Dom dla porzuconych zwierząt.'},
+        library: {name:'Biblioteka', desc:'Bezpłatny dostęp do książek i nauki dla całej okolicy.'},
+        foodbank: {name:'Bank Żywności', desc:'Codzienne paczki żywnościowe dla potrzebujących rodzin. Finansowany wyłącznie z realnych wpłat.'},
+        mobileclinic: {name:'Mobilna Klinika', desc:'Objazdowa opieka medyczna dla wsi bez dostępu do lekarza. Wynajmowana co miesiąc z realnych wpłat.'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Otwórz', confirmNo:'Anuluj',
@@ -542,13 +555,15 @@
       tutHintOk: 'Rozumiem',
       waterAdBtn: '💧 Podlej i przyspiesz (obejrzyj reklamę)',
       waterAdBtnLoading: '⏳ Podlewanie (reklama)...',
+      watchAdShort: '📺 Reklama',
+      watchAdShortLoading: '⏳...',
       infoTitle: 'Jak to działa',
       infoP1: '📺 Oglądanie reklam jest głównym sposobem pomagania — jest darmowe dla Ciebie, a przychód z reklam trafia do funduszu.',
       infoP2: '💛 Zakupy w sklepie są całkowicie opcjonalne. Tylko zakupy oznaczone „trafia do fundacji" faktycznie zasilają fundusz — 🌾 Dobro zdobyte samą grą to zwykła ekonomia gry.',
       infoP3: '🏆 Ranking pokazuje najbardziej zaangażowane osoby wg czasu i wg wsparcia — każdy wynik się liczy, nie tylko czołówka.',
       infoP4: '🌱 Po połączeniu roślina przez chwilę rośnie, zanim znów można ją połączyć — ręczne łączenie jest zawsze darmowe. Auto-łączenie w sklepie to tylko opcjonalna oszczędność czasu.',
       infoClose: 'Zamknij',
-      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom'],
+      gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom','Huta Szkła'],
       adjectives: ['Zagadkowy','Kryształowy','Księżycowy','Słoneczny','Szmaragdowy','Niebiański','Magiczny','Pradawny','Bajkowy','Tęczowy'],
       nouns: ['ogród','oaza','las','wyspa','park','zakątek','raj','kryształowy ogród'],
       milestones: ['zestaw warzyw','jeden obiad','20 litrów wody','podręcznik','prawdziwe drzewo','zabawka','wizyta u lekarza','dzień w szkole','miesiąc dachu nad głową dla rodziny'],
@@ -573,6 +588,8 @@
         notEnoughMaterial: 'Za mało surowców w magazynie.',
         refined: function(icon){ return '📺 Przetworzono! +1 ' + icon + '.'; },
         built: function(name){ return '🏗️ Zbudowano: ' + name + '! Nowi mieszkańcy zwiększają Dobro.'; },
+        rented: function(name){ return '📅 Wynajęto: ' + name + ' na miesiąc (demo).'; },
+        rentRenewed: function(name){ return '📅 Przedłużono najem: ' + name + '.'; },
         addedToBackpack: function(name){ return '🎒 ' + name + ' trafiło do plecaka. Wybierz roślinę, żeby je zastosować.'; },
         boosterApplied: function(name){ return '✅ ' + name + ' zastosowano na wybranej roślinie!'; },
         boosterOn: function(name){ return name + ' aktywowany!'; },
@@ -587,7 +604,7 @@
         voted: function(name){ return 'Twój głos na „' + name + '" został zapisany (demo).'; }
       },
       shop: {
-        catFree: 'Przyspieszacze — zwykła ekonomia gry',
+        catFree: 'Podlewanie — zdobywane wyłącznie za oglądanie reklam',
         catHeart: 'Aktywatory za Serduszka — część trafia do funduszu',
         catSupport: 'Wsparcie projektu — złotówki (demo)',
         catCosmetic: 'Dekoracje — tylko dla wyglądu',
@@ -648,15 +665,25 @@
       refineLabel: function(need, fromIcon, toIcon){ return need + ' ' + fromIcon + ' → 1 ' + toIcon; },
       townTitle: '🏘️ Town of Good',
       townPeopleLine: function(n){ return n>0 ? ('Residents: ' + n + ' — each adds a little Good every second.') : 'Build your first building to move people in.'; },
+      townFoodWarn: '🍎 Out of food! Residents stop helping until you harvest fruit in Garden of Hope or Tropical Garden.',
+      bankTitle: '🏦 Bank — trade surplus food',
       buildBtn: 'Build',
+      buildRentBtn: 'Rent for a month',
+      buildRenewBtn: 'Renew for a month',
       buildCost: 'Cost',
+      buildMoneyTag: '💳 Real-money donation only — uses no garden materials',
+      buildRentTag: function(left){ return '📅 Rented — time left: ' + left; },
+      buildRentExpired: '📅 Rent expired — renew it to bring the residents back.',
       peopleUnit: 'residents',
       buildings: {
         senior: {name:'Nursing Home', desc:'Care and a warm meal for elderly people.'},
         orphan: {name:'Orphanage', desc:'A safe home for children without care.'},
         hospital: {name:'Hospital', desc:'Treatment for those who cannot afford it.'},
         hospice: {name:'Hospice', desc:'Dignified care in life’s final stage.'},
-        shelter: {name:'Animal Shelter', desc:'A home for abandoned animals.'}
+        shelter: {name:'Animal Shelter', desc:'A home for abandoned animals.'},
+        library: {name:'Library', desc:'Free access to books and learning for the whole area.'},
+        foodbank: {name:'Food Bank', desc:'Daily food parcels for families in need. Funded only by real donations.'},
+        mobileclinic: {name:'Mobile Clinic', desc:'Traveling medical care for villages with no doctor nearby. Rented monthly from real donations.'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Unlock', confirmNo:'Cancel',
@@ -678,13 +705,15 @@
       tutHintOk: 'Got it',
       waterAdBtn: '💧 Water & speed up (watch an ad)',
       waterAdBtnLoading: '⏳ Watering (ad)...',
+      watchAdShort: '📺 Ad',
+      watchAdShortLoading: '⏳...',
       infoTitle: 'How it works',
       infoP1: '📺 Watching ads is the main way to help — it costs you nothing, and the ad revenue goes to the fund.',
       infoP2: '💛 Shop purchases are entirely optional. Only items marked "goes to the foundation" actually fund the cause — 🌾 Good earned just by playing is regular game economy.',
       infoP3: '🏆 The leaderboard shows the most engaged people by time and by support — every contribution counts, not just the top spots.',
       infoP4: '🌱 After merging, a plant grows for a short moment before it can merge again — merging by hand is always free. Auto-Merge in the shop is just an optional time-saver.',
       infoClose: 'Close',
-      gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry'],
+      gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry','Glass Foundry'],
       adjectives: ['Mysterious','Crystal','Moonlit','Sunny','Emerald','Heavenly','Magic','Ancient','Fairytale','Rainbow'],
       nouns: ['garden','oasis','forest','island','park','corner','paradise','crystal garden'],
       milestones: ['a box of vegetables','one meal','20 liters of water','a school textbook','a real tree planted','a toy','a doctor visit','a day of school','a month of rent for a family'],
@@ -709,6 +738,8 @@
         notEnoughMaterial: 'Not enough materials in the warehouse.',
         refined: function(icon){ return '📺 Refined! +1 ' + icon + '.'; },
         built: function(name){ return '🏗️ Built: ' + name + '! New residents boost Good.'; },
+        rented: function(name){ return '📅 Rented: ' + name + ' for a month (demo).'; },
+        rentRenewed: function(name){ return '📅 Rent renewed: ' + name + '.'; },
         addedToBackpack: function(name){ return '🎒 ' + name + ' added to your backpack. Select a plant to apply it.'; },
         boosterApplied: function(name){ return '✅ ' + name + ' applied to the selected plant!'; },
         boosterOn: function(name){ return name + ' activated!'; },
@@ -723,7 +754,7 @@
         voted: function(name){ return 'Your vote for "' + name + '" was recorded (demo).'; }
       },
       shop: {
-        catFree: 'Boosters — regular game economy',
+        catFree: 'Watering — earned only by watching ads',
         catHeart: 'Heart-powered activators — a share goes to the fund',
         catSupport: 'Support the project — PLN (demo)',
         catCosmetic: 'Decorations — cosmetic only',
@@ -767,17 +798,21 @@
   var EMOJI_POOL = ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🌳','🌵','🌴','🍍','🥥','🌼','🌹','🪷','🌸','🍄','🦔','🦋','🐚','💎','🏝️','🌌','⭐','🔥','🌈','🌺','🌾','🍂','🍇'];
   var SECRET_POOL = ['🌟','🐚','🦋','🦄','🔥','💎','🌈','⚡','❄️','🍀'];
   var CURATED_PLANTS = [
-    ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🌳','✨'],
-    ['🌰','🌱','🍃','🌿','🍌','🍍','🥥','🌴','🏝️'],
-    ['🌰','🌱','🌿','🪴','🌲','🌳','🌳','🪵','🪵'],
+    ['🌰','🌱','🌿','🍀','🌷','🌻','🍎','🍎','🍎'],
+    ['🌰','🌱','🍃','🌿','🍌','🍍','🥥','🥥','🥥'],
+    ['🌰','🌱','🌿','🎋','🌲','🪾','🌳','🌳','🌳'],
     ['🌰','🌱','🌿','🌼','🌷','🌹','🪷','🌸','🌈'],
-    ['🪨','🪨','⛏️','⛏️','⚒️','💎','💎','⚙️','🔩']
+    ['🪨','⛰️','🗻','🔶','🔷','💎','💎','💎','💎'],
+    ['🏖️','🏜️','🔥','🧊','🔮','🪟','🍾','🥂','🏺']
   ];
-  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','💠'];
-  var CURATED_COST = [0,600,1500,3000,6000];
+  var CURATED_SECRET = ['🌟','🐚','🦋','🦄','⚡','❄️'];
+  var CURATED_COST = [0,600,1500,3000,6000,12000];
   /* gardens that yield raw materials once a plant reaches max level (tap a matured max-level
-     plant to harvest it into the warehouse via a short ad, instead of merging it further) */
-  var HARVESTABLE_GARDENS = {2:'wood', 4:'stone'};
+     plant to harvest it into the warehouse via a short ad, instead of merging it further):
+     Ogród Nadziei & Ogród Tropikalny grow food (fed to town residents — see FOOD_PER_PERSON),
+     Gaj Drzewny grows wood (→ planks), Kamieniołom grows stone (→ iron → nails),
+     Huta Szkła grows sand (→ glass). Ogród Kwiatowy stays a pure decorative/Dobro garden. */
+  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'sand'};
   var MAX_LEVEL = 9, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
@@ -804,24 +839,41 @@
   var skins = {sunset:false, midnight:false};
 
   /* ---- materials warehouse & town (charity buildings) ---- */
-  var warehouse = {water:0, wood:0, stone:0, iron:0, nails:0};
+  var warehouse = {water:0, food:0, wood:0, plank:0, stone:0, iron:0, nails:0, sand:0, glass:0};
   var warehouseCap = 40;
-  var MATERIAL_ICON = {water:'💧', wood:'🪵', stone:'🪨', iron:'⚙️', nails:'🔩'};
-  var REFINE = {iron:{from:'stone', need:5}, nails:{from:'iron', need:3}};
+  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', plank:'🟫', stone:'🪨', iron:'⚙️', nails:'🔩', sand:'🏖️', glass:'🪟'};
+  var REFINE = {iron:{from:'stone', need:5}, nails:{from:'iron', need:3}, plank:{from:'wood', need:5}, glass:{from:'sand', need:4}};
+  /* "bank" — trade a surplus of food for whichever raw material is running low, so the town
+     never gets permanently stuck waiting on one specific garden (still ad-gated, same as every
+     other exchange in the warehouse). */
+  var BANK_EXCHANGE = {wood:{from:'food', need:10}, stone:{from:'food', need:10}, sand:{from:'food', need:10}};
+  var RENT_MS = 3*60*1000; /* 1 "month" is compressed to 3 minutes for this demo build */
+  var FOOD_PER_PERSON = 0.03; /* Dobro/sec worth of 🍎 each resident eats — keeps the town from running forever on one harvest */
+  var cityFed = true;
   var BUILDINGS = [
     {key:'senior', icon:'🏠', people:4, cost:{wood:15, nails:8, water:10}},
     {key:'orphan', icon:'🧸', people:5, cost:{wood:12, stone:8, water:10}},
-    {key:'hospital', icon:'🏥', people:8, cost:{stone:20, iron:10, nails:10, water:20}},
+    {key:'hospital', icon:'🏥', people:8, cost:{stone:20, iron:10, nails:10, plank:6, glass:4, water:20}},
     {key:'hospice', icon:'🕊️', people:3, cost:{wood:18, stone:10, water:15}},
-    {key:'shelter', icon:'🐾', people:2, cost:{wood:8, stone:5, water:8}}
+    {key:'shelter', icon:'🐾', people:2, cost:{wood:8, stone:5, water:8}},
+    {key:'library', icon:'📚', people:3, cost:{plank:10, glass:6, nails:4, water:12}},
+    {key:'foodbank', icon:'🥫', people:6, moneyOnly:true, moneyCost:49},
+    {key:'mobileclinic', icon:'🚐', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
   ];
-  var townBuilt = {}; var townPeople = 0;
+  var townBuilt = {}; var townPeople = 0; var townRent = {};
   function buildingCount(key){ return townBuilt[key]||0; }
   function buildingCost(def){
     var n = buildingCount(def.key), mult = Math.pow(1.35, n), out = {};
     for(var k in def.cost) out[k] = Math.ceil(def.cost[k]*mult);
     return out;
   }
+  function moneyCostFor(def){ return Math.ceil(def.moneyCost * Math.pow(1.35, buildingCount(def.key))); }
+  function rentPeopleActive(){
+    var sum = 0;
+    BUILDINGS.forEach(function(b){ if(b.rentable && townRent[b.key] && townRent[b.key] > Date.now()) sum += b.people; });
+    return sum;
+  }
+  function totalResidents(){ return townPeople + rentPeopleActive(); }
   function canAfford(cost){ for(var k in cost){ if((warehouse[k]||0) < cost[k]) return false; } return true; }
 
   function newBoard(){ return new Array(25).fill(0); }
@@ -856,9 +908,9 @@
   var backpackPanel=$('backpackPanel'), bpTitle=$('bpTitle'), bpList=$('bpList');
   var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
   var navGarden=$('navGarden'), navShop=$('navShop'), navRank=$('navRank'), navVote=$('navVote');
-  var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn');
+  var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn'), cityOpenBtn=$('cityOpenBtn');
   var whTitle=$('whTitle'), whBar=$('whBar'), whCapText=$('whCapText'), whGrid=$('whGrid'), whWaterBtn=$('whWaterBtn'), whExpandBtn=$('whExpandBtn'), whRefine=$('whRefine');
-  var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), buildList=$('buildList');
+  var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine'), buildList=$('buildList');
   var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
   var roundupModal=$('roundupModal'), roundupTitle=$('roundupTitle'), roundupText=$('roundupText'), roundupYes=$('roundupYes'), roundupNo=$('roundupNo');
   var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
@@ -871,6 +923,7 @@
   var soundOn = true, audioCtx = null, tutorialShown = false;
 
   function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
+  function fmtLeft(ms){ var s=Math.max(0,Math.round(ms/1000)), mm=Math.floor(s/60), ss=s%60; return mm+':'+(ss<10?'0':'')+ss; }
   function toast(msg, ms){
     toastEl.textContent = msg; toastEl.classList.add('show');
     clearTimeout(toastEl._t);
@@ -900,7 +953,17 @@
   function totalProduction(gardenIdx){
     var g = ensureGarden(gardenIdx); var sum=0;
     for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, i);
-    return sum * (1+honeyStacks*0.05) + townPeople*0.4;
+    var peopleBonus = cityFed ? totalResidents()*0.4 : 0;
+    return sum * (1+honeyStacks*0.05) + peopleBonus;
+  }
+  /* residents eat 🍎 food every second — without it they stop boosting Dobro until the
+     warehouse gets more food (from Ogród Nadziei / Ogród Tropikalny). This is what keeps the
+     town from ever being "finished": there is always another resource to keep flowing. */
+  function tickFood(){
+    var need = totalResidents()*FOOD_PER_PERSON;
+    if(need<=0){ cityFed = true; return; }
+    if(warehouse.food >= need){ warehouse.food -= need; cityFed = true; }
+    else { warehouse.food = 0; cityFed = false; }
   }
 
   function checkMilestone(){
@@ -918,7 +981,7 @@
     var t = T();
     tagline.textContent = t.tagline;
     impactLabelText.textContent = t.impactLabel;
-    plantBtn.textContent = t.plantBtn + ' ' + (seedCost()===0 ? t.plantFree : t.plantCost(seedCost()));
+    plantBtn.textContent = t.plantBtn + ' (' + (seedAdLoading ? t.watchAdShortLoading : t.watchAdShort) + ')';
     adBtn.textContent = adBtn._loading ? t.adBtnLoading : t.adBtn;
     offlineBtn.textContent = t.offlineBtn;
     $('navGardenLbl').textContent = t.navGarden;
@@ -975,10 +1038,8 @@
     });
     if(honeyStacks>0){ var hc=document.createElement('span'); hc.className='boost-chip'; hc.textContent='🍯 +'+(honeyStacks*5)+'%'; boostsEl.appendChild(hc); }
     gardenNameTag.textContent = gardenDef(active).name;
-    plantBtn.textContent = t.plantBtn + ' ' + (seedCost()===0 ? t.plantFree : t.plantCost(seedCost()));
+    plantBtn.textContent = t.plantBtn + ' (' + (seedAdLoading ? t.watchAdShortLoading : t.watchAdShort) + ')';
   }
-
-  function seedCost(){ var g = ensureGarden(active); if(g.seeds<3) return 0; return Math.round(5*Math.pow(1.18, g.seeds-3)); }
 
   function renderGrid(){
     var g = ensureGarden(active);
@@ -1004,6 +1065,7 @@
       }
       cell.setAttribute('role','button'); cell.setAttribute('tabindex','0');
       cell.addEventListener('click', (function(idx){ return function(){ onCellTap(idx); }; })(i));
+      cell.addEventListener('pointerdown', (function(idx){ return function(){ onCellPointerDown(idx); }; })(i));
       gridEl.appendChild(cell);
     }
     if(!waterAdLoading) waterAdBtn.textContent = T().waterAdBtn;
@@ -1056,6 +1118,11 @@
     g.board[a] = newLvl + (makeSecret?SECRET_OFFSET:0);
     g.board[b] = 0;
     g.readyAt[a] = Date.now() + MATURE_MS;
+    /* a merge always starts a fresh "generation" — any droplet/lamp/fertilizer badge from
+       either parent is cleared rather than carried over, even if its timer hasn't run out yet
+       (the boost's effect is already folded into fertActive above; only the leftover badge
+       needed clearing so it doesn't linger on plants it was never applied to). */
+    if(g.cellBoosts[a]) delete g.cellBoosts[a];
     if(g.cellBoosts[b]) delete g.cellBoosts[b];
     var bonus = newLvl*3*(fertActive?1.4:1);
     dobro += bonus; addAllTime(bonus);
@@ -1081,7 +1148,12 @@
     if(selected===null){ if(val) selected=i; renderGrid(); return; }
     if(selected===i){ selected=null; renderGrid(); return; }
     var selVal = g.board[selected];
-    if(val===0){ g.board[i]=selVal; g.board[selected]=0; g.readyAt[i]=g.readyAt[selected]||0; g.readyAt[selected]=0; selected=null; renderGrid(); return; }
+    if(val===0){
+      g.board[i]=selVal; g.board[selected]=0;
+      g.readyAt[i]=g.readyAt[selected]||0; g.readyAt[selected]=0;
+      if(g.cellBoosts[selected]){ g.cellBoosts[i]=g.cellBoosts[selected]; delete g.cellBoosts[selected]; }
+      selected=null; renderGrid(); return;
+    }
     if(val===selVal){
       var info = levelInfo(val);
       if(info.lvl >= MAX_LEVEL){ toast(t.toast.maxSameLine); sfx('deny'); selected=null; renderGrid(); return; }
@@ -1093,14 +1165,48 @@
     selected = i; renderGrid();
   }
 
+  /* ---- drag-and-drop merge: drag one plant onto a matching neighbor to merge them, or onto
+     an empty cell to move it — same underlying logic as tap-to-select, just a faster gesture.
+     Tap-to-select keeps working side by side with this (a plain tap never moves the pointer,
+     so it always falls through to the normal click handler below unaffected). ---- */
+  var dragFrom = null;
+  function onCellPointerDown(i){
+    var g = ensureGarden(active);
+    if(!g.board[i] || !isReady(g,i)) return;
+    dragFrom = i;
+    var el = gridEl.children[i]; if(el) el.classList.add('dragging');
+  }
+  window.addEventListener('pointerup', function(ev){
+    if(dragFrom===null) return;
+    var from = dragFrom; dragFrom = null;
+    var fromEl = gridEl.children[from]; if(fromEl) fromEl.classList.remove('dragging');
+    var target = document.elementFromPoint(ev.clientX, ev.clientY);
+    var cellEl = target && target.closest ? target.closest('.cell') : null;
+    if(!cellEl || !gridEl.contains(cellEl)) return;
+    var to = Array.prototype.indexOf.call(gridEl.children, cellEl);
+    if(to<0 || to===from) return;
+    selected = from;
+    onCellTap(to);
+  });
+
+  /* seeds are free but ad-gated (per the "everything except merging itself runs on ads" rule) —
+     no currency cost, just the short ad wait like every other ad action in this demo. */
+  var seedAdLoading = false;
   function plantSeed(){
-    var t = T(); var g = ensureGarden(active); var cost = seedCost();
-    if(cost>dobro){ toast(t.toast.notEnoughSoft); sfx('deny'); return; }
+    var t = T(); var g = ensureGarden(active);
+    if(seedAdLoading) return;
     var empties=[]; for(var i=0;i<g.board.length;i++) if(g.board[i]===0) empties.push(i);
     if(!empties.length){ toast(t.toast.gridFull); sfx('deny'); return; }
-    dobro -= cost;
-    var idx = empties[Math.floor(Math.random()*empties.length)];
-    g.board[idx]=1; g.readyAt[idx]=Date.now()+MATURE_MS; g.seeds++; renderGrid(); renderStats(); sfx('click');
+    seedAdLoading = true; renderStats();
+    setTimeout(function(){
+      seedAdLoading = false;
+      var g2 = ensureGarden(active);
+      var empties2=[]; for(var i=0;i<g2.board.length;i++) if(g2.board[i]===0) empties2.push(i);
+      if(!empties2.length){ toast(T().toast.gridFull); sfx('deny'); renderStats(); return; }
+      var idx = empties2[Math.floor(Math.random()*empties2.length)];
+      g2.board[idx]=1; g2.readyAt[idx]=Date.now()+MATURE_MS; g2.seeds++;
+      renderGrid(); renderStats(); sfx('click');
+    }, 900);
   }
 
   /* ---- auto-merge (paid convenience — manual merging is always free) ---- */
@@ -1121,6 +1227,7 @@
 
   /* ---- free ad-based instant ripen ("water") ---- */
   var waterAdLoading = false;
+  var shopWaterAdLoading = false;
   function anyGrowing(){
     var g = ensureGarden(active);
     for(var i=0;i<g.board.length;i++){ if(g.board[i] && !isReady(g,i)) return true; }
@@ -1199,14 +1306,51 @@
     }, 900);
   }
 
-  /* ---- build a charity building from collected materials ---- */
+  /* ---- "bank": trade surplus food for whichever raw material is running short, ad-gated
+     exactly like refining — this is what stops one bad garden day from ever hard-blocking a
+     building. ---- */
+  var bankLoading = {};
+  function bankExchange(key){
+    var def = BANK_EXCHANGE[key]; if(!def || bankLoading[key]) return;
+    if(warehouse[def.from] < def.need){ toast(T().toast.notEnoughMaterial); sfx('deny'); return; }
+    var room = warehouseCap - warehouseTotal();
+    if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
+    bankLoading[key] = true;
+    setTimeout(function(){
+      warehouse[def.from] -= def.need; warehouse[key] = (warehouse[key]||0)+1;
+      bankLoading[key] = false;
+      renderWarehouse(); toast(T().toast.refined(MATERIAL_ICON[key]), 2400); sfx('harvest');
+    }, 900);
+  }
+
+  /* ---- build a charity building — three ways to fund one, matching the three-tier
+     monetization plan (materials from play, a one-off real donation, or a monthly one) ---- */
   function buildBuilding(key){
-    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def) return;
+    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def || def.moneyOnly || def.rentable) return;
     var cost = buildingCost(def);
     if(!canAfford(cost)){ toast(T().toast.notEnoughMaterial); sfx('deny'); return; }
     for(var k in cost) warehouse[k] -= cost[k];
     townBuilt[key] = buildingCount(key)+1; townPeople += def.people;
     renderWarehouse(); toast(T().toast.built(T().buildings[key].name), 3000); sfx('build');
+  }
+  /* money-only building — a one-off real-money donation (demo), no warehouse materials involved */
+  function buildWithMoney(key){
+    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def || !def.moneyOnly) return;
+    townBuilt[key] = buildingCount(key)+1; townPeople += def.people;
+    renderWarehouse(); toast(T().toast.built(T().buildings[key].name), 3000); sfx('build');
+    maybeRoundup();
+  }
+  /* rentable building — a monthly real-money donation (demo-compressed to a few minutes) keeps
+     it running; letting the rent lapse just pauses its residents until it's renewed, it never
+     disappears — nothing about renewing it is urgent or time-pressured. */
+  function rentBuilding(key){
+    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def || !def.rentable) return;
+    var wasActive = townRent[key] && townRent[key] > Date.now();
+    townRent[key] = Math.max(Date.now(), townRent[key]||0) + def.rentMs;
+    if(!townBuilt[key]) townBuilt[key] = 1;
+    renderWarehouse();
+    toast(T().toast[wasActive?'rentRenewed':'rented'](T().buildings[key].name), 3000); sfx('build');
+    maybeRoundup();
   }
 
   var adLoading=false;
@@ -1296,7 +1440,7 @@
     whBar.style.width = Math.min(100, Math.round(total/warehouseCap*100)) + '%';
     whCapText.textContent = t.whCapText(total, warehouseCap);
     whGrid.innerHTML = '';
-    ['water','wood','stone','iron','nails'].forEach(function(k){
+    ['water','food','wood','plank','stone','iron','nails','sand','glass'].forEach(function(k){
       var chip = document.createElement('div'); chip.className = 'wh-chip';
       chip.innerHTML = '<span class="wi">'+MATERIAL_ICON[k]+'</span>' + fmt(warehouse[k]);
       whGrid.appendChild(chip);
@@ -1313,21 +1457,52 @@
       btn.onclick = function(){ refineMaterial(key); };
       whRefine.appendChild(btn);
     });
+    var bankHead = document.createElement('div');
+    bankHead.style.cssText = 'font-size:9.5px;font-weight:800;color:var(--ink-dim);margin-top:6px;';
+    bankHead.textContent = t.bankTitle;
+    whRefine.appendChild(bankHead);
+    Object.keys(BANK_EXCHANGE).forEach(function(key){
+      var def = BANK_EXCHANGE[key];
+      var can = warehouse[def.from] >= def.need && warehouseTotal() < warehouseCap;
+      var btn = document.createElement('button');
+      btn.disabled = !can || !!bankLoading[key];
+      btn.innerHTML = '<span>'+t.refineLabel(def.need, MATERIAL_ICON[def.from], MATERIAL_ICON[key])+'</span><span>'+(bankLoading[key]?'⏳':'📺')+'</span>';
+      btn.onclick = function(){ bankExchange(key); };
+      whRefine.appendChild(btn);
+    });
 
     townTitle.textContent = t.townTitle;
-    townPeopleLine.textContent = t.townPeopleLine(townPeople);
+    townPeopleLine.textContent = t.townPeopleLine(totalResidents());
+    if(!cityFed && totalResidents()>0){ townFoodLine.textContent = t.townFoodWarn; townFoodLine.style.display=''; }
+    else { townFoodLine.style.display='none'; }
     buildList.innerHTML = '';
     BUILDINGS.forEach(function(def){
       var bt = t.buildings[def.key];
-      var cost = buildingCost(def);
-      var costParts = [];
-      for(var k in cost) costParts.push(MATERIAL_ICON[k]+' '+cost[k]);
       var count = buildingCount(def.key);
       var row = document.createElement('div'); row.className = 'build-item';
-      row.innerHTML = '<div class="brow"><div class="bname">'+def.icon+' '+bt.name+(count?' ×'+count:'')+'</div>'+
-        '<button '+(canAfford(cost)?'':'disabled')+'>'+t.buildBtn+'</button></div>'+
-        '<div class="bcost">'+bt.desc+'<br>'+t.buildCost+': '+costParts.join('  ·  ')+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
-      row.querySelector('button').onclick = function(k){ return function(){ buildBuilding(k); }; }(def.key);
+      var nameHTML = def.icon+' '+bt.name+(count?' ×'+count:'');
+      if(def.moneyOnly){
+        var price = moneyCostFor(def);
+        row.innerHTML = '<div class="brow"><div class="bname">'+nameHTML+'</div>'+
+          '<button>'+t.buildBtn+' · '+price+' zł</button></div>'+
+          '<div class="bcost">'+bt.desc+'<br>'+t.buildMoneyTag+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
+        row.querySelector('button').onclick = function(k){ return function(){ buildWithMoney(k); }; }(def.key);
+      } else if(def.rentable){
+        var active = townRent[def.key] && townRent[def.key] > Date.now();
+        var statusHTML = active ? t.buildRentTag(fmtLeft(townRent[def.key]-Date.now())) : t.buildRentExpired;
+        row.innerHTML = '<div class="brow"><div class="bname">'+nameHTML+'</div>'+
+          '<button>'+(active?t.buildRenewBtn:t.buildRentBtn)+' · '+def.rentCost+' zł</button></div>'+
+          '<div class="bcost">'+bt.desc+'<br>'+statusHTML+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
+        row.querySelector('button').onclick = function(k){ return function(){ rentBuilding(k); }; }(def.key);
+      } else {
+        var cost = buildingCost(def);
+        var costParts = [];
+        for(var k in cost) costParts.push(MATERIAL_ICON[k]+' '+cost[k]);
+        row.innerHTML = '<div class="brow"><div class="bname">'+nameHTML+'</div>'+
+          '<button '+(canAfford(cost)?'':'disabled')+'>'+t.buildBtn+'</button></div>'+
+          '<div class="bcost">'+bt.desc+'<br>'+t.buildCost+': '+costParts.join('  ·  ')+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
+        row.querySelector('button').onclick = function(k){ return function(){ buildBuilding(k); }; }(def.key);
+      }
       buildList.appendChild(row);
     });
   }
@@ -1351,10 +1526,14 @@
     function item(html){ var d=document.createElement('div'); d.className='shop-item'; d.innerHTML=html; shopScroll.appendChild(d); return d; }
 
     cat(s.catFree);
-    item('<div class="row1"><div class="name">'+s.water.name+'</div><button id="buyWater">15 🌾</button></div><div class="desc">'+s.water.desc+'</div>')
+    item('<div class="row1"><div class="name">'+s.water.name+'</div><button id="buyWater">'+(shopWaterAdLoading?t.watchAdShortLoading:t.watchAdShort)+'</button></div><div class="desc">'+s.water.desc+'</div>')
       .querySelector('button').onclick = function(){
-        if(dobro<15){ toast(t.toast.notEnoughSoft); sfx('deny'); return; }
-        dobro-=15; inventory.water++; renderAll(); toast(t.toast.addedToBackpack(s.water.name)); sfx('buy');
+        if(shopWaterAdLoading) return;
+        shopWaterAdLoading = true; renderShop();
+        setTimeout(function(){
+          shopWaterAdLoading = false; inventory.water++; renderAll();
+          toast(t.toast.addedToBackpack(s.water.name)); sfx('ad');
+        }, 900);
       };
 
     cat(s.catHeart);
@@ -1482,6 +1661,10 @@
   navRank.addEventListener('click', function(){ switchScreen('rank'); sfx('click'); });
   navVote.addEventListener('click', function(){ switchScreen('vote'); sfx('click'); });
   mapOpenBtn.addEventListener('click', function(){ switchScreen('map'); sfx('click'); });
+  cityOpenBtn.addEventListener('click', function(){
+    switchScreen('map'); sfx('click');
+    setTimeout(function(){ townTitle.scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
+  });
   mapCloseBtn.addEventListener('click', function(){ switchScreen('garden'); sfx('click'); });
   rankTabTime.addEventListener('click', function(){ rankTab='time'; renderRank(); sfx('click'); });
   rankTabMoney.addEventListener('click', function(){ rankTab='money'; renderRank(); sfx('click'); });
@@ -1620,11 +1803,13 @@
 
   renderAll();
   setInterval(function(){
+    tickFood();
     var perSec = totalProduction(active);
     if(perSec>0){ dobro += perSec; addAllTime(perSec); }
     if(boostActive('automerge')) autoMergeStep();
     renderStats();
     if(screen==='garden') renderGrid();
+    if(screen==='map') renderWarehouse();
   }, 1000);
   setInterval(spawnFruit, 1400);
 })();
