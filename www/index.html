@@ -1,7 +1,22 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<!-- viewport-fit=cover + a fixed initial scale: without this the phone's WebView assumed a
+     ~980px desktop-style viewport and rendered the whole game zoomed out and blurry — this
+     was likely the single biggest reason the app looked broken/tiny on real devices. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Dobry Sad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<script>
+  /* runs synchronously, before first paint, so there's no flash of the desktop marketing
+     layout before the real app switches to full-screen. Capacitor injects window.Capacitor
+     into the WebView it controls — a real browser (or this same file opened as a plain demo
+     page) never has it, so this only fires inside the actual installed app. */
+  if(window.Capacitor){ document.documentElement.className = 'native-app'; }
+</script>
 <style>
   :root{
     --bg:#eef2e3; --bg-2:#e4ead4; --surface:#fbfaf1; --surface-2:#e8e3ce;
@@ -71,6 +86,8 @@
   .langsw{display:flex; gap:3px;}
   .langsw button{border:1px solid var(--line); background:var(--surface-2); color:var(--ink-dim); font-size:9.5px; font-weight:800; border-radius:6px; padding:2px 6px; cursor:pointer;}
   .langsw button.active{background:var(--leaf); color:#fff; border-color:var(--leaf);}
+  .langsw .icon-btn{padding:2px; width:22px; height:22px; display:flex; align-items:center; justify-content:center;}
+  .soundset-icon{width:16px; height:16px; display:block;}
   .screen{padding:4px 14px 4px; position:relative; perspective:800px;}
   /* a one-sided "page flip" when switching bottom tabs — the incoming view rotates in on its
      Y-axis from a slight angle instead of just appearing, giving the tab switch some depth. */
@@ -149,18 +166,18 @@
   .bp-row button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:8px; padding:5px 10px; font-size:10.5px; cursor:pointer; white-space:nowrap;}
 
   .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px; perspective:420px;}
-  /* the falling coin is built from three independently-animated CSS transform channels
-     (the standalone translate/rotate/scale properties, which compose with each other and
-     with `transform` in a fixed order) instead of cramming everything into one `transform`
-     keyframe — that's what let a sway animation silently cancel out the spin before. */
-  .fruit{position:absolute; width:26px; height:26px; top:-9%; translate:-50% 0; pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, scale linear, opacity .15s ease; animation:fruitSway 1.3s ease-in-out infinite, fruitSpin 1.1s linear infinite; scale:0.8;}
-  .fruit.gold{width:30px; height:30px; animation-duration:1.3s, .85s;}
+  /* position/rotation/scale are all driven from one requestAnimationFrame loop in JS (see
+     spawnFruit) instead of CSS animations/transitions — a previous version split the motion
+     across the standalone rotate/scale/translate CSS properties, which is a newer feature
+     that isn't reliably supported in every WebView a Capacitor app might run on, and that
+     inconsistency is exactly why the spin kept silently failing on real devices even though
+     it looked fine here. A single `transform` string built by hand only needs `transform`
+     and `perspective`, which every realistic target has had for well over a decade. */
+  .fruit{position:absolute; top:0; left:0; width:26px; height:26px; pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow));}
+  .fruit.gold{width:30px; height:30px;}
   .fruit svg{width:100%; height:100%; display:block;}
   .fruit .fruit-glyph{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1;}
   .fruit.gold .fruit-glyph{font-size:17px;}
-  @keyframes fruitSpin{ 0%{rotate:0 1 0 0deg;} 100%{rotate:0 1 0 360deg;} }
-  @keyframes fruitSway{ 0%,100%{transform:translateX(0);} 50%{transform:translateX(7px);} }
-  @media (prefers-reduced-motion:reduce){ .fruit{ animation:none; } }
   .float-plus{position:absolute; font-weight:800; font-size:13px; color:var(--gold-ink); pointer-events:none; animation:floatUp 900ms ease-out forwards; z-index:2;}
   @keyframes floatUp{ from{opacity:1; transform:translateY(0) scale(1);} 30%{transform:translateY(-6px) scale(1.15);} to{opacity:0; transform:translateY(-32px) scale(1);} }
   /* catch "explosion": a handful of tiny shards fly outward from the tap point and fade */
@@ -203,8 +220,12 @@
   .settings-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line);}
   .settings-row:last-of-type{border-bottom:none;}
   .settings-row span{font-size:12.5px; font-weight:600;}
-  .switch{font-family:'Baloo 2', 'Manrope', sans-serif; border:1.5px solid var(--line); background:var(--surface-2); border-radius:999px; padding:5px 12px; font-size:11.5px; font-weight:700; cursor:pointer; min-width:66px;}
-  .switch.on{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+  /* a real sliding toggle (track + knob) instead of a text pill — the on/off state reads
+     instantly from knob position and track color, no label text to parse */
+  .switch{position:relative; width:46px; height:27px; border:1.5px solid var(--line); background:var(--surface-2); border-radius:999px; cursor:pointer; padding:0; transition:background .18s ease, border-color .18s ease; flex-shrink:0;}
+  .switch::after{content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.35); transition:transform .18s ease;}
+  .switch.on{background:var(--leaf); border-color:var(--leaf);}
+  .switch.on::after{transform:translateX(19px);}
 
   .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px;}
   .city-map-svg{width:100%; height:auto; display:block;}
@@ -321,6 +342,10 @@
   #coinGrad stop:nth-child(2){stop-color:var(--gold);}
   #coinGradGold stop:nth-child(1){stop-color:#e7c9f5;}
   #coinGradGold stop:nth-child(2){stop-color:var(--violet);}
+  #soundGrad stop:nth-child(1){stop-color:var(--blue);}
+  #soundGrad stop:nth-child(2){stop-color:#1c4a6e;}
+  :root[data-theme="dark"] #soundGrad stop:nth-child(2){stop-color:#123449;}
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #soundGrad stop:nth-child(2){stop-color:#123449;} }
 
   .header-logo{display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 2px;}
   .header-logo svg{width:22px; height:22px; flex-shrink:0;}
@@ -354,7 +379,28 @@
   .tut-hint-card{background:var(--surface); border:1px solid var(--gold); border-radius:14px; padding:12px; max-width:88%; text-align:center; box-shadow:0 14px 26px -10px var(--shadow);}
   .tut-hint-card p{font-size:11.5px; color:var(--ink); margin:0 0 8px; line-height:1.5;}
   .tut-hint-card button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:9px; padding:6px 14px; font-size:11px; cursor:pointer;}
+
+  /* ---- running as the real installed app (see the inline script in <head>) — the marketing
+     copy around the phone mockup is only for this file's role as a demo/preview page, so it
+     disappears and the mockup itself fills the screen edge-to-edge instead of sitting in a
+     fake bezel. Capped at 480px and centered rather than stretched to 100vw so a tablet gets
+     a comfortable reading column instead of a comically wide grid. ---- */
+  .native-app .top, .native-app .layout > :not(.phone-wrap){display:none;}
+  .native-app .page{padding:0; max-width:none;}
+  .native-app .layout{display:block;}
+  .native-app .phone-wrap{display:block;}
+  .native-app .phone{
+    width:100%; max-width:480px; margin:0 auto; height:100vh; height:100dvh;
+    border:none; border-radius:0; box-shadow:none;
+  }
+  .native-app body{background:var(--bg);}
+  /* the "1 hour offline" button is a dev/testing shortcut, not a real feature — the real app
+     now computes genuine offline earnings on launch (see grantRealOfflineEarnings), so this
+     stays visible only in the browser preview and disappears from the actual installed app */
+  .native-app #offlineBtn{display:none;}
 </style>
+</head>
+<body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -435,6 +481,21 @@
       <circle cx="20" cy="20" r="14.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.4"/>
       <ellipse cx="14" cy="11.5" rx="6.5" ry="3.6" fill="#fff" opacity=".32"/>
     </symbol>
+    <linearGradient id="soundGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <!-- header button that opens sound+vibration settings: a note (music) plus two small
+       radiating arcs (vibration) on one gradient badge, replacing the plain 🔊/🔇 emoji which
+       could only ever represent sound, not the new vibration toggle living behind it. -->
+    <symbol id="ic-sound-settings" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="30" fill="url(#soundGrad)"/>
+      <circle cx="23" cy="41" r="5.5" fill="#fff"/>
+      <rect x="26.5" y="15" width="3" height="26.5" fill="#fff"/>
+      <path d="M29.5 15 C38 17 40.5 23.5 37 29" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M43 25 q4.5 7 0 14" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="3" stroke-linecap="round"/>
+      <path d="M48.5 20.5 q8.5 11.5 0 23" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -452,7 +513,7 @@
         <div class="statusbar">
           <span>9:41</span>
           <div class="langsw">
-            <button id="soundToggle" title="Sound">🔊</button>
+            <button id="soundToggle" class="icon-btn" title="Sound &amp; vibration"><svg class="soundset-icon"><use href="#ic-sound-settings"/></svg></button>
             <button id="langPl" class="active">PL</button><button id="langEn">EN</button>
           </div>
         </div>
@@ -477,7 +538,6 @@
           <div class="head-actions">
             <button id="infoBtn" title="Info">ℹ️</button>
           </div>
-          <div class="game-tagline" id="tagline"></div>
           <div class="garden-row">
             <button class="map-open" id="cityOpenBtn"><svg class="mo-icon"><use href="#ic-city"/></svg><span id="cityOpenLbl"></span></button>
             <button class="map-open" id="mapOpenBtn"><svg class="mo-icon"><use href="#ic-map"/></svg><span id="mapOpenLbl"></span></button>
@@ -606,6 +666,7 @@
               <h3 id="settingsTitle"></h3>
               <div class="settings-row"><span id="settingsMusicLabel"></span><button class="switch" id="musicToggleBtn"></button></div>
               <div class="settings-row"><span id="settingsSfxLabel"></span><button class="switch" id="sfxToggleBtn"></button></div>
+              <div class="settings-row"><span id="settingsVibrateLabel"></span><button class="switch" id="vibrateToggleBtn"></button></div>
               <button class="btn btn-primary" style="width:100%; margin-top:10px;" id="settingsClose"></button>
             </div>
           </div>
@@ -654,7 +715,7 @@
     pl: {
       tagline: 'Pomagaj za darmo oglądając reklamy',
       gardenLabelSuffix: '',
-      impactLabel: 'Wspólne dobro (cały świat)',
+      impactLabel: 'Twoje dobro od startu',
       plantFree: '(za darmo)',
       plantCost: function(c){ return '(' + c + ' 🌾)'; },
       plantBtn: '🌰 Zasadź nasionko',
@@ -730,11 +791,18 @@
       infoP3: '🏆 Ranking pokazuje najbardziej zaangażowane osoby wg czasu i wg wsparcia — każdy wynik się liczy, nie tylko czołówka.',
       infoP4: '🌱 Po połączeniu roślina przez chwilę rośnie, zanim znów można ją połączyć — ręczne łączenie jest zawsze darmowe. Auto-łączenie w sklepie to tylko opcjonalna oszczędność czasu.',
       infoClose: 'Zamknij',
-      settingsTitle: '🔊 Dźwięk',
+      settingsTitle: 'Dźwięk i wibracje',
       settingsMusic: 'Muzyka w tle',
       settingsSfx: 'Dźwięki gry',
+      settingsVibrate: 'Wibracje',
       settingsOn: 'Włączone', settingsOff: 'Wyłączone',
       settingsClose: 'Zamknij',
+      notif: {
+        title: 'Dobry Sad',
+        day1: function(remain){ return remain>0 ? ('🌱 Twój ogród czeka! Zostało tylko '+remain+' Dobra do następnego celu.') : '🌱 Twój ogród czeka na Ciebie — wpadnij zebrać plony!'; },
+        day3: '☀️ Rośliny podrosły beze mnie? Zajrzyj na chwilę do ogrodu.',
+        day7: '💛 Minął tydzień — Twój ogród wciąż tu jest i wciąż pomaga, kiedy grasz.'
+      },
       gardenNames: ['Ogród Nadziei','Ogród Tropikalny','Gaj Drzewny','Ogród Kwiatowy','Kamieniołom','Huta Szkła','Kuźnia'],
       adjectives: ['Zagadkowy','Kryształowy','Księżycowy','Słoneczny','Szmaragdowy','Niebiański','Magiczny','Pradawny','Bajkowy','Tęczowy'],
       nouns: ['ogród','oaza','las','wyspa','park','zakątek','raj','kryształowy ogród'],
@@ -817,7 +885,7 @@
     en: {
       tagline: 'Do good by watching ads — free for you',
       gardenLabelSuffix: '',
-      impactLabel: 'Shared good (whole world)',
+      impactLabel: 'Your good since day one',
       plantFree: '(free)',
       plantCost: function(c){ return '(' + c + ' 🌾)'; },
       plantBtn: '🌰 Plant a seed',
@@ -893,11 +961,18 @@
       infoP3: '🏆 The leaderboard shows the most engaged people by time and by support — every contribution counts, not just the top spots.',
       infoP4: '🌱 After merging, a plant grows for a short moment before it can merge again — merging by hand is always free. Auto-Merge in the shop is just an optional time-saver.',
       infoClose: 'Close',
-      settingsTitle: '🔊 Sound',
+      settingsTitle: 'Sound & vibration',
       settingsMusic: 'Background music',
       settingsSfx: 'Game sounds',
+      settingsVibrate: 'Vibration',
       settingsOn: 'On', settingsOff: 'Off',
       settingsClose: 'Close',
+      notif: {
+        title: 'Dobry Sad',
+        day1: function(remain){ return remain>0 ? ('🌱 Your garden is waiting! Only '+remain+' Good left to the next goal.') : '🌱 Your garden is waiting for you — come collect the harvest!'; },
+        day3: '☀️ The plants have grown a bit without you. Drop by for a quick look.',
+        day7: '💛 It has been a week — your garden is still here, still helping every time you play.'
+      },
       gardenNames: ['Garden of Hope','Tropical Garden','Timber Grove','Flower Garden','Quarry','Glass Foundry','Ironworks'],
       adjectives: ['Mysterious','Crystal','Moonlit','Sunny','Emerald','Heavenly','Magic','Ancient','Fairytale','Rainbow'],
       nouns: ['garden','oasis','forest','island','park','corner','paradise','crystal garden'],
@@ -1011,8 +1086,12 @@
   var MAX_LEVEL = 9, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
-  /* the live "Wspólne dobro" readout always shows our own kindness mark — the exact same
-     #ic-logo symbol as the splash screen, reused as-is, never redrawn or altered. */
+  /* the live "Twoje dobro od startu" readout always shows our own kindness mark — the exact
+     same #ic-logo symbol as the splash screen, reused as-is, never redrawn or altered. it's
+     this device's own lifetime total (never decreases when spent) mapped onto MILESTONE_T
+     thresholds, each paired with a real-world equivalent in MILESTONE_ICON/milestones purely
+     as motivating flavor text — there's no backend, so it can't yet be a real cross-player
+     "whole world" total; the old label implied one and that was misleading. */
   var IMPACT_ICON_SVG = '<svg class="impact-logo-icon"><use href="#ic-logo"/></svg> ';
 
   function gardenDef(n){
@@ -1122,7 +1201,8 @@
         warehouse:warehouse, warehouseCap:warehouseCap,
         inventory:inventory, activeBoosts:activeBoosts,
         townBuilt:townBuilt, townPeople:townPeople, townRent:townRent, cityFed:cityFed,
-        votes:votes, votedAlready:votedAlready, skins:skins, tutorialShown:tutorialShown
+        votes:votes, votedAlready:votedAlready, skins:skins, tutorialShown:tutorialShown,
+        lastSeenAt: Date.now()
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
     }catch(e){}
@@ -1167,8 +1247,61 @@
       if(typeof s.votedAlready === 'boolean') votedAlready = s.votedAlready;
       if(s.skins && typeof s.skins==='object'){ for(var sk in skins){ if(typeof s.skins[sk]==='boolean') skins[sk]=s.skins[sk]; } }
       if(typeof s.tutorialShown === 'boolean') tutorialShown = s.tutorialShown;
+      if(typeof s.lastSeenAt === 'number') pendingLastSeenAt = s.lastSeenAt;
       return true;
     }catch(e){ return false; }
+  }
+  /* real "welcome back" earnings, computed from how long it's actually been since the last
+     save — replaces guessing with the "Symulacja: godzina offline" test button, which stays
+     around only for our own testing (see the .native-app rule that hides it in the real app) */
+  var pendingLastSeenAt = null;
+  var OFFLINE_MIN_MS = 60*1000, OFFLINE_CAP_MS = 8*60*60*1000;
+  function grantRealOfflineEarnings(){
+    if(pendingLastSeenAt === null) return;
+    var elapsed = Math.min(OFFLINE_CAP_MS, Math.max(0, Date.now() - pendingLastSeenAt));
+    pendingLastSeenAt = null;
+    if(elapsed < OFFLINE_MIN_MS) return;
+    var perSec = totalProduction(active);
+    if(perSec <= 0) return;
+    var earned = perSec * (elapsed/1000);
+    dobro += earned; addAllTime(earned);
+    toast(T().toast.offline(fmt(earned)), 3400);
+  }
+
+  /* "come back" reminders — local notifications only, no server involved, scheduled fresh
+     each time the app is backgrounded and cancelled if the player returns before they fire.
+     Only does anything inside the real installed app (window.Capacitor with the
+     LocalNotifications plugin synced in); a plain browser tab has neither, so this is a
+     harmless no-op everywhere else, including this file's own demo/preview use. */
+  var COMEBACK_NOTIF_IDS = [50101, 50102, 50103];
+  function scheduleComebackNotifications(){
+    try{
+      var C = window.Capacitor;
+      var LN = C && C.Plugins && C.Plugins.LocalNotifications;
+      if(!LN) return;
+      LN.requestPermissions().then(function(res){
+        if(!res || res.display !== 'granted') return;
+        var t = T();
+        var mIdx = milestoneIdx;
+        var remain = mIdx < MILESTONE_T.length ? Math.max(0, Math.round(MILESTONE_T[mIdx]-allTime)) : 0;
+        var plans = [
+          {id:COMEBACK_NOTIF_IDS[0], days:1, body:t.notif.day1(fmt(remain))},
+          {id:COMEBACK_NOTIF_IDS[1], days:3, body:t.notif.day3},
+          {id:COMEBACK_NOTIF_IDS[2], days:7, body:t.notif.day7}
+        ];
+        LN.schedule({ notifications: plans.map(function(p){
+          return { id:p.id, title:t.notif.title, body:p.body, schedule:{ at:new Date(Date.now()+p.days*24*3600*1000) } };
+        }) }).catch(function(){});
+      }).catch(function(){});
+    }catch(e){}
+  }
+  function cancelComebackNotifications(){
+    try{
+      var C = window.Capacitor;
+      var LN = C && C.Plugins && C.Plugins.LocalNotifications;
+      if(!LN) return;
+      LN.cancel({ notifications: COMEBACK_NOTIF_IDS.map(function(id){ return {id:id}; }) }).catch(function(){});
+    }catch(e){}
   }
   function cellBoostActive(g, i, key){ return g.cellBoosts[i] && g.cellBoosts[i][key] && g.cellBoosts[i][key] > Date.now(); }
   function applyCellBoost(g, i, key, ms){ if(!g.cellBoosts[i]) g.cellBoosts[i] = {}; g.cellBoosts[i][key] = Date.now()+ms; }
@@ -1184,7 +1317,7 @@
   var dobroEl=$('dobro'), heartsEl=$('hearts'), boostsEl=$('boosts');
   var impactLabel=$('impactLabel'), impactBar=$('impactBar'), impactLabelText=$('impactLabelText');
   var gridEl=$('grid'), fruitLayer=$('fruitLayer'), comboEl=$('combo');
-  var toastEl=$('toast'), gardenNameTag=$('gardenNameTag'), tagline=$('tagline');
+  var toastEl=$('toast'), gardenNameTag=$('gardenNameTag');
   var plantBtn=$('plantBtn'), adBtn=$('adBtn'), offlineBtn=$('offlineBtn');
   var backpackPanel=$('backpackPanel'), bpTitle=$('bpTitle'), bpList=$('bpList');
   var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
@@ -1199,18 +1332,18 @@
   var voteNote=$('voteNote'), voteList=$('voteList');
   var langPl=$('langPl'), langEn=$('langEn'), soundToggle=$('soundToggle');
   var settingsModal=$('settingsModal'), settingsTitleEl=$('settingsTitle'), settingsClose=$('settingsClose');
-  var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel');
-  var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn');
+  var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel'), settingsVibrateLabel=$('settingsVibrateLabel');
+  var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn'), vibrateToggleBtn=$('vibrateToggleBtn');
   var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta');
   var infoBtn=$('infoBtn'), infoModal=$('infoModal'), infoTitle=$('infoTitle'), infoP1=$('infoP1'), infoP2=$('infoP2'), infoP3=$('infoP3'), infoP4=$('infoP4'), infoClose=$('infoClose');
   var tutHint=$('tutHint'), tutHintText=$('tutHintText'), tutHintOk=$('tutHintOk');
   var selected = null;
-  var musicOn = true, sfxOn = true, audioCtx = null, tutorialShown = false;
+  var musicOn = true, sfxOn = true, vibrateOn = true, audioCtx = null, tutorialShown = false;
   /* load the saved game now that every piece of state it can touch has its default value in
      place — this has to run after the very last `var ... = <default>` above, since a save
      restored earlier would just get overwritten by those defaults as they execute */
   var hadSave = loadGame();
-  /* remember the music/sfx switches between launches — a player who turns off music
+  /* remember the music/sfx/vibration switches between launches — a player who turns off music
      shouldn't have to do it again every time they reopen the game */
   var SOUND_PREFS_KEY = 'dobrySadSoundPrefs';
   (function loadSoundPrefs(){
@@ -1219,11 +1352,27 @@
       if(saved){
         if(typeof saved.music === 'boolean') musicOn = saved.music;
         if(typeof saved.sfx === 'boolean') sfxOn = saved.sfx;
+        if(typeof saved.vibrate === 'boolean') vibrateOn = saved.vibrate;
       }
     }catch(e){}
   })();
   function saveSoundPrefs(){
-    try{ localStorage.setItem(SOUND_PREFS_KEY, JSON.stringify({ music: musicOn, sfx: sfxOn })); }catch(e){}
+    try{ localStorage.setItem(SOUND_PREFS_KEY, JSON.stringify({ music: musicOn, sfx: sfxOn, vibrate: vibrateOn })); }catch(e){}
+  }
+  /* haptic feedback — light, on merges and coin catches. Prefers Capacitor's native Haptics
+     plugin (better-feeling patterns than the raw web API), falls back to navigator.vibrate()
+     when running as a plain web page (e.g. this preview), and does nothing when vibrateOn is
+     off or neither path is available. */
+  function haptic(style){
+    if(!vibrateOn) return;
+    try{
+      var C = window.Capacitor;
+      if(C && C.Plugins && C.Plugins.Haptics){
+        C.Plugins.Haptics.impact({ style: style==='medium' ? 'MEDIUM' : 'LIGHT' });
+        return;
+      }
+    }catch(e){}
+    try{ if(navigator.vibrate) navigator.vibrate(style==='medium' ? 16 : 9); }catch(e){}
   }
 
   function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
@@ -1283,7 +1432,6 @@
   /* ---- static text application ---- */
   function applyStatic(){
     var t = T();
-    tagline.textContent = t.tagline;
     impactLabelText.textContent = t.impactLabel;
     plantBtn.textContent = t.plantBtn + ' (' + (seedAdLoading ? t.watchAdShortLoading : t.watchAdShort) + ')';
     adBtn.textContent = adBtn._loading ? t.adBtnLoading : t.adBtn;
@@ -1448,6 +1596,7 @@
   function announceMerge(res){
     var t = T();
     sfx(res.makeSecret ? 'mergeSecret' : 'merge');
+    haptic(res.makeSecret ? 'medium' : 'light');
     if(res.makeSecret && !res.wasSecret) toast(t.toast.secretSpawn, 3000);
     if(res.newLvl===MAX_LEVEL) toast(t.toast.maxReached, 3000);
   }
@@ -1788,22 +1937,40 @@
     var el = document.createElement('div'); el.className='fruit'+(isGold?' gold':'');
     el.innerHTML = '<svg><use href="#'+(isGold?'ic-coin-gold':'ic-coin')+'"/></svg>' +
       (isGold ? '<span class="fruit-glyph">'+gardenDef(active).secret+'</span>' : '');
-    var left = 10+Math.random()*80; el.style.left = left+'%'; el.style.top='-9%';
     fruitLayer.appendChild(el);
+
+    var layerRect = fruitLayer.getBoundingClientRect();
+    var size = isGold ? 30 : 26;
+    var startX = layerRect.width*0.1 + Math.random()*layerRect.width*0.8 - size/2;
+    var startTop = -size, endTop = layerRect.height + size;
     var duration = 2200+Math.random()*1000;
-    requestAnimationFrame(function(){
-      el.style.transition = 'top '+duration+'ms linear, scale '+duration+'ms linear';
-      el.style.top = '108%';
-      el.style.scale = '1.25';
-    });
-    var caught=false;
+    var spinMs = isGold ? 850 : 1100, swayMs = 1300, swayAmp = 7;
+    var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var caught = false, rafId = null, t0 = null;
+
+    function frame(now){
+      if(t0===null) t0 = now;
+      var elapsed = now - t0;
+      var p = Math.min(1, elapsed/duration);
+      var top = startTop + (endTop-startTop)*p;
+      var scale = reduceMotion ? 1 : (0.8 + 0.45*p);
+      var sway = reduceMotion ? 0 : Math.sin((elapsed/swayMs)*Math.PI*2)*swayAmp;
+      var rotY = reduceMotion ? 0 : ((elapsed % spinMs)/spinMs)*360;
+      el.style.transform = 'translate3d('+(startX+sway).toFixed(1)+'px,'+top.toFixed(1)+'px,0) rotateY('+rotY.toFixed(1)+'deg) scale('+scale.toFixed(3)+')';
+      if(p>=1){ if(!caught){ el.remove(); resetCombo(); } return; }
+      rafId = requestAnimationFrame(frame);
+    }
+    rafId = requestAnimationFrame(frame);
+
     el.addEventListener('click', function(){
       if(caught) return; caught=true;
+      if(rafId) cancelAnimationFrame(rafId);
       var value = Math.round((isGold?15:2)*combo*(1+prod*0.05));
       dobro += value; addAllTime(value); bumpCombo();
       sfx(isGold ? 'gold' : 'coin');
-      var layerRect = fruitLayer.getBoundingClientRect(), elRect = el.getBoundingClientRect();
-      var cx = elRect.left + elRect.width/2 - layerRect.left, cy = elRect.top + elRect.height/2 - layerRect.top;
+      haptic('light');
+      var layerRect2 = fruitLayer.getBoundingClientRect(), elRect = el.getBoundingClientRect();
+      var cx = elRect.left + elRect.width/2 - layerRect2.left, cy = elRect.top + elRect.height/2 - layerRect2.top;
       var plus = document.createElement('div'); plus.className='float-plus'; plus.textContent='+'+value;
       plus.style.left = cx+'px'; plus.style.top = cy+'px';
       fruitLayer.appendChild(plus); setTimeout(function(){ plus.remove(); }, 950);
@@ -1811,7 +1978,6 @@
       el.style.transition='opacity .12s ease'; el.style.opacity='0';
       renderStats(); setTimeout(function(){ el.remove(); }, 140);
     });
-    setTimeout(function(){ if(!caught){ el.remove(); resetCombo(); } }, duration+60);
   }
 
   /* ---- map ---- */
@@ -2274,10 +2440,10 @@
     }
     musicTimer = setTimeout(scheduleMusicBar, MUSIC_BAR_S*1000);
   }
-  /* a very quiet, looping "nature" bed under the chords — three filtered-noise layers standing
-     in for rain, sea and wind (there are no audio files here, everything is synthesized from
-     noise + filters), each kept well under the melody's own volume so it adds atmosphere
-     without ever competing with the tune. */
+  /* a very quiet, looping sea-wave bed under the chords — filtered noise standing in for waves
+     (no audio files here, everything is synthesized), kept well under the melody's own volume
+     so it adds atmosphere without ever competing with the tune. Rain/wind layers were tried
+     and dropped per feedback — just the one calm sound now. */
   var natureBed = null;
   function makeNoiseBuffer(ctx, seconds){
     var bufferSize = Math.floor(ctx.sampleRate*seconds);
@@ -2300,41 +2466,13 @@
       seaSrc.buffer = makeNoiseBuffer(ctx, 4); seaSrc.loop = true;
       var seaFilter = ctx.createBiquadFilter();
       seaFilter.type = 'lowpass'; seaFilter.frequency.value = 480; seaFilter.Q.value = 0.3;
-      var seaGain = ctx.createGain(); seaGain.gain.value = 0.013;
+      var seaGain = ctx.createGain(); seaGain.gain.value = 0.018;
       var seaLfo = ctx.createOscillator(); seaLfo.frequency.value = 0.09;
-      var seaLfoGain = ctx.createGain(); seaLfoGain.gain.value = 0.007;
+      var seaLfoGain = ctx.createGain(); seaLfoGain.gain.value = 0.009;
       seaLfo.connect(seaLfoGain); seaLfoGain.connect(seaGain.gain);
       seaSrc.connect(seaFilter); seaFilter.connect(seaGain); seaGain.connect(master);
       seaSrc.start(); seaLfo.start();
       bed.nodes.push(seaSrc, seaLfo);
-
-      // wind: bandpass noise whose center frequency drifts slowly, like gusts rising and falling
-      var windSrc = ctx.createBufferSource();
-      windSrc.buffer = makeNoiseBuffer(ctx, 5); windSrc.loop = true;
-      var windFilter = ctx.createBiquadFilter();
-      windFilter.type = 'bandpass'; windFilter.frequency.value = 500; windFilter.Q.value = 0.6;
-      var windLfo = ctx.createOscillator(); windLfo.frequency.value = 0.045;
-      var windLfoGain = ctx.createGain(); windLfoGain.gain.value = 220;
-      windLfo.connect(windLfoGain); windLfoGain.connect(windFilter.frequency);
-      var windGain = ctx.createGain(); windGain.gain.value = 0.007;
-      windSrc.connect(windFilter); windFilter.connect(windGain); windGain.connect(master);
-      windSrc.start(); windLfo.start();
-      bed.nodes.push(windSrc, windLfo);
-
-      // rain: bright, narrow-band noise with a faint shimmer so it reads as a steady patter
-      var rainSrc = ctx.createBufferSource();
-      rainSrc.buffer = makeNoiseBuffer(ctx, 3); rainSrc.loop = true;
-      var rainHi = ctx.createBiquadFilter();
-      rainHi.type = 'highpass'; rainHi.frequency.value = 2200; rainHi.Q.value = 0.5;
-      var rainLo = ctx.createBiquadFilter();
-      rainLo.type = 'lowpass'; rainLo.frequency.value = 7000;
-      var rainGain = ctx.createGain(); rainGain.gain.value = 0.005;
-      var rainLfo = ctx.createOscillator(); rainLfo.frequency.value = 5.5;
-      var rainLfoGain = ctx.createGain(); rainLfoGain.gain.value = 0.0012;
-      rainLfo.connect(rainLfoGain); rainLfoGain.connect(rainGain.gain);
-      rainSrc.connect(rainHi); rainHi.connect(rainLo); rainLo.connect(rainGain); rainGain.connect(master);
-      rainSrc.start(); rainLfo.start();
-      bed.nodes.push(rainSrc, rainLfo);
 
       master.gain.linearRampToValueAtTime(1, ctx.currentTime+3);
       natureBed = bed;
@@ -2362,19 +2500,23 @@
     stopNoiseBed();
   }
 
-  /* ---- sound settings: music and game sounds toggle independently, each remembered
-     between launches via saveSoundPrefs()/loadSoundPrefs() above ---- */
+  /* ---- sound + vibration settings: each toggles independently and is remembered between
+     launches via saveSoundPrefs()/loadSoundPrefs() above. Rendered as sliding on/off switches
+     (a filled track + a knob that slides side to side) rather than text buttons — the state
+     reads at a glance instead of having to read "Włączone"/"Wyłączone" each time. ---- */
   function renderSettings(){
     var t = T();
     settingsTitleEl.textContent = t.settingsTitle;
     settingsMusicLabel.textContent = t.settingsMusic;
     settingsSfxLabel.textContent = t.settingsSfx;
-    musicToggleBtn.textContent = musicOn ? t.settingsOn : t.settingsOff;
+    settingsVibrateLabel.textContent = t.settingsVibrate;
     musicToggleBtn.className = 'switch' + (musicOn ? ' on' : '');
-    sfxToggleBtn.textContent = sfxOn ? t.settingsOn : t.settingsOff;
+    musicToggleBtn.setAttribute('aria-pressed', String(musicOn));
     sfxToggleBtn.className = 'switch' + (sfxOn ? ' on' : '');
+    sfxToggleBtn.setAttribute('aria-pressed', String(sfxOn));
+    vibrateToggleBtn.className = 'switch' + (vibrateOn ? ' on' : '');
+    vibrateToggleBtn.setAttribute('aria-pressed', String(vibrateOn));
     settingsClose.textContent = t.settingsClose;
-    soundToggle.textContent = (musicOn || sfxOn) ? '🔊' : '🔇';
   }
   soundToggle.addEventListener('click', function(){ renderSettings(); settingsModal.classList.add('show'); });
   settingsClose.addEventListener('click', function(){ settingsModal.classList.remove('show'); });
@@ -2384,6 +2526,7 @@
     renderSettings(); sfx('click'); saveSoundPrefs();
   });
   sfxToggleBtn.addEventListener('click', function(){ sfxOn = !sfxOn; renderSettings(); if(sfxOn) sfx('click'); saveSoundPrefs(); });
+  vibrateToggleBtn.addEventListener('click', function(){ vibrateOn = !vibrateOn; renderSettings(); if(vibrateOn) haptic('light'); saveSoundPrefs(); });
 
   /* ---- boot / splash sequence ---- */
   var bootStage = 'studio', bootTipIdx = 0, bootTipTimer = null, bootBarTimer = null, bootAutoTimer = null;
@@ -2429,7 +2572,7 @@
     if(ctx && ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
     if(musicOn) startMusic();
     boot.classList.add('hide');
-    setTimeout(function(){ boot.style.display='none'; maybeShowTutorial(); }, 420);
+    setTimeout(function(){ boot.style.display='none'; maybeShowTutorial(); grantRealOfflineEarnings(); renderStats(); }, 420);
   }
   boot.addEventListener('click', function(){
     if(bootStage==='studio'){ clearTimeout(bootAutoTimer); enterLoadingStage(); }
@@ -2476,8 +2619,16 @@
   }, 1000);
   setInterval(spawnFruit, 1400);
   /* also save the instant the app is backgrounded/closed — a mobile WebView can be killed
-     without warning once hidden, so waiting for the next 5s tick isn't reliable enough */
-  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') saveGame(); });
-  window.addEventListener('pagehide', saveGame);
+     without warning once hidden, so waiting for the next 5s tick isn't reliable enough. The
+     same moment is also when we line up the "come back" reminders (native-only — the browser
+     preview has no LocalNotifications plugin, so scheduleComebackNotifications() is a no-op
+     there), and cancel them again if the player returns before any of them fire. */
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='hidden'){ saveGame(); scheduleComebackNotifications(); }
+    else { cancelComebackNotifications(); }
+  });
+  window.addEventListener('pagehide', function(){ saveGame(); scheduleComebackNotifications(); });
 })();
 </script>
+</body>
+</html>
