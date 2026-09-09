@@ -227,26 +227,52 @@
   .switch.on{background:var(--leaf); border-color:var(--leaf);}
   .switch.on::after{transform:translateX(19px);}
 
-  .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px;}
+  .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px; overflow:hidden;}
   .city-map-svg{width:100%; height:auto; display:block;}
-  .city-road{stroke:var(--line); stroke-width:6; stroke-linecap:round; filter:drop-shadow(0 2px 1px var(--shadow));}
-  .city-road-dash{stroke:var(--surface); stroke-width:1.5; stroke-dasharray:5 5;}
-  .city-connector{stroke:var(--line); stroke-width:2; stroke-dasharray:2 2;}
-  /* a small offset "shine" circle (drawn separately in JS) plus a drop-shadow is enough to
-     read as a glossy raised button rather than a flat dot — cheap SVG filter, not real 3D. */
-  .city-node{fill:var(--gold-soft); stroke:var(--gold); stroke-width:1.5; filter:drop-shadow(0 2px 2px var(--shadow));}
-  .city-node.inactive{fill:var(--surface-2); stroke:var(--ink-dim); opacity:.55;}
-  .city-node-shine{fill:rgba(255,255,255,.55); pointer-events:none;}
-  .city-badge{font-size:7px; font-weight:800; fill:var(--coral);}
-  .city-ped{fill:var(--leaf); filter:drop-shadow(0 1px 1px var(--shadow));}
   .city-map-hint{font-size:11px; color:var(--ink-dim); text-align:center; padding:18px 8px;}
-  @keyframes cityWalk0{ 0%{cx:14px;} 50%{cx:286px;} 100%{cx:14px;} }
-  @keyframes cityWalk1{ 0%{cx:286px;} 50%{cx:14px;} 100%{cx:286px;} }
-  @keyframes cityWalk2{ 0%{cx:100px;} 50%{cx:220px;} 100%{cx:100px;} }
-  .city-ped0{ animation:cityWalk0 15s linear infinite; }
-  .city-ped1{ animation:cityWalk1 11s linear infinite; }
-  .city-ped2{ animation:cityWalk2 8.5s linear infinite; }
-  @media (prefers-reduced-motion:reduce){ .city-ped0,.city-ped1,.city-ped2{ animation:none; } }
+  .city-expand-btn{position:absolute; top:10px; right:10px; width:26px; height:26px; padding:0; border:none; background:none; cursor:pointer;}
+  .ce-icon{width:26px; height:26px; display:block; filter:drop-shadow(0 2px 3px var(--shadow));}
+
+  /* ground: a sidewalk strip the buildings sit on, plus a lower reserved lane — left visually
+     empty today on purpose, so a future update can drop moving car sprites into it without
+     any layout rework. */
+  .city-sidewalk{fill:var(--surface);}
+  .city-road-lane{fill:var(--line); opacity:.45;}
+  .city-road-dash{stroke:var(--surface); stroke-width:1; stroke-dasharray:4 4;}
+  .city-lot-pad{fill:var(--bg); opacity:.5;}
+
+  /* each building is a small isometric-ish block — a front wall, a darker side sliver, and a
+     roof cap — so it reads as an actual 3D building instead of a flat pin on a line. Family
+     colors (housing/care/culture/food/shop) are set inline from CITY_FAM_COLOR in JS. */
+  .city-bldg{cursor:pointer;}
+  .city-bldg.inactive{opacity:.5;}
+  .city-bldg-front{filter:drop-shadow(0 2px 2px var(--shadow));}
+  .city-bldg-window{fill:#fff; opacity:.6;}
+  .city-bldg-glyph{font-size:10px; text-anchor:middle; pointer-events:none;}
+  .city-badge{font-size:6.5px; font-weight:800; fill:var(--coral);}
+
+  /* ambient life: small two-part sprites (head + body) that a JS ticker slides along the
+     sidewalk in the full-screen view. A cheap alternating vertical bob is enough to read as
+     "walking" without extra per-frame work. The compact inline preview only shows a couple of
+     free, always-on CSS-only walkers (no JS ticker) so glancing at it costs nothing extra. */
+  .city-sprite-body{filter:drop-shadow(0 1px 1px var(--shadow));}
+  .city-sprite.bob{animation:citySpriteBob .46s ease-in-out infinite alternate;}
+  @keyframes citySpriteBob{ from{transform:translateY(0);} to{transform:translateY(-1.4px);} }
+  @keyframes cityMiniWalk0{ 0%{transform:translateX(0);} 50%{transform:translateX(258px);} 100%{transform:translateX(0);} }
+  @keyframes cityMiniWalk1{ 0%{transform:translateX(258px);} 50%{transform:translateX(0);} 100%{transform:translateX(258px);} }
+  .city-mini-ped0{ animation:cityMiniWalk0 16s linear infinite; }
+  .city-mini-ped1{ animation:cityMiniWalk1 12s linear infinite; }
+  @media (prefers-reduced-motion:reduce){ .city-sprite.bob, .city-mini-ped0, .city-mini-ped1{ animation:none; } }
+
+  .modal-city{max-width:420px; width:96%; max-height:92vh; display:flex; flex-direction:column;}
+  .city-full-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px;}
+  .city-full-head h3{margin:0;}
+  .btn-x{border:none; background:var(--surface-2); color:var(--ink-dim); width:27px; height:27px; border-radius:50%; cursor:pointer; font-size:13px; line-height:1; flex-shrink:0;}
+  .city-full-wrap{position:relative; flex:1; min-height:230px; background:var(--bg-2); border:1px solid var(--line); border-radius:12px; overflow:hidden; touch-action:none;}
+  .city-map-svg-full{width:100%; height:100%; display:block;}
+  .city-zoom-controls{display:flex; gap:8px; justify-content:center; margin-top:8px;}
+  .city-zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-size:16px; font-weight:800; cursor:pointer;}
+  .city-full-hint{font-size:10.5px; color:var(--ink-dim); text-align:center; margin-top:6px;}
 
   .map-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:4px;}
   .garden-card{flex:0 0 auto; width:96px; border-radius:14px; padding:9px 8px; text-align:center; border:1.5px solid var(--line); background:var(--surface-2); cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.08), 0 6px 12px -6px var(--shadow); transition:transform .1s ease, box-shadow .1s ease;}
@@ -346,6 +372,8 @@
   #soundGrad stop:nth-child(2){stop-color:#1c4a6e;}
   :root[data-theme="dark"] #soundGrad stop:nth-child(2){stop-color:#123449;}
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #soundGrad stop:nth-child(2){stop-color:#123449;} }
+  #expandGrad stop:nth-child(1){stop-color:var(--leaf);}
+  #expandGrad stop:nth-child(2){stop-color:var(--leaf-deep);}
 
   .header-logo{display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 2px;}
   .header-logo svg{width:22px; height:22px; flex-shrink:0;}
@@ -496,6 +524,19 @@
       <path d="M43 25 q4.5 7 0 14" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="3" stroke-linecap="round"/>
       <path d="M48.5 20.5 q8.5 11.5 0 23" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
     </symbol>
+    <linearGradient id="expandGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <!-- small "open full screen" badge (four corner arrows) shown over the compact city-map
+       preview, so it's clear that tapping it opens the bigger, pannable/zoomable city view. -->
+    <symbol id="ic-expand" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="30" fill="url(#expandGrad)"/>
+      <path d="M22 30 V20 h10 M22 20 l9 9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M42 30 V20 H32 M42 20 l-9 9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 34 V44 h10 M22 44 l9 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M42 34 V44 H32 M42 44 l-9 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -600,12 +641,38 @@
             <div class="town-people" id="townFoodLine" style="color:var(--coral); display:none;"></div>
 
             <div class="section-title" id="cityMapTitle"></div>
-            <div class="city-map-wrap">
-              <svg class="city-map-svg" id="cityMapSvg" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet">
-                <g id="cityRoadGroup"></g>
-                <g id="cityPedGroup"></g>
+            <div class="city-map-wrap" id="cityMapOpen">
+              <svg class="city-map-svg" id="cityMapSvg" viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet">
+                <g id="cityRoadGroupMini"></g>
+                <g id="cityBuildGroupMini"></g>
+                <g id="cityPedGroupMini"></g>
               </svg>
               <div class="city-map-hint" id="cityMapHint"></div>
+              <button class="city-expand-btn" id="cityExpandBtn" title=""><svg class="ce-icon"><use href="#ic-expand"/></svg></button>
+            </div>
+
+            <div class="modal-overlay" id="cityFullModal">
+              <div class="modal modal-city">
+                <div class="city-full-head">
+                  <h3 id="cityFullTitle"></h3>
+                  <button class="btn-x" id="cityFullClose">✕</button>
+                </div>
+                <div class="city-full-wrap" id="cityFullWrap">
+                  <svg class="city-map-svg city-map-svg-full" id="cityFullSvg" viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet">
+                    <g id="cityViewportFull">
+                      <g id="cityRoadGroupFull"></g>
+                      <g id="cityBuildGroupFull"></g>
+                      <g id="cityPedGroupFull"></g>
+                    </g>
+                  </svg>
+                </div>
+                <div class="city-zoom-controls">
+                  <button class="city-zoom-btn" id="cityZoomOut">−</button>
+                  <button class="city-zoom-btn" id="cityZoomReset">⟳</button>
+                  <button class="city-zoom-btn" id="cityZoomIn">+</button>
+                </div>
+                <div class="city-full-hint" id="cityFullHint"></div>
+              </div>
             </div>
 
             <div class="scroll420" id="buildList"></div>
@@ -739,9 +806,11 @@
       townPeopleLine: function(n){ return n>0 ? ('Mieszkańcy: ' + n + ' — każdy dodaje trochę Dobra co sekundę.') : 'Zbuduj pierwszy obiekt, żeby zamieszkali w nim ludzie.'; },
       townFoodWarn: '🍎 Brak jedzenia! Mieszkańcy nie pomagają, dopóki nie zbierzesz owoców w Ogrodzie Nadziei lub Tropikalnym.',
       bankTitle: '🏦 Bank — wymień nadmiar jedzenia',
-      cityMapTitle: '🗺️ Mapa miasta',
+      cityMapTitle: 'Mapa miasta',
       cityMapEmpty: 'Zbuduj pierwszy dom, a pojawi się na mapie razem z drogą.',
       cityMapInactive: ' (wynajem wygasł)',
+      cityExpandTitle: 'Powiększ miasto',
+      cityFullHint: 'Uszczypnij lub użyj kółka, aby przybliżyć — przeciągnij, aby się rozejrzeć.',
       buildBtn: 'Buduj',
       buildRentBtn: 'Wynajmij na miesiąc',
       buildRenewBtn: 'Przedłuż o miesiąc',
@@ -909,9 +978,11 @@
       townPeopleLine: function(n){ return n>0 ? ('Residents: ' + n + ' — each adds a little Good every second.') : 'Build your first building to move people in.'; },
       townFoodWarn: '🍎 Out of food! Residents stop helping until you harvest fruit in Garden of Hope or Tropical Garden.',
       bankTitle: '🏦 Bank — trade surplus food',
-      cityMapTitle: '🗺️ City map',
+      cityMapTitle: 'City map',
       cityMapEmpty: 'Build your first house and it will appear on the map along with a road.',
       cityMapInactive: ' (rent expired)',
+      cityExpandTitle: 'Expand the city',
+      cityFullHint: 'Pinch or scroll to zoom — drag to look around.',
       buildBtn: 'Build',
       buildRentBtn: 'Rent for a month',
       buildRenewBtn: 'Renew for a month',
@@ -1130,23 +1201,30 @@
   var BUILDINGS = [
     /* the primary, cheapest building — basic shelter, so residents have somewhere to live
        before any other building goes up. Deliberately the smallest material ask in the list. */
-    {key:'needyhome', icon:'🏘️', people:6, cost:{wood:6, water:6}},
-    {key:'senior', icon:'🏠', people:4, cost:{wood:15, nails:8, water:10}},
-    {key:'orphan', icon:'🧸', people:5, cost:{wood:12, stone:8, water:10}},
-    {key:'hospital', icon:'🏥', people:8, cost:{stone:20, iron:10, nails:10, plank:6, glass:4, water:20}},
-    {key:'hospice', icon:'🕊️', people:3, cost:{wood:18, stone:10, water:15}},
-    {key:'shelter', icon:'🐾', people:2, cost:{wood:8, stone:5, water:8}},
-    {key:'library', icon:'📚', people:3, cost:{plank:10, glass:6, nails:4, water:12}},
+    {key:'needyhome', icon:'🏘️', fam:'housing', people:6, cost:{wood:6, water:6}},
+    {key:'senior', icon:'🏠', fam:'housing', people:4, cost:{wood:15, nails:8, water:10}},
+    {key:'orphan', icon:'🧸', fam:'housing', people:5, cost:{wood:12, stone:8, water:10}},
+    {key:'hospital', icon:'🏥', fam:'care', people:8, cost:{stone:20, iron:10, nails:10, plank:6, glass:4, water:20}},
+    {key:'hospice', icon:'🕊️', fam:'care', people:3, cost:{wood:18, stone:10, water:15}},
+    {key:'shelter', icon:'🐾', fam:'care', people:2, cost:{wood:8, stone:5, water:8}},
+    {key:'library', icon:'📚', fam:'culture', people:3, cost:{plank:10, glass:6, nails:4, water:12}},
     /* everyday city infrastructure — more people, and each pulls from more gardens than the
        one before it, so the town keeps needing every garden as it grows (per the "bigger
        building → more varied materials" rule). */
-    {key:'cafe', icon:'☕', people:3, cost:{wood:10, glass:5, water:10}},
-    {key:'restaurant', icon:'🍽️', people:4, cost:{wood:14, stone:8, nails:6, water:15}},
-    {key:'cinema', icon:'🎬', people:6, cost:{stone:16, iron:10, glass:12, nails:8, water:18}},
-    {key:'mall', icon:'🏬', people:10, cost:{stone:25, iron:15, glass:20, plank:15, nails:12, water:25}},
-    {key:'foodbank', icon:'🥫', people:6, moneyOnly:true, moneyCost:49},
-    {key:'mobileclinic', icon:'🚐', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
+    {key:'cafe', icon:'☕', fam:'food', people:3, cost:{wood:10, glass:5, water:10}},
+    {key:'restaurant', icon:'🍽️', fam:'food', people:4, cost:{wood:14, stone:8, nails:6, water:15}},
+    {key:'cinema', icon:'🎬', fam:'culture', people:6, cost:{stone:16, iron:10, glass:12, nails:8, water:18}},
+    {key:'mall', icon:'🏬', fam:'shop', people:10, cost:{stone:25, iron:15, glass:20, plank:15, nails:12, water:25}},
+    {key:'foodbank', icon:'🥫', fam:'food', people:6, moneyOnly:true, moneyCost:49},
+    {key:'mobileclinic', icon:'🚐', fam:'care', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
   ];
+  var CITY_FAM_COLOR = {
+    housing:{a:'var(--gold-soft)', b:'var(--gold)', c:'var(--gold-ink)'},
+    care:{a:'var(--coral-soft)', b:'var(--coral)', c:'#5c2416'},
+    culture:{a:'var(--violet-soft)', b:'var(--violet)', c:'#3a2a5c'},
+    food:{a:'#dcefd4', b:'var(--leaf)', c:'var(--leaf-deep)'},
+    shop:{a:'var(--blue-soft)', b:'var(--blue)', c:'#1c3a52'}
+  };
   var townBuilt = {}; var townPeople = 0; var townRent = {};
   function buildingCount(key){ return townBuilt[key]||0; }
   function buildingCost(def){
@@ -1325,7 +1403,10 @@
   var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn'), cityOpenBtn=$('cityOpenBtn');
   var whTitle=$('whTitle'), whBar=$('whBar'), whCapText=$('whCapText'), whGrid=$('whGrid'), whWaterBtn=$('whWaterBtn'), whExpandBtn=$('whExpandBtn'), whRefine=$('whRefine');
   var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine'), buildList=$('buildList');
-  var cityMapTitleEl=$('cityMapTitle'), cityMapSvg=$('cityMapSvg'), cityMapHint=$('cityMapHint'), cityRoadGroup=$('cityRoadGroup'), cityPedGroup=$('cityPedGroup');
+  var cityMapOpen=$('cityMapOpen'), cityMapTitleEl=$('cityMapTitle'), cityMapSvg=$('cityMapSvg'), cityMapHint=$('cityMapHint'), cityRoadGroupMini=$('cityRoadGroupMini'), cityBuildGroupMini=$('cityBuildGroupMini'), cityPedGroupMini=$('cityPedGroupMini');
+  var cityExpandBtn=$('cityExpandBtn'), cityFullModal=$('cityFullModal'), cityFullTitle=$('cityFullTitle'), cityFullClose=$('cityFullClose'), cityFullHint=$('cityFullHint'), cityFullWrap=$('cityFullWrap');
+  var cityFullSvg=$('cityFullSvg'), cityViewportFull=$('cityViewportFull'), cityRoadGroupFull=$('cityRoadGroupFull'), cityBuildGroupFull=$('cityBuildGroupFull'), cityPedGroupFull=$('cityPedGroupFull');
+  var cityZoomIn=$('cityZoomIn'), cityZoomOut=$('cityZoomOut'), cityZoomReset=$('cityZoomReset');
   var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
   var roundupModal=$('roundupModal'), roundupTitle=$('roundupTitle'), roundupText=$('roundupText'), roundupYes=$('roundupYes'), roundupNo=$('roundupNo');
   var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
@@ -2013,11 +2094,17 @@
   }
 
   /* ---- warehouse & town (materials + charity buildings) ---- */
-  /* ---- city map: purchased buildings placed along an auto-drawn road, with a few residents
-     always strolling along it. Rebuilding the whole map only when the set of built buildings
-     actually changes (not on every 1s tick) keeps the pedestrian animation running smoothly
-     instead of restarting every second. ---- */
-  var lastCityMapSig = null, cityPedsSpawned = false;
+  /* ---- city map v2 — a small isometric-ish city instead of pins on a line: each building is
+     a real 3D-looking block (front + side + roof), placed on a sidewalk with a lower lane kept
+     empty on purpose for future traffic. The compact panel below the warehouse is only a static
+     thumbnail; tapping it opens a full-screen, pinch-zoom/pan view with a couple of ambient
+     residents always strolling, plus rare "easter egg" cats/dogs (sometimes walked by an owner)
+     that cross the screen once and disappear — a light, GTA2-style touch of life, kept cheap
+     enough for weak devices by capping concurrent sprites and freezing everything the instant
+     the full view is closed. Rebuilding the DOM only when the set of built buildings actually
+     changes (not on every 1s tick) keeps this affordable. ---- */
+  var lastCityMapSig = null, cityMiniPedsSpawned = false;
+  var CITY_NS = 'http://www.w3.org/2000/svg';
   function cityMapSignature(){
     return BUILDINGS.map(function(b){
       var c = buildingCount(b.key); if(!c) return '';
@@ -2025,77 +2112,288 @@
       return b.key+':'+c+':'+(active?1:0);
     }).join('|');
   }
+  function svgEl(tag, attrs){
+    var el = document.createElementNS(CITY_NS, tag);
+    for(var k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) el.setAttribute(k, attrs[k]); }
+    return el;
+  }
+  function drawCityGround(group, W, groundY){
+    group.innerHTML = '';
+    group.appendChild(svgEl('rect', {x:0, y:groundY, width:W, height:10, class:'city-sidewalk'}));
+    /* reserved lower lane — empty today, ready for car sprites in a future update */
+    group.appendChild(svgEl('rect', {x:0, y:groundY+10, width:W, height:16, class:'city-road-lane'}));
+    group.appendChild(svgEl('line', {x1:0, y1:groundY+18, x2:W, y2:groundY+18, class:'city-road-dash'}));
+  }
+  function buildingBlockNode(t, def, cx, groundY, scale, active, count){
+    var col = CITY_FAM_COLOR[def.fam] || CITY_FAM_COLOR.housing;
+    var Wf = 24*scale, Hf = (20+Math.min(16, def.people*1.5))*scale, Ws = 8*scale, dy = 6*scale;
+    var x0 = cx-Wf/2, x1 = cx+Wf/2, y0 = groundY-Hf, y1 = groundY;
+    var g = svgEl('g', {class:'city-bldg'+(active?'':' inactive')});
+    function poly(pts, fill){ g.appendChild(svgEl('polygon', {points:pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' '), fill:fill})); }
+    poly([[x1,y0],[x1+Ws,y0-dy],[x1+Ws,y1-dy],[x1,y1]], col.c); // side face — depth cue
+    poly([[x0,y0],[x0+Ws,y0-dy],[x1+Ws,y0-dy],[x1,y0]], col.a); // roof cap
+    g.appendChild(svgEl('rect', {x:x0, y:y0, width:Wf, height:Hf, fill:col.b, class:'city-bldg-front'}));
+    if(scale > 0.4){
+      var wCols = Wf>20 ? 2 : 1, wRows = Math.max(1, Math.floor(Hf/(9*scale))-1);
+      var wSize = 2.6*scale, padX = Wf/(wCols+1), padY = Hf/(wRows+1);
+      for(var r=0;r<wRows;r++){ for(var c=0;c<wCols;c++){
+        g.appendChild(svgEl('rect', {x:(x0+padX*(c+1)-wSize/2).toFixed(1), y:(y0+padY*(r+1)-wSize/2).toFixed(1), width:wSize.toFixed(1), height:wSize.toFixed(1), rx:0.5, class:'city-bldg-window'}));
+      } }
+    }
+    var glyph = svgEl('text', {x:cx, y:(y1-Hf*0.28).toFixed(1), class:'city-bldg-glyph', 'font-size':(11*scale).toFixed(1)});
+    glyph.textContent = def.icon; g.appendChild(glyph);
+    var bt = t.buildings[def.key];
+    var titleEl = svgEl('title', {}); titleEl.textContent = bt.name + (active?'':t.cityMapInactive);
+    g.appendChild(titleEl);
+    if(count > 1){
+      var badge = svgEl('text', {x:(x1+Ws*0.5).toFixed(1), y:(y0-dy-1).toFixed(1), class:'city-badge', 'text-anchor':'middle'});
+      badge.textContent = '×'+count; g.appendChild(badge);
+    }
+    return g;
+  }
+  function ensureCityMiniPeds(){
+    if(cityMiniPedsSpawned) return;
+    cityPedGroupMini.innerHTML = '';
+    /* same fix as the full-view sprites: the walking CSS animation sets its own transform, so
+       it lives on an inner <g> while the outer <g>'s attribute-based transform just places the
+       walker on the sidewalk — otherwise the animation would silently discard that position. */
+    [0,1].forEach(function(i){
+      var outer = svgEl('g', {transform:'translate(14,116)'});
+      var inner = svgEl('g', {class:'city-mini-ped'+i});
+      inner.appendChild(svgEl('rect', {x:-1.3, y:-3, width:2.6, height:4.6, rx:1, fill:i===0?'var(--leaf)':'var(--blue)'}));
+      inner.appendChild(svgEl('circle', {cx:0, cy:-4.4, r:1.5, fill:'var(--gold-soft)'}));
+      outer.appendChild(inner);
+      cityPedGroupMini.appendChild(outer);
+    });
+    cityMiniPedsSpawned = true;
+  }
+  var cityContentW = 320, cityLifeBounds = {min:14, max:306, y:118};
+  function renderCityFullScene(t){
+    if(!cityRoadGroupFull) return;
+    var placed = BUILDINGS.filter(function(b){ return buildingCount(b.key) > 0; });
+    var groundY = 118;
+    cityLifeBounds.y = groundY;
+    if(!placed.length){
+      cityRoadGroupFull.innerHTML=''; cityBuildGroupFull.innerHTML='';
+      cityContentW = 320; cityLifeBounds.min = 14; cityLifeBounds.max = 306;
+      return;
+    }
+    var PITCH = 62, PAD = 40;
+    var W = Math.max(320, PAD*2 + (placed.length-1)*PITCH);
+    cityContentW = W;
+    drawCityGround(cityRoadGroupFull, W, groundY);
+    cityBuildGroupFull.innerHTML = '';
+    placed.forEach(function(def, idx){
+      var cx = PAD + idx*PITCH;
+      var active = def.rentable ? !!(townRent[def.key] && townRent[def.key] > Date.now()) : true;
+      cityBuildGroupFull.appendChild(buildingBlockNode(t, def, cx, groundY, 1, active, buildingCount(def.key)));
+    });
+    cityLifeBounds.min = 14; cityLifeBounds.max = W-14;
+  }
   function renderCityMap(){
     if(!cityMapSvg) return;
     var t = T();
-    var NS = 'http://www.w3.org/2000/svg';
-    if(!cityPedsSpawned){
-      cityPedGroup.innerHTML = '';
-      [0,1,2].forEach(function(i){
-        var ped = document.createElementNS(NS,'circle');
-        ped.setAttribute('cy','60'); ped.setAttribute('r','2.6');
-        ped.setAttribute('class','city-ped city-ped'+i);
-        cityPedGroup.appendChild(ped);
-      });
-      cityPedsSpawned = true;
-    }
+    ensureCityMiniPeds();
     var sig = cityMapSignature();
     if(sig === lastCityMapSig) return;
     lastCityMapSig = sig;
     var placed = BUILDINGS.filter(function(b){ return buildingCount(b.key) > 0; });
-    cityRoadGroup.innerHTML = '';
     if(!placed.length){
       cityMapHint.textContent = t.cityMapEmpty;
       cityMapHint.style.display = '';
       cityMapSvg.style.display = 'none';
+      cityExpandBtn.style.display = 'none';
+      renderCityFullScene(t);
       return;
     }
     cityMapHint.style.display = 'none';
     cityMapSvg.style.display = '';
-    var W = 300, roadY = 60;
-    function line(x1,y1,x2,y2,cls){
-      var el = document.createElementNS(NS,'line');
-      el.setAttribute('x1',x1); el.setAttribute('y1',y1); el.setAttribute('x2',x2); el.setAttribute('y2',y2);
-      el.setAttribute('class',cls); cityRoadGroup.appendChild(el); return el;
-    }
-    line(14, roadY, W-14, roadY, 'city-road');
-    line(14, roadY, W-14, roadY, 'city-road-dash');
-    var n = placed.length, spacing = (W-28)/(n+1);
+    cityExpandBtn.style.display = '';
+    var W = 320, groundY = 122;
+    drawCityGround(cityRoadGroupMini, W, groundY);
+    cityBuildGroupMini.innerHTML = '';
+    var n = placed.length, usable = W-24, slot = usable/n;
+    var scale = Math.max(0.32, Math.min(0.6, slot/44));
     placed.forEach(function(def, idx){
-      var x = 14 + spacing*(idx+1);
-      var above = idx % 2 === 0;
-      var by = above ? roadY - 32 : roadY + 32;
-      line(x, roadY, x, by, 'city-connector');
+      var cx = 12 + slot*(idx+0.5);
       var active = def.rentable ? !!(townRent[def.key] && townRent[def.key] > Date.now()) : true;
-      var circle = document.createElementNS(NS,'circle');
-      circle.setAttribute('cx',x); circle.setAttribute('cy',by); circle.setAttribute('r','12');
-      circle.setAttribute('class','city-node'+(active?'':' inactive'));
-      var bt = t.buildings[def.key];
-      var titleEl = document.createElementNS(NS,'title');
-      titleEl.textContent = bt.name + (active?'':t.cityMapInactive);
-      circle.appendChild(titleEl);
-      cityRoadGroup.appendChild(circle);
-      if(active){
-        var shine = document.createElementNS(NS,'ellipse');
-        shine.setAttribute('cx', x-4); shine.setAttribute('cy', by-5);
-        shine.setAttribute('rx','4'); shine.setAttribute('ry','2.5');
-        shine.setAttribute('class','city-node-shine');
-        cityRoadGroup.appendChild(shine);
+      cityBuildGroupMini.appendChild(buildingBlockNode(t, def, cx, groundY, scale, active, buildingCount(def.key)));
+    });
+    renderCityFullScene(t);
+  }
+
+  /* ---- city ambient life (full view only): a couple of always-present strollers, plus rare
+     cats/dogs (sometimes on a leash) that cross once and vanish. Runs on requestAnimationFrame
+     only while the full-screen city view is open; a hard cap on concurrent sprites and full
+     teardown on close keep this from ever being a battery/perf concern. ---- */
+  var CITY_LIFE_MAX_AMBIENT = 2, CITY_LIFE_MAX_EGG = 1;
+  var cityLife = { running:false, raf:null, last:0, sprites:[], eggTimer:0, nextEggAt:7, reduce:false };
+  function citySpriteNode(kind){
+    var g = svgEl('g', {class:'city-sprite'+(cityLife.reduce?'':' bob')});
+    if(kind==='person'){
+      g.appendChild(svgEl('rect', {x:-2.6, y:-9.8, width:5.2, height:8.8, rx:1.8, fill:Math.random()<0.5?'var(--leaf)':'var(--blue)', class:'city-sprite-body'}));
+      g.appendChild(svgEl('circle', {cx:0, cy:-12, r:2.7, fill:'var(--gold-soft)'}));
+    } else {
+      var isCat = kind==='cat', clr = isCat?'#9098a0':'#8a6a4a';
+      g.appendChild(svgEl('ellipse', {cx:0, cy:-2.6, rx:isCat?4.2:4.8, ry:isCat?2.1:2.6, fill:clr, class:'city-sprite-body'}));
+      g.appendChild(svgEl('polygon', {points: isCat?'3.2,-5 4.6,-6.9 5.4,-4.8':'3.8,-5.1 4.8,-6.6 5.9,-5', fill:clr}));
+      g.appendChild(svgEl('circle', {cx:isCat?4.2:5.1, cy:-3.5, r:isCat?1.8:2.1, fill:clr}));
+      var tail = svgEl('path', {d: isCat?'M -3.8 -2.9 Q -6.4 -5.4 -4.8 -7.4':'M -4.5 -2.2 Q -6.7 -1.6 -6.4 0.3', fill:'none', stroke:clr, 'stroke-width':1.3, 'stroke-linecap':'round'});
+      g.appendChild(tail);
+    }
+    return g;
+  }
+  function spawnCitySprite(kind, x, dir, speed, temp){
+    /* the CSS "bob" animation sets its own transform on the visual group, which would silently
+       override an attribute-based transform on the SAME element — so position is driven on a
+       plain outer <g> and the bobbing visual sits nested one level in, where the two never
+       fight over the transform property. */
+    var visual = citySpriteNode(kind);
+    var wrap = svgEl('g', {});
+    wrap.appendChild(visual);
+    cityPedGroupFull.appendChild(wrap);
+    return {kind:kind, el:wrap, x:x, dir:dir, speed:speed, temp:!!temp};
+  }
+  function ensureAmbientWalkers(){
+    var count = cityLife.sprites.filter(function(s){ return s.kind==='person' && !s.temp; }).length;
+    while(count < CITY_LIFE_MAX_AMBIENT){
+      var x = cityLifeBounds.min + Math.random()*(cityLifeBounds.max-cityLifeBounds.min);
+      cityLife.sprites.push(spawnCitySprite('person', x, Math.random()<0.5?1:-1, 6+Math.random()*4));
+      count++;
+    }
+  }
+  function maybeSpawnEasterEgg(dt){
+    cityLife.eggTimer += dt;
+    if(cityLife.eggTimer < cityLife.nextEggAt) return;
+    cityLife.eggTimer = 0; cityLife.nextEggAt = 10+Math.random()*14;
+    if(cityLife.sprites.filter(function(s){ return s.temp; }).length >= CITY_LIFE_MAX_EGG) return;
+    var dir = Math.random()<0.5?1:-1;
+    var startX = dir>0 ? cityLifeBounds.min-6 : cityLifeBounds.max+6;
+    var roll = Math.random();
+    if(roll < 0.45){
+      cityLife.sprites.push(spawnCitySprite(Math.random()<0.5?'cat':'dog', startX, dir, 14+Math.random()*6, true));
+    } else if(roll < 0.72){
+      var owner = spawnCitySprite('person', startX, dir, 9, true);
+      var pet = spawnCitySprite(Math.random()<0.5?'dog':'cat', startX - dir*4, dir, 9, true);
+      var leash = svgEl('line', {stroke:'var(--ink-dim)', 'stroke-width':0.6});
+      cityPedGroupFull.appendChild(leash);
+      owner.pair = pet; owner.leash = leash;
+      cityLife.sprites.push(owner);
+    }
+  }
+  function cityLifeFrame(ts){
+    if(!cityLife.running) return;
+    if(!cityLife.last) cityLife.last = ts;
+    var dt = Math.min(0.12, (ts-cityLife.last)/1000);
+    cityLife.last = ts;
+    if(!cityLife.reduce){
+      for(var i=cityLife.sprites.length-1;i>=0;i--){
+        var s = cityLife.sprites[i];
+        s.x += s.dir*s.speed*dt;
+        if(s.temp){
+          var off = s.dir>0 ? s.x > cityLifeBounds.max+8 : s.x < cityLifeBounds.min-8;
+          if(off){
+            s.el.remove(); if(s.leash) s.leash.remove(); if(s.pair) s.pair.el.remove();
+            cityLife.sprites.splice(i,1); continue;
+          }
+        } else if(s.x > cityLifeBounds.max || s.x < cityLifeBounds.min){
+          s.dir *= -1; s.x = Math.max(cityLifeBounds.min, Math.min(cityLifeBounds.max, s.x));
+        }
+        s.el.setAttribute('transform', 'translate('+s.x.toFixed(1)+','+cityLifeBounds.y.toFixed(1)+')');
+        if(s.pair){
+          s.pair.x = s.x - s.dir*6.5;
+          s.pair.el.setAttribute('transform', 'translate('+s.pair.x.toFixed(1)+','+(cityLifeBounds.y+1).toFixed(1)+')');
+          if(s.leash){
+            s.leash.setAttribute('x1', s.x.toFixed(1)); s.leash.setAttribute('y1', (cityLifeBounds.y-6).toFixed(1));
+            s.leash.setAttribute('x2', s.pair.x.toFixed(1)); s.leash.setAttribute('y2', (cityLifeBounds.y-3).toFixed(1));
+          }
+        }
       }
-      var label = document.createElementNS(NS,'text');
-      label.setAttribute('x',x); label.setAttribute('y',by+4.5);
-      label.setAttribute('text-anchor','middle'); label.setAttribute('font-size','12');
-      label.textContent = def.icon;
-      cityRoadGroup.appendChild(label);
-      var count = buildingCount(def.key);
-      if(count > 1){
-        var badge = document.createElementNS(NS,'text');
-        badge.setAttribute('x',x+11); badge.setAttribute('y', above ? by-10 : by+22);
-        badge.setAttribute('text-anchor','middle'); badge.setAttribute('class','city-badge');
-        badge.textContent = '×'+count;
-        cityRoadGroup.appendChild(badge);
+      ensureAmbientWalkers();
+      maybeSpawnEasterEgg(dt);
+    }
+    cityLife.raf = requestAnimationFrame(cityLifeFrame);
+  }
+  function startCityLife(){
+    if(cityLife.running) return;
+    cityLife.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    cityLife.running = true; cityLife.last = 0;
+    ensureAmbientWalkers();
+    cityLife.raf = requestAnimationFrame(cityLifeFrame);
+  }
+  function stopCityLife(){
+    cityLife.running = false;
+    if(cityLife.raf) cancelAnimationFrame(cityLife.raf);
+    cityLife.raf = null;
+    cityLife.sprites.forEach(function(s){ if(s.el) s.el.remove(); if(s.leash) s.leash.remove(); if(s.pair && s.pair.el) s.pair.el.remove(); });
+    cityLife.sprites = []; cityLife.eggTimer = 0;
+  }
+
+  /* ---- city full-view pan & zoom: a plain translate+scale on one <g>, driven by pointer
+     events (works for touch pinch/drag and mouse drag/wheel alike) so the city can keep
+     growing sideways without ever running out of room on screen. ---- */
+  var cityView = {scale:1, tx:0, ty:0};
+  var cityPointers = {}, cityPinchStartDist = null, cityPinchStartScale = 1;
+  var CITY_MIN_SCALE = 0.55, CITY_MAX_SCALE = 2.4;
+  function applyCityView(){
+    cityViewportFull.setAttribute('transform', 'translate('+cityView.tx.toFixed(2)+','+cityView.ty.toFixed(2)+') scale('+cityView.scale.toFixed(3)+')');
+  }
+  function cityWrapK(){ var r = cityFullWrap.getBoundingClientRect(); return r.width>0 ? r.width/320 : 1; }
+  function clampCityView(){
+    var margin = 60;
+    cityView.tx = Math.max(-(cityContentW*cityView.scale)+margin, Math.min(320-margin, cityView.tx));
+    cityView.ty = Math.max(-60, Math.min(60, cityView.ty));
+  }
+  function cityZoomTo(screenX, screenY, newScaleRaw){
+    var r = cityFullWrap.getBoundingClientRect(), k = cityWrapK();
+    var svgX = (screenX-r.left)/k, svgY = (screenY-r.top)/k;
+    var contentX = (svgX-cityView.tx)/cityView.scale, contentY = (svgY-cityView.ty)/cityView.scale;
+    var newScale = Math.max(CITY_MIN_SCALE, Math.min(CITY_MAX_SCALE, newScaleRaw));
+    cityView.tx = svgX - newScale*contentX; cityView.ty = svgY - newScale*contentY; cityView.scale = newScale;
+    clampCityView(); applyCityView();
+  }
+  function resetCityView(){ cityView.scale=1; cityView.tx=0; cityView.ty=0; applyCityView(); }
+  function cityPointerDist(){
+    var ids = Object.keys(cityPointers); if(ids.length<2) return null;
+    var a = cityPointers[ids[0]], b = cityPointers[ids[1]];
+    return Math.hypot(a.x-b.x, a.y-b.y);
+  }
+  if(cityFullWrap){
+    cityFullWrap.addEventListener('pointerdown', function(e){
+      try{ cityFullWrap.setPointerCapture(e.pointerId); }catch(err){}
+      cityPointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+      if(Object.keys(cityPointers).length === 2){ cityPinchStartDist = cityPointerDist(); cityPinchStartScale = cityView.scale; }
+    });
+    cityFullWrap.addEventListener('pointermove', function(e){
+      if(!cityPointers[e.pointerId]) return;
+      var prev = cityPointers[e.pointerId];
+      var ids = Object.keys(cityPointers);
+      if(ids.length >= 2){
+        cityPointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+        var dist = cityPointerDist();
+        if(dist && cityPinchStartDist){
+          var a = cityPointers[ids[0]], b = cityPointers[ids[1]];
+          cityZoomTo((a.x+b.x)/2, (a.y+b.y)/2, cityPinchStartScale*(dist/cityPinchStartDist));
+        }
+      } else {
+        var dxPx = e.clientX-prev.x, dyPx = e.clientY-prev.y;
+        cityPointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+        var k = cityWrapK();
+        cityView.tx += dxPx/k; cityView.ty += dyPx/k;
+        clampCityView(); applyCityView();
       }
     });
+    var cityPointerEnd = function(e){
+      delete cityPointers[e.pointerId];
+      if(Object.keys(cityPointers).length < 2) cityPinchStartDist = null;
+    };
+    cityFullWrap.addEventListener('pointerup', cityPointerEnd);
+    cityFullWrap.addEventListener('pointercancel', cityPointerEnd);
+    cityFullWrap.addEventListener('pointerleave', function(e){ if(cityPointers[e.pointerId]) cityPointerEnd(e); });
+    cityFullWrap.addEventListener('wheel', function(e){
+      e.preventDefault();
+      cityZoomTo(e.clientX, e.clientY, cityView.scale*(e.deltaY<0?1.12:0.89));
+    }, {passive:false});
   }
 
   function renderWarehouse(){
@@ -2141,6 +2439,9 @@
     if(!cityFed && totalResidents()>0){ townFoodLine.textContent = t.townFoodWarn; townFoodLine.style.display=''; }
     else { townFoodLine.style.display='none'; }
     cityMapTitleEl.textContent = t.cityMapTitle;
+    cityExpandBtn.title = t.cityExpandTitle;
+    cityFullTitle.textContent = t.cityMapTitle;
+    cityFullHint.textContent = t.cityFullHint;
     renderCityMap();
     buildList.innerHTML = '';
     BUILDINGS.forEach(function(def){
@@ -2350,9 +2651,22 @@
   mapOpenBtn.addEventListener('click', function(){ switchScreen('map'); sfx('click'); });
   cityOpenBtn.addEventListener('click', function(){
     switchScreen('map'); sfx('click');
-    setTimeout(function(){ townTitle.scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
+    setTimeout(function(){ (cityMapOpen||townTitle).scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
   });
   mapCloseBtn.addEventListener('click', function(){ switchScreen('garden'); sfx('click'); });
+  cityExpandBtn.addEventListener('click', function(){
+    renderCityFullScene(T());
+    resetCityView();
+    cityFullModal.classList.add('show');
+    startCityLife();
+    sfx('click');
+  });
+  function closeCityFull(){ cityFullModal.classList.remove('show'); stopCityLife(); }
+  cityFullClose.addEventListener('click', function(){ closeCityFull(); sfx('click'); });
+  cityFullModal.addEventListener('click', function(e){ if(e.target === cityFullModal) closeCityFull(); });
+  cityZoomIn.addEventListener('click', function(){ var r=cityFullWrap.getBoundingClientRect(); cityZoomTo(r.left+r.width/2, r.top+r.height/2, cityView.scale*1.25); });
+  cityZoomOut.addEventListener('click', function(){ var r=cityFullWrap.getBoundingClientRect(); cityZoomTo(r.left+r.width/2, r.top+r.height/2, cityView.scale*0.8); });
+  cityZoomReset.addEventListener('click', function(){ resetCityView(); sfx('click'); });
   rankTabTime.addEventListener('click', function(){ rankTab='time'; renderRank(); sfx('click'); });
   rankTabMoney.addEventListener('click', function(){ rankTab='money'; renderRank(); sfx('click'); });
 
