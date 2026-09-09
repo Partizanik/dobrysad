@@ -148,14 +148,25 @@
   .bp-row .bpcount{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
   .bp-row button{border:none; background:var(--leaf); color:#fff; font-weight:800; border-radius:8px; padding:5px 10px; font-size:10.5px; cursor:pointer; white-space:nowrap;}
 
-  .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px; perspective:400px;}
-  .fruit{position:absolute; font-size:20px; top:-8%; transform:translateX(-50%); pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, opacity .2s ease; animation:coinSpin 1.1s linear infinite;}
-  .fruit.gold{font-size:24px; animation-duration:.85s;}
-  /* falling coins/fruit tumble like an actual coin instead of sliding down flat */
-  @keyframes coinSpin{ 0%{transform:translateX(-50%) rotateY(0deg);} 100%{transform:translateX(-50%) rotateY(360deg);} }
+  .fruit-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:16px; perspective:420px;}
+  /* the falling coin is built from three independently-animated CSS transform channels
+     (the standalone translate/rotate/scale properties, which compose with each other and
+     with `transform` in a fixed order) instead of cramming everything into one `transform`
+     keyframe — that's what let a sway animation silently cancel out the spin before. */
+  .fruit{position:absolute; width:26px; height:26px; top:-9%; translate:-50% 0; pointer-events:auto; cursor:pointer; filter:drop-shadow(0 3px 4px var(--shadow)); transition:top linear, scale linear, opacity .15s ease; animation:fruitSway 1.3s ease-in-out infinite, fruitSpin 1.1s linear infinite; scale:0.8;}
+  .fruit.gold{width:30px; height:30px; animation-duration:1.3s, .85s;}
+  .fruit svg{width:100%; height:100%; display:block;}
+  .fruit .fruit-glyph{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1;}
+  .fruit.gold .fruit-glyph{font-size:17px;}
+  @keyframes fruitSpin{ 0%{rotate:0 1 0 0deg;} 100%{rotate:0 1 0 360deg;} }
+  @keyframes fruitSway{ 0%,100%{transform:translateX(0);} 50%{transform:translateX(7px);} }
   @media (prefers-reduced-motion:reduce){ .fruit{ animation:none; } }
-  .float-plus{position:absolute; font-weight:800; font-size:13px; color:var(--gold-ink); pointer-events:none; animation:floatUp 900ms ease-out forwards;}
-  @keyframes floatUp{ from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-32px);} }
+  .float-plus{position:absolute; font-weight:800; font-size:13px; color:var(--gold-ink); pointer-events:none; animation:floatUp 900ms ease-out forwards; z-index:2;}
+  @keyframes floatUp{ from{opacity:1; transform:translateY(0) scale(1);} 30%{transform:translateY(-6px) scale(1.15);} to{opacity:0; transform:translateY(-32px) scale(1);} }
+  /* catch "explosion": a handful of tiny shards fly outward from the tap point and fade */
+  .burst-piece{position:absolute; width:5px; height:5px; border-radius:2px; pointer-events:none; animation:burstFly 520ms ease-out forwards;}
+  @keyframes burstFly{ 0%{transform:translate(-50%,-50%) rotate(0deg) scale(1); opacity:1;} 100%{transform:translate(calc(-50% + var(--bx)), calc(-50% + var(--by))) rotate(var(--br)) scale(.3); opacity:0;} }
+  @media (prefers-reduced-motion:reduce){ .burst-piece{ animation:none; display:none; } }
   .combo{position:absolute; top:6px; left:50%; transform:translateX(-50%); background:var(--coral); color:#fff; font-weight:800; font-size:11px; border-radius:999px; padding:3px 10px; opacity:0; transition:opacity .2s ease; z-index:3;}
   .combo.show{opacity:1;}
 
@@ -306,6 +317,10 @@
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #cityGrad stop:nth-child(2){stop-color:#123449;} }
   #mapGrad stop:nth-child(1){stop-color:var(--leaf);}
   #mapGrad stop:nth-child(2){stop-color:var(--leaf-deep);}
+  #coinGrad stop:nth-child(1){stop-color:#f1cb6e;}
+  #coinGrad stop:nth-child(2){stop-color:var(--gold);}
+  #coinGradGold stop:nth-child(1){stop-color:#e7c9f5;}
+  #coinGradGold stop:nth-child(2){stop-color:var(--violet);}
 
   .header-logo{display:flex; align-items:center; justify-content:center; gap:7px; margin:2px 0 2px;}
   .header-logo svg{width:22px; height:22px; flex-shrink:0;}
@@ -395,6 +410,30 @@
       <circle cx="41" cy="42" r="7" fill="#fff" opacity=".85"/>
       <path d="M23 20 q3 -5 0 -8 q-3 3 0 8" fill="var(--leaf)"/>
       <path d="M41 20 q3 -5 0 -8 q-3 3 0 8" fill="var(--leaf)"/>
+    </symbol>
+    <linearGradient id="coinGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <linearGradient id="coinGradGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"></stop>
+      <stop offset="100%"></stop>
+    </linearGradient>
+    <!-- the falling "coin" — a small glossy medallion carrying our own kindness mark, replacing
+       the generic 🪙 keyboard emoji, which is also what let us rebuild its spin as a clean
+       vector rotation instead of a flipping text glyph. -->
+    <symbol id="ic-coin" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18.5" fill="url(#coinGrad)" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+      <circle cx="20" cy="20" r="14.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/>
+      <ellipse cx="14" cy="11.5" rx="6.5" ry="3.6" fill="#fff" opacity=".32"/>
+      <path d="M20 27.5 C11.5 23, 10.5 14, 17.5 12.2 C19 11.8, 20 12.8, 20 14.2 C20 12.8, 21 11.8, 22.5 12.2 C29.5 14, 28.5 23, 20 27.5 Z" fill="#fff" opacity=".92"/>
+    </symbol>
+    <!-- the rarer "gold" drop — same medallion shape in a distinct rim color, with the current
+       garden's own bonus symbol placed on top by the game code -->
+    <symbol id="ic-coin-gold" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18.5" fill="url(#coinGradGold)" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+      <circle cx="20" cy="20" r="14.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.4"/>
+      <ellipse cx="14" cy="11.5" rx="6.5" ry="3.6" fill="#fff" opacity=".32"/>
     </symbol>
   </defs>
 </svg>
@@ -1058,6 +1097,79 @@
 
   /* ---- per-plant boost charges (bought in the shop, applied to one chosen plant from the backpack) ---- */
   var inventory = {water:0, fertilizer:0, growlamp10:0, growlamp30:0, growlampDay:0, growboost:0};
+
+  /* ---- save/load: the whole game used to reset on every reload — nothing was ever written
+     to disk. Everything below is plain data (gardens, warehouse, city, votes, ...), so it
+     round-trips through localStorage as one JSON blob. Loaded once here, before any UI
+     renders; saved on a steady cadence plus whenever the app is backgrounded. */
+  var SAVE_KEY = 'dobrySadSaveV1';
+  function serializeGardens(){
+    var out = {};
+    for(var k in gardens){ if(Object.prototype.hasOwnProperty.call(gardens,k)){
+      var g = gardens[k];
+      out[k] = {board:g.board, readyAt:g.readyAt, cellBoosts:g.cellBoosts, seeds:g.seeds, unlocked:g.unlocked};
+    }}
+    return out;
+  }
+  function saveGame(){
+    try{
+      var state = {
+        v:1, LANG:LANG,
+        dobro:dobro, hearts:hearts, allTime:allTime, milestoneIdx:milestoneIdx,
+        honeyStacks:honeyStacks, extraDonated:extraDonated, secretGuaranteed:secretGuaranteed,
+        unlockedMax:unlockedMax, active:active,
+        gardens:serializeGardens(),
+        warehouse:warehouse, warehouseCap:warehouseCap,
+        inventory:inventory, activeBoosts:activeBoosts,
+        townBuilt:townBuilt, townPeople:townPeople, townRent:townRent, cityFed:cityFed,
+        votes:votes, votedAlready:votedAlready, skins:skins, tutorialShown:tutorialShown
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    }catch(e){}
+  }
+  function loadGame(){
+    try{
+      var raw = localStorage.getItem(SAVE_KEY); if(!raw) return false;
+      var s = JSON.parse(raw); if(!s || typeof s !== 'object') return false;
+      if(typeof s.LANG === 'string') LANG = s.LANG;
+      if(typeof s.dobro === 'number') dobro = s.dobro;
+      if(typeof s.hearts === 'number') hearts = s.hearts;
+      if(typeof s.allTime === 'number') allTime = s.allTime;
+      if(typeof s.milestoneIdx === 'number') milestoneIdx = s.milestoneIdx;
+      if(typeof s.honeyStacks === 'number') honeyStacks = s.honeyStacks;
+      if(typeof s.extraDonated === 'number') extraDonated = s.extraDonated;
+      if(typeof s.secretGuaranteed === 'boolean') secretGuaranteed = s.secretGuaranteed;
+      if(typeof s.unlockedMax === 'number') unlockedMax = s.unlockedMax;
+      if(typeof s.active === 'number') active = s.active;
+      if(s.gardens && typeof s.gardens === 'object'){
+        var loaded = {};
+        for(var gk in s.gardens){ if(Object.prototype.hasOwnProperty.call(s.gardens,gk)){
+          var sg = s.gardens[gk] || {};
+          loaded[gk] = {
+            board: Array.isArray(sg.board) ? sg.board : newBoard(),
+            readyAt: Array.isArray(sg.readyAt) ? sg.readyAt : new Array(25).fill(0),
+            cellBoosts: sg.cellBoosts && typeof sg.cellBoosts==='object' ? sg.cellBoosts : {},
+            seeds: typeof sg.seeds==='number' ? sg.seeds : 0,
+            unlocked: !!sg.unlocked
+          };
+        }}
+        gardens = loaded;
+      }
+      if(s.warehouse && typeof s.warehouse==='object'){ for(var wk in warehouse){ if(typeof s.warehouse[wk]==='number') warehouse[wk]=s.warehouse[wk]; } }
+      if(typeof s.warehouseCap === 'number') warehouseCap = s.warehouseCap;
+      if(s.inventory && typeof s.inventory==='object'){ for(var ik in inventory){ if(typeof s.inventory[ik]==='number') inventory[ik]=s.inventory[ik]; } }
+      if(s.activeBoosts && typeof s.activeBoosts==='object') activeBoosts = s.activeBoosts;
+      if(s.townBuilt && typeof s.townBuilt==='object') townBuilt = s.townBuilt;
+      if(typeof s.townPeople === 'number') townPeople = s.townPeople;
+      if(s.townRent && typeof s.townRent==='object') townRent = s.townRent;
+      if(typeof s.cityFed === 'boolean') cityFed = s.cityFed;
+      if(s.votes && typeof s.votes==='object') votes = s.votes;
+      if(typeof s.votedAlready === 'boolean') votedAlready = s.votedAlready;
+      if(s.skins && typeof s.skins==='object'){ for(var sk in skins){ if(typeof s.skins[sk]==='boolean') skins[sk]=s.skins[sk]; } }
+      if(typeof s.tutorialShown === 'boolean') tutorialShown = s.tutorialShown;
+      return true;
+    }catch(e){ return false; }
+  }
   function cellBoostActive(g, i, key){ return g.cellBoosts[i] && g.cellBoosts[i][key] && g.cellBoosts[i][key] > Date.now(); }
   function applyCellBoost(g, i, key, ms){ if(!g.cellBoosts[i]) g.cellBoosts[i] = {}; g.cellBoosts[i][key] = Date.now()+ms; }
 
@@ -1094,6 +1206,10 @@
   var tutHint=$('tutHint'), tutHintText=$('tutHintText'), tutHintOk=$('tutHintOk');
   var selected = null;
   var musicOn = true, sfxOn = true, audioCtx = null, tutorialShown = false;
+  /* load the saved game now that every piece of state it can touch has its default value in
+     place — this has to run after the very last `var ... = <default>` above, since a save
+     restored earlier would just get overwritten by those defaults as they execute */
+  var hadSave = loadGame();
   /* remember the music/sfx switches between launches — a player who turns off music
      shouldn't have to do it again every time they reopen the game */
   var SOUND_PREFS_KEY = 'dobrySadSoundPrefs';
@@ -1648,28 +1764,52 @@
     comboEl.classList.add('show'); clearTimeout(comboResetTimer); comboResetTimer = setTimeout(resetCombo, 2600);
   }
 
+  /* a little "explosion" of shards flying outward from (cx,cy) — pixel coordinates relative
+     to fruitLayer — used when a coin/fruit is caught */
+  function spawnBurst(cx, cy, colorA, colorB){
+    for(var i=0;i<7;i++){
+      var piece = document.createElement('div'); piece.className='burst-piece';
+      var angle = (i/7)*Math.PI*2 + Math.random()*0.6;
+      var dist = 16 + Math.random()*16;
+      piece.style.setProperty('--bx', (Math.cos(angle)*dist).toFixed(1)+'px');
+      piece.style.setProperty('--by', (Math.sin(angle)*dist).toFixed(1)+'px');
+      piece.style.setProperty('--br', Math.round(Math.random()*360-180)+'deg');
+      piece.style.left = cx+'px'; piece.style.top = cy+'px';
+      piece.style.background = (i%2===0) ? colorA : colorB;
+      fruitLayer.appendChild(piece);
+      (function(p){ setTimeout(function(){ p.remove(); }, 560); })(piece);
+    }
+  }
   function spawnFruit(){
     if(screen !== 'garden') return;
     var prod = totalProduction(active); if(prod<=0) return;
     var chance = Math.min(0.75, 0.15+prod/40); if(Math.random()>chance) return;
     var isGold = Math.random()<0.12;
     var el = document.createElement('div'); el.className='fruit'+(isGold?' gold':'');
-    el.textContent = isGold ? gardenDef(active).secret : '🪙';
-    var left = 10+Math.random()*80; el.style.left = left+'%'; el.style.top='-8%';
+    el.innerHTML = '<svg><use href="#'+(isGold?'ic-coin-gold':'ic-coin')+'"/></svg>' +
+      (isGold ? '<span class="fruit-glyph">'+gardenDef(active).secret+'</span>' : '');
+    var left = 10+Math.random()*80; el.style.left = left+'%'; el.style.top='-9%';
     fruitLayer.appendChild(el);
     var duration = 2200+Math.random()*1000;
-    requestAnimationFrame(function(){ el.style.transition='top '+duration+'ms linear'; el.style.top='108%'; });
+    requestAnimationFrame(function(){
+      el.style.transition = 'top '+duration+'ms linear, scale '+duration+'ms linear';
+      el.style.top = '108%';
+      el.style.scale = '1.25';
+    });
     var caught=false;
     el.addEventListener('click', function(){
       if(caught) return; caught=true;
       var value = Math.round((isGold?15:2)*combo*(1+prod*0.05));
       dobro += value; addAllTime(value); bumpCombo();
       sfx(isGold ? 'gold' : 'coin');
+      var layerRect = fruitLayer.getBoundingClientRect(), elRect = el.getBoundingClientRect();
+      var cx = elRect.left + elRect.width/2 - layerRect.left, cy = elRect.top + elRect.height/2 - layerRect.top;
       var plus = document.createElement('div'); plus.className='float-plus'; plus.textContent='+'+value;
-      plus.style.left = el.style.left; plus.style.top = el.style.top;
+      plus.style.left = cx+'px'; plus.style.top = cy+'px';
       fruitLayer.appendChild(plus); setTimeout(function(){ plus.remove(); }, 950);
-      el.style.transition='opacity .15s ease'; el.style.opacity='0';
-      renderStats(); setTimeout(function(){ el.remove(); }, 160);
+      spawnBurst(cx, cy, isGold?'#c9a6ee':'#f1cb6e', isGold?'#6a4f9e':'#a8791f');
+      el.style.transition='opacity .12s ease'; el.style.opacity='0';
+      renderStats(); setTimeout(function(){ el.remove(); }, 140);
     });
     setTimeout(function(){ if(!caught){ el.remove(); resetCombo(); } }, duration+60);
   }
@@ -2322,6 +2462,7 @@
   }
 
   renderAll();
+  var tickCount = 0;
   setInterval(function(){
     tickFood();
     var perSec = totalProduction(active);
@@ -2330,7 +2471,13 @@
     renderStats();
     if(screen==='garden') renderGrid();
     if(screen==='map') renderWarehouse();
+    tickCount++;
+    if(tickCount % 5 === 0) saveGame();
   }, 1000);
   setInterval(spawnFruit, 1400);
+  /* also save the instant the app is backgrounded/closed — a mobile WebView can be killed
+     without warning once hidden, so waiting for the next 5s tick isn't reliable enough */
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') saveGame(); });
+  window.addEventListener('pagehide', saveGame);
 })();
 </script>
