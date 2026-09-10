@@ -122,6 +122,15 @@
   function drawVisibleGround(c, L, range, GameAPI, tinting){
     var TW = GEO.TW, TH = GEO.TH;
     var activeIdx = GameAPI.getActiveCityIdx();
+    // occupancy lookup for the ground-patch-under-buildings feature -- rebuilt every frame (cheap:
+    // at most ~30 plots per city) rather than cached, since it must always match what drawDynamic
+    // is about to draw on top of it a few lines later in the same frame.
+    var occupied = {};
+    var citiesNow = GameAPI.getCities();
+    var cityNow = citiesNow && citiesNow[activeIdx];
+    if(cityNow){
+      cityNow.plots.forEach(function(plot){ if(plot) occupied[plot.col+','+plot.row] = true; });
+    }
     for(var row = range.r0; row <= range.r1; row++){
       for(var col = range.c0; col <= range.c1; col++){
         var type = GEO.tileTypeAt(L, col, row);
@@ -132,6 +141,7 @@
         var isRoad = !!roads[col+','+row];
         if(isRoad) Assets.drawRoadTile(c, p.x, p.y, TW, TH, col*31+row*17+1);
         else Assets.drawPlotGroundTile(c, p.x, p.y, TW, TH, col*31+row*17+1);
+        if(!isRoad && occupied[col+','+row]) Assets.drawBuildingPad(c, p.x, p.y, TW, TH);
         if(tinting && !isRoad){
           var ok = GameAPI.canBuildAt(activeIdx, col, row);
           Assets.drawBuildTint(c, p.x, p.y, TW, TH, ok);

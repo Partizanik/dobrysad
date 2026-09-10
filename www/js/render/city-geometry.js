@@ -19,11 +19,12 @@
 
   var TW = 84, TH = 42;              // tile width/height in content-space units (2:1 iso)
   var BUILD_HEADROOM = 190;          // extra top padding so tall buildings never clip the fit view
-  var MIN_SCALE = 0.5, MAX_SCALE = 3.2;
+  var MIN_SCALE = 0.5, MAX_SCALE = 5.0;
   // how close the view starts when the fullscreen city first opens -- a Hay Day/Township-style
   // close-up on the player's own street, not a zoomed-out view of the whole (huge) field. The
   // player can always pinch or hit the reset button to zoom back out to fitView's full-field shot.
-  var INITIAL_SCALE = 2.1;
+  // MAX_SCALE sits well above this so pinch/+ still has real extra room to zoom in further.
+  var INITIAL_SCALE = 2.6;
 
   function isoToLocal(col, row){
     return { x: (col - row) * (TW/2), y: (col + row) * (TH/2) };

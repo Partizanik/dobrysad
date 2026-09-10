@@ -107,6 +107,19 @@
     ctx.strokeStyle = 'rgba(60,90,35,0.3)'; ctx.lineWidth = Math.max(1, tw*0.012);
     diamondPath(ctx, cx, cy, tw*0.96, th*0.96); ctx.stroke();
   }
+  /* ground patch under a placed building: a warm dirt/path tone, drawn slightly larger than the
+     tile so it reads as "a bit of worked ground around the building" rather than a flat color
+     swap -- requested so built plots visually stand out from bare grass at a glance. Drawn in the
+     ground pass, before the building sprite itself, so it sits underneath/around it. */
+  function drawBuildingPad(ctx, cx, cy, tw, th){
+    var padW = tw*1.18, padH = th*1.18;
+    var g = ctx.createRadialGradient(cx, cy, tw*0.05, cx, cy, padW*0.52);
+    g.addColorStop(0, '#d9c295'); g.addColorStop(1, '#c2a76f');
+    ctx.fillStyle = g; diamondPath(ctx, cx, cy, padW, padH); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,45,0.35)'; ctx.lineWidth = Math.max(1, tw*0.014);
+    diamondPath(ctx, cx, cy, padW, padH); ctx.stroke();
+  }
+
   /* free-placement feedback while a building is "in hand" (pendingPlacement) or lifted: a soft
      green wash over grass tiles the player could legally drop onto right now, a soft red wash
      over ones they can't (too close to another building, or off the buildable field) -- drawn as
@@ -787,6 +800,7 @@
     drawWaterTile: drawWaterTile,
     drawPromenadeTile: drawPromenadeTile,
     drawPlotGroundTile: drawPlotGroundTile,
+    drawBuildingPad: drawBuildingPad,
     drawBuildTint: drawBuildTint,
     seededRandom: mulberry32
   };
