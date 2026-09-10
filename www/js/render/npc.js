@@ -65,7 +65,9 @@
     var s = {
       kind: kind, slot: slot, temp: !!temp,
       col: start.col, row: start.row, tcol: start.col, trow: start.row, t: 1,
-      speed: kind === 'car' ? rand(1.1, 1.5) : rand(0.42, 0.58),
+      // slowed down from the original (1.1-1.5 / 0.42-0.58) -- at full speed cars crossed a whole
+      // tile in under a second, which read as scurrying/twitchy rather than an ambient street.
+      speed: kind === 'car' ? rand(0.55, 0.75) : rand(0.22, 0.3),
       dir: 0, life: 0
     };
     sprites.push(s);

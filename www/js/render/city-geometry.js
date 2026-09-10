@@ -175,6 +175,15 @@
       carveH(b.col, best.col, b.row);
       carveV(b.row, best.row, best.col);
     });
+
+    // Every carve above happens to include the building's OWN tile as one of its endpoints (the
+    // driveway's destination, or the spine passing straight through it when a building sits on
+    // the seed row) -- which made that tile a graph node NpcLife would walk people/cars onto,
+    // i.e. straight through the middle of the building sprite. Buildings were never meant to be
+    // walkable; strip them back out as a final pass so the network reaches right up to a
+    // building's doorstep and stops there, instead of going through it. The rest of each carved
+    // line stays intact and connected to the spine, so this never disconnects anything.
+    buildings.forEach(function(b){ delete roads[b.col+','+b.row]; });
     return roads;
   }
 

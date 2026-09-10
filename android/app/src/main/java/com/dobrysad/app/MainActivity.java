@@ -28,8 +28,19 @@ public class MainActivity extends BridgeActivity {
         controller.hide(WindowInsetsCompat.Type.systemBars());
     }
 
+    /* The manifest points MainActivity at AppTheme.NoActionBarLaunch (parent Theme.SplashScreen)
+       so the OS-drawn splash screen has the right background -- but nothing ever switched the
+       activity back to a normal theme afterwards (no @capacitor/splash-screen plugin is
+       installed to do it, and the splash API doesn't do it for you). Left on the splash theme
+       permanently, the window never gets the plain AppTheme.NoActionBar decor the rest of this
+       class assumes, which is what let the real system status bar (with the real clock) and a
+       device/theme-dependent letterboxed background keep showing no matter what
+       hideSystemBars() did. setTheme() must run before super.onCreate() -- that's the documented
+       place for it, same as the AndroidX SplashScreen API's own installSplashScreen(this) call
+       would use. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
         hideSystemBars();
     }

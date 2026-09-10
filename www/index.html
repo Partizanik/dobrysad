@@ -14,8 +14,33 @@
   /* runs synchronously, before first paint, so there's no flash of the desktop marketing
      layout before the real app switches to full-screen. Capacitor injects window.Capacitor
      into the WebView it controls — a real browser (or this same file opened as a plain demo
-     page) never has it, so this only fires inside the actual installed app. */
-  if(window.Capacitor){ document.documentElement.className = 'native-app'; }
+     page) never has it, so this only fires inside the actual installed app.
+     The single synchronous check used to be the ONLY check -- on a real device the native
+     bridge injection can lose the race against this inline script (it depends on WebView/
+     Capacitor version timing, not guaranteed), which silently left the whole page stuck in
+     the desktop demo/marketing layout: a narrow 346px-wide ".phone" mockup centered on the
+     real system background (the "coloured stripes down the sides" report) with the real
+     system status bar showing above it (the "clock's back" report) -- neither is an actual
+     status-bar/layout bug, both are just this detection never firing. So this now also
+     re-checks a few times shortly after (Capacitor may attach a beat later than this script
+     runs) and, as a last resort, off the Capacitor.getPlatform()==='android' check the
+     capacitor-android bridge itself always exposes once loaded -- whichever check succeeds
+     first applies the class; none of them ever remove it once set. */
+  (function(){
+    function markNative(){ document.documentElement.classList.add('native-app'); }
+    function isNative(){
+      return !!window.Capacitor || location.protocol === 'capacitor:';
+    }
+    if(isNative()){ markNative(); return; }
+    var tries = 0;
+    var t = setInterval(function(){
+      tries++;
+      if(isNative()){ markNative(); clearInterval(t); }
+      else if(tries > 40){ clearInterval(t); } // ~2s of retries, then give up (real demo page)
+    }, 50);
+    document.addEventListener('DOMContentLoaded', function(){ if(isNative()) markNative(); });
+    window.addEventListener('load', function(){ if(isNative()) markNative(); });
+  })();
 </script>
 <style>
   :root{
@@ -1704,8 +1729,24 @@
      layout the decorative always-visible mini city-strip preview (renderCityStrip's thumbnail)
      arranges its icons in, purely for that glance-sized visual, never for real placement. */
   var CITY_COLS = 5, CITY_ROWS = 6;
-  var FIELD_COLS = 100, FIELD_ROWS = 100, FIELD_WATER_ROWS = 5, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
+  /* Field size trimmed down (was 100x100) and the sea band widened (was 5 rows) -- the old field
+     was so much bigger than any city ever actually gets built (CITY_PLOTS capacity was in the
+     thousands) that almost all of it was empty land nobody ever panned out to, and the shore felt
+     thin next to it. Kept generous enough that a very active city still has room to grow. */
+  var FIELD_COLS = 70, FIELD_ROWS = 64, FIELD_WATER_ROWS = 8, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
   var FIELD_ROW0 = FIELD_WATER_ROWS + FIELD_PROMENADE_ROWS; // first buildable field row
+  /* The buildable land is clipped to a rounded (elliptical) region well inside the field
+     rectangle, instead of every tile up to the raw edges -- a plain square lot never read as an
+     island/peninsula, and letting the player build right up against the field's outer border
+     looked like the map just stopped rather than like a coastline. isFieldBuildableTile() below
+     checks both the rectangle AND this ellipse; the margin (2 tiles) is what keeps the outermost
+     ring of columns/rows permanently non-buildable on every side. */
+  var FIELD_LAND_ROWS = FIELD_ROWS - FIELD_ROW0;
+  var FIELD_ELLIPSE_MARGIN = 2;
+  var FIELD_ELLIPSE_CX = (FIELD_COLS-1)/2;
+  var FIELD_ELLIPSE_CY = FIELD_ROW0 + (FIELD_LAND_ROWS-1)/2;
+  var FIELD_ELLIPSE_RX = FIELD_COLS/2 - FIELD_ELLIPSE_MARGIN;
+  var FIELD_ELLIPSE_RY = FIELD_LAND_ROWS/2 - FIELD_ELLIPSE_MARGIN;
   /* true max capacity of one city's field: buildings must sit at least FIELD_MIN_GAP tiles apart
      (Chebyshev distance) in every direction, so the densest legal packing places one building
      every (FIELD_MIN_GAP+1) tiles along each axis -- this is the honest "how many charity
@@ -1735,7 +1776,9 @@
      that the tap would then deny. excludeSlotIdx lets a lift-in-progress check against every
      OTHER building without rejecting the tile the lifted building is already standing on. */
   function isFieldBuildableTile(col, row){
-    return col>=0 && col<FIELD_COLS && row>=FIELD_ROW0 && row<FIELD_ROWS;
+    if(col<0 || col>=FIELD_COLS || row<FIELD_ROW0 || row>=FIELD_ROWS) return false;
+    var dx = (col-FIELD_ELLIPSE_CX)/FIELD_ELLIPSE_RX, dy = (row-FIELD_ELLIPSE_CY)/FIELD_ELLIPSE_RY;
+    return (dx*dx + dy*dy) <= 1;
   }
   function findPlotAt(city, col, row){
     for(var i=0;i<city.plots.length;i++){ var p=city.plots[i]; if(p && p.col===col && p.row===row) return i; }
@@ -3360,13 +3403,11 @@
       renderAll(); toast(t.toast.materialsBought); sfx('buy'); saveGame(); setTimeout(thankSupporter, 2900);
     };
 
-    cat(s.catCosmetic);
-    [['sunset','skinSunset',9],['midnight','skinMidnight',12]].forEach(function(row){
-      var key=row[0], defKey=row[1], price=row[2];
-      var owned = skins[key]; var def = s[defKey];
-      var el = item('<div class="row1"><div class="name">'+def.name+'</div><button '+(owned?'disabled':'')+'>'+(owned?s.owned:price+' zł')+'</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityCosmetic+'</div>');
-      if(!owned) el.querySelector('button').onclick = function(){ skins[key]=true; renderAll(); toast(t.toast.skinApplied(def.name)); sfx('buy'); setTimeout(thankSupporter, 2900); };
-    });
+    // The old "Decorations" category (skinSunset/skinMidnight) only ever toggled a `skins` flag
+    // that no rendering code anywhere actually read -- a cosmetic-in-name-only purchase that did
+    // nothing to the garden's look. Removed at the user's request rather than wired up, since a
+    // real cosmetic/boost lineup for this slot is still being redesigned (see the shop economy
+    // notes). `skins` and its save-load are left in place so old saves still load cleanly.
   }
 
   /* ---- leaderboard ---- */
@@ -3943,7 +3984,8 @@
        layout math can never drift from this file's own idea of what's a legal building tile
        (canBuildAt is the actual gate; this is just the numbers the renderer draws from). */
     getCityGridDims: function(){
-      return {cols:FIELD_COLS, rows:FIELD_ROWS, waterRows:FIELD_WATER_ROWS, promenadeRows:FIELD_PROMENADE_ROWS, minGap:FIELD_MIN_GAP, plotCount:CITY_PLOTS};
+      return {cols:FIELD_COLS, rows:FIELD_ROWS, waterRows:FIELD_WATER_ROWS, promenadeRows:FIELD_PROMENADE_ROWS, minGap:FIELD_MIN_GAP, plotCount:CITY_PLOTS,
+        buildableEllipse:{cx:FIELD_ELLIPSE_CX, cy:FIELD_ELLIPSE_CY, rx:FIELD_ELLIPSE_RX, ry:FIELD_ELLIPSE_RY}};
     },
     getCities: function(){ return cities; },
     getActiveCityIdx: function(){ return activeCityIdx; },
