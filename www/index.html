@@ -2667,10 +2667,7 @@
     if(adLoading) return; var t = T();
     adLoading = true; adBtn._loading = true; adBtn.textContent = t.adBtnLoading;
     setTimeout(function(){
-      /* rebalanced so ad-watching and the 50zł-for-50-hearts money pack land in the same
-         ballpark of "hearts per effort" -- roughly a 50/50 free-vs-paid economy instead of ads
-         feeling like a token reward next to buying hearts outright. */
-      hearts += 15; adLoading=false; adBtn._loading=false; adBtn.textContent = T().adBtn;
+      hearts += 5; adLoading=false; adBtn._loading=false; adBtn.textContent = T().adBtn;
       adWatched();
       renderStats(); toast(T().toast.adReward, 3100); sfx('ad');
     }, 1100);
@@ -3264,7 +3261,7 @@
     /* boost the WHOLE active garden to its next level at once, one real-money tap -- distinct
        from the single-plant heart-powered activators above (bio/fertilizer/growlamp), which only
        ever touch one chosen cell. */
-    var boostAllEl = item('<div class="row1"><div class="name">'+s.boostAllGarden.name+'</div><button id="buyBoostAllGarden">9,99 zł</button></div><div class="desc">'+s.boostAllGarden.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    var boostAllEl = item('<div class="row1"><div class="name">'+s.boostAllGarden.name+'</div><button id="buyBoostAllGarden">2,99 zł</button></div><div class="desc">'+s.boostAllGarden.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
     boostAllEl.querySelector('button').onclick = function(){
       var g = ensureGarden(active); var any=false;
       for(var i=0;i<g.board.length;i++){
@@ -3842,6 +3839,28 @@
     renderWarehouse();
     return true;
   }
+  /* ---- Android hardware back button --------------------------------------------------------
+     @capacitor/app (the plugin that normally exposes a JS 'backButton' event) isn't installed
+     in this project, so instead MainActivity.java overrides onBackPressed() and calls this
+     function directly via WebView.evaluateJavascript(), reading the string it returns
+     ("true"/"false") to decide whether to minimize the app. This needed no new native plugin at
+     all -- just the one small native override, since evaluateJavascript is plain WebView API.
+     Closes whatever's on top first (confirm dialog > profile/info/settings > build picker > city
+     map), then falls back to the bottom-nav tab, and only tells native to minimize once we're
+     genuinely at the garden home screen with nothing open. */
+  function handleAndroidBack(){
+    if(confirmModal.classList.contains('show')){ confirmModal.classList.remove('show'); return false; }
+    if(profileModal.classList.contains('show')){ profileModal.classList.remove('show'); return false; }
+    if(infoModal.classList.contains('show')){ infoModal.classList.remove('show'); return false; }
+    if(settingsModal.classList.contains('show')){ settingsModal.classList.remove('show'); return false; }
+    if(buildFullModal.classList.contains('show')){ closeBuildFull(); return false; }
+    if(warehouseFullModal.classList.contains('show')){ closeWarehouseFull(); return false; }
+    if(cityFullModal.classList.contains('show')){ closeCityFull(); return false; }
+    if(screen !== 'garden'){ switchScreen('garden'); return false; }
+    return true; // nothing left to close -- let native minimize the app
+  }
+  window.__handleAndroidBack = function(){ try{ return handleAndroidBack(); }catch(e){ return true; } };
+
   window.GameAPI = {
     getBuildingCatalog: function(){ return BUILDINGS; },
     getBuildingDef: function(key){ return BUILDING_BY_KEY[key] || null; },
