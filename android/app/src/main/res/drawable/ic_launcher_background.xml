@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Dobry Sad app icon background: solid soft-cream fill, matching the game's own light theme
-     (see www/index.html --bg). Replaces the default Android-Studio-template teal grid. -->
+     (see www/index.html, the bg custom property). Replaces the default Android-Studio-template
+     teal grid. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
