@@ -53,16 +53,27 @@
      numbers (see canBuildAt() there). */
   function buildLayout(dims){
     var cols = dims.cols, rows = dims.rows;
+    // waterRows/promenadeRows are now a PER-SIDE count (index.html's FIELD_WATER_ROWS/
+    // FIELD_PROMENADE_ROWS) -- the sea wraps both the north (top) and south (bottom) edges of the
+    // field instead of only the north edge, so the coastline reads as a proper island with open
+    // water on two sides rather than a lake on one edge of a square lot.
     var waterRows = dims.waterRows != null ? dims.waterRows : 5;
     var promenadeRows = dims.promenadeRows != null ? dims.promenadeRows : 1;
     var minCol = 0, maxCol = cols-1, minRow = 0, maxRow = rows-1;
-    var waterRow0 = 0, waterRow1 = waterRows-1;
-    var promRow0 = waterRows, promRow1 = waterRows+promenadeRows-1;
-    var fieldRow0 = waterRows+promenadeRows, fieldRow1 = maxRow;
+    // north band
+    var waterRow1N = waterRows-1;
+    var promRow0N = waterRows, promRow1N = waterRows+promenadeRows-1;
+    var fieldRow0 = waterRows+promenadeRows;
+    // south band (mirrors the north band from the bottom edge)
+    var fieldRow1 = maxRow - waterRows - promenadeRows;
+    var promRow0S = fieldRow1+1, promRow1S = fieldRow1+promenadeRows;
+    var waterRow0S = promRow1S+1;
     // Same ellipse index.html's isFieldBuildableTile() uses to decide where building is legal --
     // reusing it here too (rather than only gating placement) is what actually makes the map READ
-    // as a round island: tiles outside it now render as open water instead of grass, so the coast
-    // truly curves instead of just carrying an invisible "can't build here" rule over a rectangle.
+    // as a round island: it now spans the WHOLE field (water bands included, not just the land
+    // band), so tiles outside it render nothing at all (see tileTypeAt below) and the whole map --
+    // sea and land together -- comes out as one continuous oval instead of a diamond with an oval
+    // cut out of its middle.
     var ellipse = dims.buildableEllipse || null;
 
     // bounding box of the projected district, in local iso-projection units (before origin shift)
@@ -81,8 +92,13 @@
     return {
       cols: cols, rows: rows,
       minCol: minCol, maxCol: maxCol, minRow: minRow, maxRow: maxRow,
-      waterRow0: waterRow0, waterRow1: waterRow1, promRow0: promRow0, promRow1: promRow1,
+      // kept as the "primary" (north) shore names too -- water-life.js, the landmark spots, and
+      // the tree/lamppost scatter in city-renderer.js all only ever cared about "the" shore, and
+      // keeping these names pointed at the north band means none of that code needs to change.
+      waterRow0: 0, waterRow1: waterRow1N, promRow0: promRow0N, promRow1: promRow1N,
       fieldRow0: fieldRow0, fieldRow1: fieldRow1,
+      // new south-shore fields, for anything that wants to know about the second coastline
+      promRow0S: promRow0S, promRow1S: promRow1S, waterRow0S: waterRow0S,
       ellipse: ellipse,
       originX: originX, originY: originY,
       contentW: (hx-lx), contentH: (hy-ly) + BUILD_HEADROOM
@@ -119,17 +135,19 @@
      building or is a road; that's layered on top by computeRoadTiles()/city-renderer.js. */
   function tileTypeAt(layout, col, row){
     if(col < layout.minCol || col > layout.maxCol || row < layout.minRow || row > layout.maxRow) return null;
-    if(row <= layout.waterRow1) return 'water';
-    if(row <= layout.promRow1) return 'promenade';
-    // beyond the buildable ellipse, field tiles give way to open water -- this is the actual
-    // coastline; isFieldBuildableTile() in index.html runs the identical test for build legality,
-    // so the two can never visually disagree (no invisible "shore" past which building silently
-    // fails for no visible reason).
+    // the ellipse now bounds the WHOLE map -- water and land alike -- so anything outside it is
+    // simply not drawn at all (null), instead of falling back to a rectangular water fill. That's
+    // the actual "make the whole map round, not just the island" fix: without this, the corners of
+    // the field rectangle (which used to always be water) kept the overall silhouette a diamond.
     if(layout.ellipse){
       var e = layout.ellipse;
       var dx = (col-e.cx)/e.rx, dy = (row-e.cy)/e.ry;
-      if(dx*dx + dy*dy > 1) return 'water';
+      if(dx*dx + dy*dy > 1) return null;
     }
+    // inside the oval: north sea, south sea (mirrored), or land in between -- see buildLayout()
+    // for how these row bands are sized (waterRows/promenadeRows are a PER-SIDE count).
+    if(row <= layout.waterRow1 || row >= layout.waterRow0S) return 'water';
+    if(row <= layout.promRow1 || row >= layout.promRow0S) return 'promenade';
     return 'field';
   }
 

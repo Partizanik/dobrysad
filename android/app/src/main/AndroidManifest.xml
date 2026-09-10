@@ -15,7 +15,14 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:exported="true">
+            <!-- The whole UI (index.html) is built as a portrait phone screen: header/nav
+                 top and bottom, one column in between. Without this, a tablet (or a phone
+                 rotated sideways) would render that exact layout stretched into a landscape
+                 rectangle, which is the "on rotation it also breaks" bug reported on-device.
+                 Locking portrait here is what actually prevents that layout from ever being
+                 reachable, rather than trying to redesign the UI to also work in landscape. -->
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

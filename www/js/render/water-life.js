@@ -112,17 +112,23 @@
     // shoreline foam -- one synced frame across every visible column right at the water's edge,
     // bounded to the current viewport (falls back to the whole field width when no range is
     // given, e.g. from a test calling this directly) so it costs nothing extra at any field size.
+    // The field now has a sea on BOTH the north and south edges (see city-geometry.js), so this
+    // draws the same synced foam line along whichever shore row(s) fall in view -- south included
+    // when it has one (older/smaller layouts without waterRow0S just skip that half, harmlessly).
     var c0 = range ? Math.max(L.minCol, range.c0) : L.minCol;
     var c1 = range ? Math.min(L.maxCol, range.c1) : L.maxCol;
     var frameN = 1 + Math.floor(foamElapsed*FOAM_FPS) % FOAM_FRAMES;
     var slot = 'wave_' + (frameN<10?'0'+frameN:frameN);
-    var foamRow = L.waterRow1 + 0.5;
-    for(var fc = Math.floor(c0); fc <= Math.ceil(c1); fc++){
-      (function(fc){
-        var p = GEO.isoToContent(L, fc, foamRow);
-        out.push({ depth: GEO.depthAt(L, fc, foamRow) + 0.1, draw: function(ctx){ Assets.blit(ctx, slot, p.x, p.y); } });
-      })(fc);
-    }
+    var foamRows = [L.waterRow1 + 0.5];
+    if(L.waterRow0S != null) foamRows.push(L.waterRow0S - 0.5);
+    foamRows.forEach(function(foamRow){
+      for(var fc = Math.floor(c0); fc <= Math.ceil(c1); fc++){
+        (function(fc){
+          var p = GEO.isoToContent(L, fc, foamRow);
+          out.push({ depth: GEO.depthAt(L, fc, foamRow) + 0.1, draw: function(ctx){ Assets.blit(ctx, slot, p.x, p.y); } });
+        })(fc);
+      }
+    });
     return out;
   }
 

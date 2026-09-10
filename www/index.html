@@ -12,32 +12,37 @@
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <script>
   /* runs synchronously, before first paint, so there's no flash of the desktop marketing
-     layout before the real app switches to full-screen. Capacitor injects window.Capacitor
-     into the WebView it controls — a real browser (or this same file opened as a plain demo
-     page) never has it, so this only fires inside the actual installed app.
-     The single synchronous check used to be the ONLY check -- on a real device the native
-     bridge injection can lose the race against this inline script (it depends on WebView/
-     Capacitor version timing, not guaranteed), which silently left the whole page stuck in
-     the desktop demo/marketing layout: a narrow 346px-wide ".phone" mockup centered on the
-     real system background (the "coloured stripes down the sides" report) with the real
-     system status bar showing above it (the "clock's back" report) -- neither is an actual
-     status-bar/layout bug, both are just this detection never firing. So this now also
-     re-checks a few times shortly after (Capacitor may attach a beat later than this script
-     runs) and, as a last resort, off the Capacitor.getPlatform()==='android' check the
-     capacitor-android bridge itself always exposes once loaded -- whichever check succeeds
-     first applies the class; none of them ever remove it once set. */
+     layout before the real app switches to full-screen.
+
+     History: this used to check only window.Capacitor (injected by the bridge into the WebView
+     it controls). On a real device that injection can lose the race against this inline script
+     (WebView/Capacitor version timing, not guaranteed) -- a later fix added a retry loop
+     (setInterval, ~2s then give up), which helped but still had a hard cutoff: if the bridge
+     attaches even a beat later than that (slow cold boot, first launch after install, etc.) the
+     loop gives up for good and the page is stuck for the entire session in the desktop demo/
+     marketing layout -- a narrow 346px ".phone" mockup on the real system background (the
+     "coloured stripes down the sides" report) with the real system status bar showing above it
+     (the "clock's back, from the very start" report). That's exactly the failure mode still
+     being seen, so the retry loop alone isn't good enough.
+
+     The actual fix: MainActivity.java now appends a fixed marker ("DobrySadNativeApp") to the
+     WebView's User-Agent string before the page ever loads. navigator.userAgent is available
+     the instant this script runs -- synchronously, zero injection delay, nothing to race --
+     unlike window.Capacitor, which depends on the bridge's own async setup. This is the
+     primary check now. window.Capacitor / capacitor: protocol are kept as a fallback signal
+     (e.g. iOS, where no such native wrapper change exists), with polling that no longer gives
+     up after a fixed number of tries -- worst case it just keeps checking, harmlessly, instead
+     of ever silently abandoning detection for the rest of the session. */
   (function(){
     function markNative(){ document.documentElement.classList.add('native-app'); }
     function isNative(){
-      return !!window.Capacitor || location.protocol === 'capacitor:';
+      return (navigator.userAgent.indexOf('DobrySadNativeApp') !== -1) ||
+        !!window.Capacitor || location.protocol === 'capacitor:';
     }
     if(isNative()){ markNative(); return; }
-    var tries = 0;
     var t = setInterval(function(){
-      tries++;
       if(isNative()){ markNative(); clearInterval(t); }
-      else if(tries > 40){ clearInterval(t); } // ~2s of retries, then give up (real demo page)
-    }, 50);
+    }, 100); // no give-up cutoff -- see comment above
     document.addEventListener('DOMContentLoaded', function(){ if(isNative()) markNative(); });
     window.addEventListener('load', function(){ if(isNative()) markNative(); });
   })();
@@ -586,18 +591,33 @@
 
   /* ---- running as the real installed app (see the inline script in <head>) — the marketing
      copy around the phone mockup is only for this file's role as a demo/preview page, so it
-     disappears and the mockup itself fills the screen edge-to-edge instead of sitting in a
-     fake bezel. Capped at 480px and centered rather than stretched to 100vw so a tablet gets
-     a comfortable reading column instead of a comically wide grid. ---- */
+     disappears and the mockup itself fills the screen edge-to-edge, full width and height, on
+     every device -- phone or tablet, portrait or landscape (previously capped at 480px/centered
+     on the theory that a tablet should get "a comfortable reading column" instead of stretching;
+     in practice that just left tablets looking broken -- app squeezed in the middle with empty
+     margins either side -- so the cap is gone; see AndroidManifest.xml for the separate portrait
+     lock that keeps landscape from ever actually being reachable in the first place). ---- */
   .native-app .top, .native-app .layout > :not(.phone-wrap){display:none;}
   .native-app .page{padding:0; max-width:none;}
   .native-app .layout{display:block;}
   .native-app .phone-wrap{display:block;}
   .native-app .phone{
-    width:100%; max-width:480px; margin:0 auto; height:100vh; height:100dvh;
+    /* used to be capped at max-width:480px -- fine on a phone (narrower than that anyway), but on
+       a tablet (or any phone in landscape) it left the real app squeezed into a centred column
+       with large empty margins on both sides, which is the "displays crooked, not full-screen"
+       bug. The app's own inner layout (.screen, .navbar, etc.) is all percentage/flex based, not
+       pixel-fixed, so it stretches to fill whatever width it's given -- no reason to cap it here. */
+    width:100%; height:100vh; height:100dvh;
     border:none; border-radius:0; box-shadow:none;
   }
-  .native-app body{background:var(--bg);}
+  .native-app body{background:var(--bg); margin:0;}
+  html{height:100%;}
+  .native-app html, .native-app body{width:100%; height:100%; overflow:hidden;}
+  /* .city-fullscreen's 480px cap (see its own comment) was written assuming "the real app's
+     viewport is always phone-narrow anyway" -- true on a phone, false on a tablet, where it left
+     the city/build/warehouse fullscreen views squeezed into a centred column exactly like .phone
+     was. Same fix, same reason: let it fill whatever width the actual device has. */
+  .native-app .city-fullscreen{max-width:none;}
   /* the "1 hour offline" button is a dev/testing shortcut, not a real feature — the real app
      now computes genuine offline earnings on launch (see grantRealOfflineEarnings), so this
      stays visible only in the browser preview and disappears from the actual installed app */
@@ -1956,28 +1976,43 @@
   /* Field size trimmed down (was 100x100) and the sea band widened (was 5 rows) -- the old field
      was so much bigger than any city ever actually gets built (CITY_PLOTS capacity was in the
      thousands) that almost all of it was empty land nobody ever panned out to, and the shore felt
-     thin next to it. Kept generous enough that a very active city still has room to grow. */
-  var FIELD_COLS = 70, FIELD_ROWS = 64, FIELD_WATER_ROWS = 8, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
-  var FIELD_ROW0 = FIELD_WATER_ROWS + FIELD_PROMENADE_ROWS; // first buildable field row
+     thin next to it. Kept generous enough that a very active city still has room to grow.
+
+     The sea used to run along only the NORTH edge, inside a rectangular (diamond, once projected)
+     outer boundary -- the buildable island itself was round, but the map as a WHOLE still read as
+     a square because the water band never curved with it (it just filled the diamond's corners).
+     Now FIELD_WATER_ROWS/FIELD_PROMENADE_ROWS are each a PER-SIDE count: the sea wraps both the
+     north and south edges, and the single buildable ellipse below now governs the whole field --
+     water included -- so the entire rendered map is one continuous oval, not a diamond with an
+     oval cut out of it (see city-geometry.js's tileTypeAt, which returns null -- nothing drawn at
+     all -- outside this same ellipse). Numbers land almost exactly on an 80% land / 20% sea+
+     boardwalk split: 56 of 70 rows are land (80%), 12 water + 2 promenade rows are the coast (20%). */
+  var FIELD_COLS = 70, FIELD_ROWS = 70, FIELD_WATER_ROWS = 6, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
+  var FIELD_ROW0 = FIELD_WATER_ROWS + FIELD_PROMENADE_ROWS;                  // first buildable row (north shore)
+  var FIELD_ROW1 = FIELD_ROWS - 1 - FIELD_WATER_ROWS - FIELD_PROMENADE_ROWS; // last buildable row (south shore)
   /* The buildable land is clipped to a rounded (elliptical) region well inside the field
      rectangle, instead of every tile up to the raw edges -- a plain square lot never read as an
      island/peninsula, and letting the player build right up against the field's outer border
      looked like the map just stopped rather than like a coastline. isFieldBuildableTile() below
      checks both the rectangle AND this ellipse; the margin (2 tiles) is what keeps the outermost
-     ring of columns/rows permanently non-buildable on every side. */
-  var FIELD_LAND_ROWS = FIELD_ROWS - FIELD_ROW0;
+     ring of columns/rows permanently non-buildable on every side. The ellipse is centred on the
+     WHOLE field now (water bands included, not just the land band), since it doubles as the map's
+     overall round silhouette. (Verified this only ever GROWS the old buildable region -- every
+     tile legal under the previous rectangle+ellipse is still legal here -- so existing saved
+     building placements stay exactly where they were.) */
+  var FIELD_LAND_ROWS = FIELD_ROW1 - FIELD_ROW0 + 1;
   var FIELD_ELLIPSE_MARGIN = 2;
   var FIELD_ELLIPSE_CX = (FIELD_COLS-1)/2;
-  var FIELD_ELLIPSE_CY = FIELD_ROW0 + (FIELD_LAND_ROWS-1)/2;
+  var FIELD_ELLIPSE_CY = (FIELD_ROWS-1)/2;
   var FIELD_ELLIPSE_RX = FIELD_COLS/2 - FIELD_ELLIPSE_MARGIN;
-  var FIELD_ELLIPSE_RY = FIELD_LAND_ROWS/2 - FIELD_ELLIPSE_MARGIN;
+  var FIELD_ELLIPSE_RY = FIELD_ROWS/2 - FIELD_ELLIPSE_MARGIN;
   /* true max capacity of one city's field: buildings must sit at least FIELD_MIN_GAP tiles apart
      (Chebyshev distance) in every direction, so the densest legal packing places one building
      every (FIELD_MIN_GAP+1) tiles along each axis -- this is the honest "how many charity
      buildings actually fit here" number the city list/fullscreen header show as X/CITY_PLOTS,
      replacing the old fixed 30-slot cap that had nothing to do with the field's real size. */
   var FIELD_PACK_STEP = FIELD_MIN_GAP + 1;
-  var CITY_PLOTS = Math.ceil(FIELD_COLS/FIELD_PACK_STEP) * Math.ceil((FIELD_ROWS-FIELD_ROW0)/FIELD_PACK_STEP);
+  var CITY_PLOTS = Math.ceil(FIELD_COLS/FIELD_PACK_STEP) * Math.ceil(FIELD_LAND_ROWS/FIELD_PACK_STEP);
   var BUILDING_BY_KEY = {}; BUILDINGS.forEach(function(b){ BUILDING_BY_KEY[b.key] = b; });
   // name:null means "no custom name yet" -- display falls back to the localized "Miasto N"/"City N"
   // (cityDisplayName below), so every existing/older city with no name keeps looking the same.
@@ -2000,7 +2035,7 @@
      that the tap would then deny. excludeSlotIdx lets a lift-in-progress check against every
      OTHER building without rejecting the tile the lifted building is already standing on. */
   function isFieldBuildableTile(col, row){
-    if(col<0 || col>=FIELD_COLS || row<FIELD_ROW0 || row>=FIELD_ROWS) return false;
+    if(col<0 || col>=FIELD_COLS || row<FIELD_ROW0 || row>FIELD_ROW1) return false;
     var dx = (col-FIELD_ELLIPSE_CX)/FIELD_ELLIPSE_RX, dy = (row-FIELD_ELLIPSE_CY)/FIELD_ELLIPSE_RY;
     return (dx*dx + dy*dy) <= 1;
   }
@@ -2376,7 +2411,7 @@
   function applyStatic(){
     var t = T();
     impactLabelText.textContent = t.impactLabel;
-    plantBtn.textContent = t.plantBtn + ' (' + (seedAdLoading ? t.watchAdShortLoading : t.watchAdShort) + ')';
+    plantBtn.textContent = t.plantBtn + ' (' + plantBtnHint(t) + ')';
     adBtn.textContent = adBtn._loading ? t.adBtnLoading : t.adBtn;
     offlineBtn.textContent = t.offlineBtn;
     $('navGardenLbl').textContent = t.navGarden;
@@ -2440,7 +2475,7 @@
     });
     if(honeyStacks>0){ var hc=document.createElement('span'); hc.className='boost-chip'; hc.textContent='🍯 +'+(honeyStacks*5)+'%'; boostsEl.appendChild(hc); }
     gardenNameTag.textContent = gardenDef(active).name;
-    plantBtn.textContent = t.plantBtn + ' (' + (seedAdLoading ? t.watchAdShortLoading : t.watchAdShort) + ')';
+    plantBtn.textContent = t.plantBtn + ' (' + plantBtnHint(t) + ')';
   }
 
   /* ---- profile / stats panel: nickname + sign-in state, lifetime ads watched, and the same
@@ -2717,6 +2752,15 @@
   /* seeds are free but ad-gated (per the "everything except merging itself runs on ads" rule) —
      no currency cost, just the short ad wait like every other ad action in this demo. */
   var seedAdLoading = false;
+  /* what the "(...)" part of the Plant-a-seed button shows: while the player has any bought seed
+     packs (shop, real money) banked, plantSeed() spends those first with no ad at all -- but the
+     button used to always say "watch ad" regardless, so there was no way to tell how many bought
+     seeds were left. Show the actual banked count instead whenever there is one; only fall back to
+     the ad prompt once boughtSeeds hits 0. "×N" needs no per-language translation. */
+  function plantBtnHint(t){
+    if(boughtSeeds > 0) return '×' + boughtSeeds;
+    return seedAdLoading ? t.watchAdShortLoading : t.watchAdShort;
+  }
   function plantSeed(){
     var t = T(); var g = ensureGarden(active);
     if(seedAdLoading) return;
@@ -3893,16 +3937,43 @@
   }
   /* pause/resume (not stop/restart) for when the app is backgrounded -- keeps the track's
      current position so it always plays start-to-finish across a background/foreground cycle
-     instead of appearing to "restart" every time the player comes back. */
+     instead of appearing to "restart" every time the player comes back.
+
+     This used to only touch music_theme.mp3 -- the city-ambience beds (amb_sea/seagulls/birds/
+     traffic, see scheduleCityAmbience() below) were left alone, on the assumption that their own
+     document.hidden check inside scheduleCityAmbience()'s setTimeout loop would ramp them down to
+     silence on its own. In practice that loop is exactly the kind of JS timer many Android
+     WebViews throttle or freeze the moment the app is backgrounded or the screen locks -- so the
+     gain-ramp-to-silence it was mid-way through can get stuck part-done, and since the underlying
+     <audio> elements were never actually told to pause, the OS keeps mixing them in (the reported
+     "sea sound keeps playing after locking the screen" bug). Pausing every bed's real <audio>
+     element directly here, independent of that timer, is what actually guarantees silence. */
   function pauseMusicForBackground(){
     var bed = _mediaBeds['music_theme.mp3'];
     if(bed && !bed.el.paused){ musicPausedByVisibility = true; try{ bed.el.pause(); }catch(e){} }
+    if(cityAmbienceTimer){ clearTimeout(cityAmbienceTimer); cityAmbienceTimer = null; }
+    ['amb_sea.mp3','amb_seagulls.mp3','amb_birds.mp3','amb_traffic.mp3'].forEach(function(f){
+      var b = _mediaBeds[f];
+      if(b && !b.el.paused){ try{ b.el.pause(); }catch(e){} }
+    });
   }
   function resumeMusicFromBackground(){
-    if(!musicPausedByVisibility) return;
-    musicPausedByVisibility = false;
-    var bed = _mediaBeds['music_theme.mp3'];
-    if(bed && musicOn && musicRunning){ bed.el.play().catch(function(){}); }
+    if(musicPausedByVisibility){
+      musicPausedByVisibility = false;
+      var bed = _mediaBeds['music_theme.mp3'];
+      if(bed && musicOn && musicRunning){ bed.el.play().catch(function(){}); }
+    }
+    // only re-arm ambience if the city view is still actually open (cityAmbienceRunning tracks
+    // that independently of the background pause above) -- otherwise this would wake up ambience
+    // that was already correctly stopped before backgrounding (e.g. player closed the city, then
+    // locked the screen).
+    if(cityAmbienceRunning){
+      ['amb_sea.mp3','amb_seagulls.mp3','amb_birds.mp3','amb_traffic.mp3'].forEach(function(f){
+        var b = _mediaBeds[f];
+        if(b && b.el.paused){ b.el.play().catch(function(){}); }
+      });
+      scheduleCityAmbience();
+    }
   }
 
   /* ---- city ambience: layered on TOP of the music (which keeps playing untouched) only while

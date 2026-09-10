@@ -9,14 +9,28 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <!-- android:windowFullscreen hides the status bar (clock/battery/notification icons) as soon
+         as the theme itself is applied, before Activity.onCreate() ever runs. This matters
+         because MainActivity's hideSystemBars() (Java) can only act once onCreate() starts, which
+         is AFTER the OS has already drawn one or more frames using whichever theme is active at
+         that moment. Both themes below get it, since MainActivity briefly uses each one in turn
+         (NoActionBarLaunch during the native splash, then this one for the rest of the app):
+         without it on both, there was a real window (however brief) where the plain system status
+         bar, icons and all, was visible on top of the splash/loading screen, which is exactly
+         what was being reported ("иконки на экране загрузки и при лого"). -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
     </style>
 
-
+    <!-- Active from process start until MainActivity.onCreate() calls setTheme(), i.e. exactly
+         the native splash/"developer logo" screen the icons were showing up on. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
     </style>
 </resources>

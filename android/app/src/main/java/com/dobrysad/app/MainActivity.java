@@ -72,6 +72,18 @@ public class MainActivity extends BridgeActivity {
         if (hasFocus) hideSystemBars();
     }
 
+    /* Belt-and-suspenders alongside onWindowFocusChanged: on some devices the WebView's own first
+       layout pass (right as index.html's start screen appears) can nudge the system bars back on
+       without a focus change ever firing, which is what let them show up on the app's own
+       "Dobry Sad" start/logo screen even after onCreate()'s hideSystemBars() call. onResume() is
+       always called after onCreate() on a fresh launch, so this is a second, cheap chance to
+       reassert immersive mode right as that screen is about to be visible. */
+    @Override
+    public void onResume() {
+        super.onResume();
+        hideSystemBars();
+    }
+
     /* Hardware back button: @capacitor/app (the plugin that normally exposes a JS 'backButton'
        event) isn't installed in this project, so instead of that we ask the web app directly,
        via plain WebView.evaluateJavascript() (no extra native plugin needed for this), whether

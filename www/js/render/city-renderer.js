@@ -346,7 +346,11 @@
     if(rect.width <= 0 || rect.height <= 0) return 0;
     var world = GEO.screenToWorld(view, rect, rect.left+rect.width/2, rect.top+rect.height/2);
     var iso = GEO.contentToIso(layout, world.x, world.y);
-    var rowsPastPromenade = iso.row - layout.promRow1;
+    // the sea now wraps both the north and south edges of the field, not just the north edge --
+    // use whichever shore is nearer so the ambience swells the same way approaching either coast.
+    var distFromNorth = iso.row - layout.promRow1;
+    var distFromSouth = layout.promRow0S - iso.row;
+    var rowsPastPromenade = Math.min(distFromNorth, distFromSouth);
     return 1 - Math.max(0, Math.min(1, rowsPastPromenade / WATER_FADE_ROWS));
   }
 
