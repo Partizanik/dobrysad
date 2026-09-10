@@ -638,8 +638,13 @@
        a tablet (or any phone in landscape) it left the real app squeezed into a centred column
        with large empty margins on both sides, which is the "displays crooked, not full-screen"
        bug. The app's own inner layout (.screen, .navbar, etc.) is all percentage/flex based, not
-       pixel-fixed, so it stretches to fill whatever width it's given -- no reason to cap it here. */
-    width:100%; height:100vh; height:100dvh;
+       pixel-fixed, so it stretches to fill whatever width it's given -- no reason to cap it here.
+       BUT: removing max-width:480px here left the base .phone{max-width:346px} rule (the
+       desktop demo mockup's own cap) still in effect, since nothing was overriding it any more --
+       silently shrinking the real app back down to a narrow 346px column on every device, with
+       empty space on the side. That's the actual regression behind "запуск игры и огород уже
+       сбились" -- max-width:none is what actually removes the cap. */
+    width:100%; max-width:none; height:100vh; height:100dvh;
     border:none; border-radius:0; box-shadow:none;
   }
   .native-app body{background:var(--bg); margin:0;}
