@@ -101,16 +101,18 @@
     diamondPath(ctx, cx, cy, tw*0.88, th*0.88); ctx.stroke();
   }
   function drawPlotGroundTile(ctx, cx, cy, tw, th, seed){
-    // ~1 in 6 tiles (deterministic per-tile via the same seed city-renderer.js already derives
-    // from col/row, so it doesn't flicker between different textures frame to frame) gets a real
-    // painted ground photo instead of the flat gradient -- picked from GROUND_VARIANT_FILES,
-    // clipped to the tile's own diamond so the photo's non-tileable edges (grass blades, a raised
-    // dirt lip on two sides -- these were generated as a small diorama chunk of ground, not a
-    // seamless texture) never show past this one tile's boundary and can't visibly clash with a
-    // flat-gradient neighbour. Falls through to the plain gradient below until the chosen image
-    // has actually finished loading.
+    // Every tile gets a real painted ground photo (the Nano Banana grass art), not the flat
+    // procedural gradient -- the user explicitly wants the whole field to read as "seeded with
+    // that real grass texture", not a rare 1-in-6 accent on an otherwise flat-color field (which
+    // is how this used to work). Picked from GROUND_VARIANT_FILES, deterministic per-tile via the
+    // same seed city-renderer.js already derives from col/row (so it doesn't flicker between
+    // different textures frame to frame), and clipped to the tile's own diamond so the photo's
+    // non-tileable edges (grass blades, a raised dirt lip on two sides -- these were generated as
+    // a small diorama chunk of ground, not a seamless texture) never show past this one tile's
+    // boundary and can't visibly clash with a neighbour. Falls through to the plain gradient below
+    // only as a loading-frame placeholder, until the chosen image has actually finished loading.
     var rnd = mulberry32((seed||1) >>> 0);
-    var useVariant = rnd() < (1/6);
+    var useVariant = true;
     if(useVariant){
       var file = GROUND_VARIANT_FILES[Math.floor(rnd()*GROUND_VARIANT_FILES.length) % GROUND_VARIANT_FILES.length];
       var img = loadImg(file, GROUND_BASE);
@@ -415,51 +417,13 @@
     ctx.beginPath(); ctx.arc(w*0.24,cy+h*0.28,h*0.11,0,Math.PI*2); ctx.arc(w*0.76,cy+h*0.28,h*0.11,0,Math.PI*2); ctx.fill();
   }
 
-  /* ---- sea life: ferries, tankers, surfers, gulls -- the "big, alive sea" the waterfront now
-     has real room for (WATER_ROWS widened in city-geometry.js). Boats/surfers float on the water
-     plane and depth-sort with everything else; gulls fly above the whole scene and are drawn in
-     their own always-on-top pass by city-renderer.js, never depth-sorted with ground objects. ---- */
-  function drawFerry(ctx, w, h){
-    var cy = h*0.58;
-    ellipseShadow(ctx, w*0.5, h*0.86, w*0.46, h*0.08, 0.16);
-    ctx.fillStyle = '#e7e4d8';
-    ctx.beginPath();
-    ctx.moveTo(w*0.05, cy+h*0.2); ctx.lineTo(w*0.12, cy-h*0.06); ctx.lineTo(w*0.88, cy-h*0.06); ctx.lineTo(w*0.95, cy+h*0.2);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = shade('#e7e4d8', -30); ctx.fillRect(w*0.05, cy+h*0.12, w*0.9, h*0.09);
-    ctx.fillStyle = PALETTE.blue;
-    ctx.fillRect(w*0.3, cy-h*0.32, w*0.4, h*0.28);
-    for(var i=0;i<3;i++){ ctx.fillStyle='#dff3ff'; ctx.fillRect(w*(0.34+i*0.11), cy-h*0.24, w*0.06, h*0.09); }
-    ctx.strokeStyle = '#233020'; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(w*0.62, cy-h*0.32); ctx.lineTo(w*0.62, cy-h*0.5); ctx.stroke();
-    ctx.fillStyle = PALETTE.coral;
-    ctx.beginPath(); ctx.moveTo(w*0.62,cy-h*0.5); ctx.lineTo(w*0.72,cy-h*0.44); ctx.lineTo(w*0.62,cy-h*0.4); ctx.closePath(); ctx.fill();
-  }
-  function drawTanker(ctx, w, h){
-    var cy = h*0.6;
-    ellipseShadow(ctx, w*0.5, h*0.88, w*0.48, h*0.09, 0.18);
-    ctx.fillStyle = '#3c4550';
-    ctx.beginPath();
-    ctx.moveTo(w*0.03, cy+h*0.18); ctx.lineTo(w*0.1, cy-h*0.02); ctx.lineTo(w*0.9, cy-h*0.02); ctx.lineTo(w*0.97, cy+h*0.18);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#c0392b'; ctx.fillRect(w*0.03, cy+h*0.1, w*0.94, h*0.08);
-    // deck tanks
-    ctx.fillStyle = '#8a8f96';
-    [0.2,0.38,0.56,0.74].forEach(function(t){
-      ctx.beginPath(); ctx.ellipse(w*t, cy-h*0.08, w*0.06, h*0.06, 0, 0, Math.PI*2); ctx.fill();
-    });
-    ctx.fillStyle = '#5a6068'; ctx.fillRect(w*0.82, cy-h*0.32, w*0.14, h*0.3);
-  }
-  function drawSurfer(ctx, w, h){
-    var cy = h*0.7;
-    ellipseShadow(ctx, w*0.5, cy+h*0.1, w*0.5, h*0.1, 0.14);
-    ctx.fillStyle = '#e8dcc0';
-    ctx.beginPath(); ctx.ellipse(w*0.5, cy, w*0.46, h*0.12, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = '#c0392b';
-    ctx.beginPath(); ctx.ellipse(w*0.48, cy-h*0.16, w*0.14, h*0.14, 0, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(w*0.48, cy-h*0.34, w*0.09, 0, Math.PI*2); ctx.fillStyle='#c98f5e'; ctx.fill();
-  }
+  /* ---- sea life: gulls -- the "big, alive sea" the waterfront now has real room for (WATER_ROWS
+     widened in city-geometry.js). The old procedurally-drawn ferry/tanker/surfer sprites (a
+     placeholder look, never matching the purchased hand-painted asset packs used everywhere else
+     on the water) were removed per explicit request -- the real hand-painted rowboat/fisherman
+     asset (realImageSlot('boat_rowboat_01', ...) below) is what represents small watercraft now.
+     Gulls fly above the whole scene and are drawn in their own always-on-top pass by
+     city-renderer.js, never depth-sorted with ground objects. ---- */
   function drawSeagull(ctx, w, h, opts){
     var flap = (opts && opts.flap) || 0; // -1..1, subtle wing angle variation across baked variants
     var cy = h*0.55;
@@ -529,9 +493,6 @@
     car_02: { category:'vehicle', anchor:'center', size:{w:34, h:20}, draw:function(ctx,w,h){ drawCar(ctx,w,h,CAR_COLORS[1]); } },
     car_03: { category:'vehicle', anchor:'center', size:{w:34, h:20}, draw:function(ctx,w,h){ drawCar(ctx,w,h,CAR_COLORS[2]); } },
 
-    boat_ferry_01: { category:'vessel', anchor:'center', size:{w:70, h:44}, draw:drawFerry },
-    boat_tanker_01: { category:'vessel', anchor:'center', size:{w:84, h:40}, draw:drawTanker },
-    surfer_01: { category:'vessel', anchor:'center', size:{w:22, h:20}, draw:drawSurfer },
     seagull_01: { category:'sky', anchor:'center', size:{w:20, h:12}, draw:function(ctx,w,h){ drawSeagull(ctx,w,h,{flap:1}); } },
     seagull_02: { category:'sky', anchor:'center', size:{w:20, h:12}, draw:function(ctx,w,h){ drawSeagull(ctx,w,h,{flap:-0.4}); } }
   };

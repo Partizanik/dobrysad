@@ -91,7 +91,7 @@
     roadsSig = sig;
     var buildings = city.plots.filter(Boolean).map(function(p){ return { col: p.col, row: p.row }; });
     roads = GEO.computeRoadTiles(layout, buildings);
-    Npc.setRoads(roads, sig);
+    Npc.setRoads(roads, sig, buildings.length);
   }
 
   /* which (col,row) tiles are actually on screen right now, plus a small margin so tiles don't
@@ -123,8 +123,12 @@
   function placementInfo(GameAPI){
     var pending = GameAPI.getPendingPlacement();
     var lifted = GameAPI.getLiftedPlot();
-    if(!pending && !lifted) return null;
-    return { active: true };
+    var pendingD = GameAPI.getPendingDecor && GameAPI.getPendingDecor();
+    var liftedD = GameAPI.getLiftedDecor && GameAPI.getLiftedDecor();
+    if(!pending && !lifted && !pendingD && !liftedD) return null;
+    // decor placement has its own (looser) legality rule -- canDecorAt, not canBuildAt -- so the
+    // tint has to call the matching one or it would show green on a tile the tap would then deny.
+    return { active: true, decor: !!(pendingD || liftedD) };
   }
 
   function drawVisibleGround(c, L, range, GameAPI, tinting){
@@ -151,7 +155,7 @@
         else Assets.drawPlotGroundTile(c, p.x, p.y, TW, TH, col*31+row*17+1);
         if(!isRoad && occupied[col+','+row]) Assets.drawBuildingPad(c, p.x, p.y, TW, TH);
         if(tinting && !isRoad){
-          var ok = GameAPI.canBuildAt(activeIdx, col, row);
+          var ok = tinting.decor ? GameAPI.canDecorAt(activeIdx, col, row) : GameAPI.canBuildAt(activeIdx, col, row);
           Assets.drawBuildTint(c, p.x, p.y, TW, TH, ok);
         }
       }
@@ -208,6 +212,7 @@
     var city = cities[activeIdx];
     if(!city) return;
     var lifted = GameAPI.getLiftedPlot();
+    var liftedD = GameAPI.getLiftedDecor && GameAPI.getLiftedDecor();
     var entries = [];
 
     for(var i=0; i<city.plots.length; i++){
@@ -232,6 +237,32 @@
           }
         }});
       })(i, plot);
+    }
+
+    // player-placed decoration (trees/bushes) -- same depth-sort/lift-highlight treatment as
+    // buildings above, just a plain blit (Assets.blit, not blitBuilding -- decor has no
+    // rent/lifecycle state, so there's no alpha-fade or per-instance sprite variant to resolve).
+    var decorList = city.decor || [];
+    for(var di=0; di<decorList.length; di++){
+      (function(di, d){
+        var dDef = GameAPI.getDecorDef ? GameAPI.getDecorDef(d.key) : null;
+        if(!dDef) return;
+        var anchor = GEO.anchorAt(L, d.col, d.row);
+        var depth = GEO.depthAt(L, d.col, d.row);
+        var isLifted = !!(liftedD && liftedD.cityIdx===activeIdx && liftedD.decorIdx===di);
+        entries.push({ depth: depth, draw: function(){
+          if(isLifted){ c.save(); c.globalAlpha = 0.6; Assets.blit(c, dDef.slot, anchor.x, anchor.y); c.restore(); }
+          else Assets.blit(c, dDef.slot, anchor.x, anchor.y);
+          if(isLifted){
+            c.save();
+            c.strokeStyle = Assets.PALETTE.gold; c.lineWidth = 2; c.setLineDash([4,3]);
+            var w2 = GEO.TW*0.9, h2 = GEO.TH*0.9;
+            c.beginPath(); c.moveTo(anchor.x, anchor.y-h2/2); c.lineTo(anchor.x+w2/2, anchor.y); c.lineTo(anchor.x, anchor.y+h2/2); c.lineTo(anchor.x-w2/2, anchor.y); c.closePath();
+            c.stroke();
+            c.restore();
+          }
+        }});
+      })(di, decorList[di]);
     }
 
     Npc.update(dt);
@@ -269,7 +300,7 @@
 
     var range = visibleTileRange(rect);
     var placement = placementInfo(global.GameAPI);
-    drawVisibleGround(ctx, layout, range, global.GameAPI, !!placement);
+    drawVisibleGround(ctx, layout, range, global.GameAPI, placement);
     drawDynamic(ctx, layout, global.GameAPI, dt, range);
 
     rafId = requestAnimationFrame(drawFrame);

@@ -1,17 +1,19 @@
-/* ---- Dobry Sad city visual layer: sea life (ferries, tankers, surfers, gulls, shoreline foam) ---
+/* ---- Dobry Sad city visual layer: sea life (rowboat, gulls, shoreline foam) -----------------
    The waterfront band (WATER_ROWS in city-geometry.js) is now wide enough to feel like real open
-   sea, not a decorative strip -- this module populates it with slow-moving vessels and a couple of
-   surfers near the shore, plus gulls wheeling overhead and an animated foam line (the purchased
-   sea pack's 18 real wave frames) washing along the water/promenade edge. Boats/surfers/foam float
-   on the water plane and depth-sort with buildings/people via collectRenderables(); gulls fly
-   above everything and are drawn separately, always on top, via collectSky() -- city-renderer.js
-   calls that last, unsorted. Pure simulation + draw-entry generation; no GameAPI calls, no
-   game-state knowledge. ---------------------------------------------------------------------- */
+   sea, not a decorative strip -- this module populates it with a slow-drifting rowboat/fisherman
+   (the purchased hand-painted asset), plus gulls wheeling overhead and an animated foam line (the
+   purchased sea pack's 18 real wave frames) washing along the water/promenade edge. The old
+   procedurally-drawn ferry/tanker/surfer sprites were removed per explicit request -- they never
+   matched the hand-painted look of the real asset packs used everywhere else. Boats/foam float on
+   the water plane and depth-sort with buildings/people via collectRenderables(); gulls fly above
+   everything and are drawn separately, always on top, via collectSky() -- city-renderer.js calls
+   that last, unsorted. Pure simulation + draw-entry generation; no GameAPI calls, no game-state
+   knowledge. ------------------------------------------------------------------------------------ */
 (function(global){
   'use strict';
 
-  var MAX_FERRY = 1, MAX_TANKER = 1, MAX_ROWBOAT = 1, MAX_SURFER = 3, MAX_GULL = 4;
-  var boats = [], surfers = [], gulls = [];
+  var MAX_ROWBOAT = 1, MAX_GULL = 4;
+  var boats = [], gulls = [];
   var running = false, layout = null;
   var reduceMotion = false;
 
@@ -26,41 +28,16 @@
   function setLayout(l){
     if(layout === l) return;
     layout = l;
-    boats = []; surfers = []; gulls = [];
-  }
-
-  function waterLanes(){
-    var top = layout.waterRow0 != null ? layout.waterRow0 : 0;
-    var bot = layout.waterRow1;
-    return [top + (bot-top)*0.28, top + (bot-top)*0.68];
+    boats = []; gulls = [];
   }
 
   function ensureBoats(){
     if(!layout) return;
-    var lanes = waterLanes();
-    while(boats.filter(function(b){ return b.kind === 'ferry'; }).length < MAX_FERRY){
-      boats.push({ kind:'ferry', slot:'boat_ferry_01', row: lanes[0], col: rand(layout.minCol, layout.maxCol),
-        dir: Math.random()<0.5?1:-1, speed: rand(0.32, 0.46) });
-    }
-    while(boats.filter(function(b){ return b.kind === 'tanker'; }).length < MAX_TANKER){
-      boats.push({ kind:'tanker', slot:'boat_tanker_01', row: lanes[1], col: rand(layout.minCol, layout.maxCol),
-        dir: Math.random()<0.5?1:-1, speed: rand(0.18, 0.28) });
-    }
-    // the rowboat/fisherman hugs the shore, well in front of (closer to land than) the ferry lane --
-    // a small oar-powered boat drifting out among the ferry/tanker traffic would read as out of
-    // place/scale, and rowing pace is naturally slower than either.
+    // the rowboat/fisherman hugs the shore, close to land -- a small oar-powered boat, rowing at
+    // a naturally slow, human pace.
     while(boats.filter(function(b){ return b.kind === 'rowboat'; }).length < MAX_ROWBOAT){
       boats.push({ kind:'rowboat', slot:'boat_rowboat_01', row: layout.waterRow1 - rand(0.7, 0.95), col: rand(layout.minCol, layout.maxCol),
         dir: Math.random()<0.5?1:-1, speed: rand(0.1, 0.16) });
-    }
-  }
-  function ensureSurfers(){
-    if(!layout) return;
-    while(surfers.length < MAX_SURFER){
-      surfers.push({
-        row: layout.waterRow1 - rand(0.15, 0.55), col: rand(layout.minCol+1, layout.maxCol-1),
-        dir: Math.random()<0.5?1:-1, speed: rand(0.03, 0.07), phase: Math.random()*Math.PI*2
-      });
     }
   }
   function ensureGulls(){
@@ -78,17 +55,13 @@
 
   function update(dt){
     if(!layout) return;
-    ensureBoats(); ensureSurfers(); ensureGulls();
+    ensureBoats(); ensureGulls();
     if(!reduceMotion) foamElapsed += dt;
     if(reduceMotion) return;
     boats.forEach(function(b){
       b.col += b.dir*b.speed*dt;
       if(b.col > layout.maxCol+2){ b.col = layout.maxCol+2; b.dir = -1; }
       else if(b.col < layout.minCol-2){ b.col = layout.minCol-2; b.dir = 1; }
-    });
-    surfers.forEach(function(s){
-      s.col += s.dir*s.speed*dt;
-      if(s.col > layout.maxCol-0.5 || s.col < layout.minCol+0.5) s.dir *= -1;
     });
     gulls.forEach(function(g){
       g.col += g.dir*g.speed*dt;
@@ -104,17 +77,16 @@
       var p = GEO.isoToContent(L, b.col, b.row);
       out.push({ depth: GEO.depthAt(L, b.col, b.row), draw: function(ctx){ Assets.blit(ctx, b.slot, p.x, p.y, 1, b.dir < 0); } });
     });
-    surfers.forEach(function(s){
-      var p = GEO.isoToContent(L, s.col, s.row);
-      var bob = reduceMotion ? 0 : Math.sin(Date.now()/500 + s.phase) * 1.4;
-      out.push({ depth: GEO.depthAt(L, s.col, s.row), draw: function(ctx){ Assets.blit(ctx, 'surfer_01', p.x, p.y+bob, 1, s.dir < 0); } });
-    });
     // shoreline foam -- one synced frame across every visible column right at the water's edge,
     // bounded to the current viewport (falls back to the whole field width when no range is
     // given, e.g. from a test calling this directly) so it costs nothing extra at any field size.
     // The field now has a sea on BOTH the north and south edges (see city-geometry.js), so this
     // draws the same synced foam line along whichever shore row(s) fall in view -- south included
     // when it has one (older/smaller layouts without waterRow0S just skip that half, harmlessly).
+    // Each column is also checked against the field's own oval boundary (GEO.insideEllipse) --
+    // without that, a straight column sweep across "every visible column" sails right past the
+    // map's actual curved edge wherever the oval has narrowed in near its north/south tips, which
+    // is what let the wave line visibly stick out past the map on both shores before this fix.
     var c0 = range ? Math.max(L.minCol, range.c0) : L.minCol;
     var c1 = range ? Math.min(L.maxCol, range.c1) : L.maxCol;
     var frameN = 1 + Math.floor(foamElapsed*FOAM_FPS) % FOAM_FRAMES;
@@ -123,6 +95,7 @@
     if(L.waterRow0S != null) foamRows.push(L.waterRow0S - 0.5);
     foamRows.forEach(function(foamRow){
       for(var fc = Math.floor(c0); fc <= Math.ceil(c1); fc++){
+        if(!GEO.insideEllipse(L, fc, foamRow)) continue;
         (function(fc){
           var p = GEO.isoToContent(L, fc, foamRow);
           out.push({ depth: GEO.depthAt(L, fc, foamRow) + 0.1, draw: function(ctx){ Assets.blit(ctx, slot, p.x, p.y); } });
@@ -149,9 +122,9 @@
       if(running) return;
       reduceMotion = !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
       running = true;
-      if(layout){ ensureBoats(); ensureSurfers(); ensureGulls(); }
+      if(layout){ ensureBoats(); ensureGulls(); }
     },
-    stop: function(){ running = false; boats = []; surfers = []; gulls = []; },
+    stop: function(){ running = false; boats = []; gulls = []; },
     isRunning: function(){ return running; },
     update: update,
     collectRenderables: collectRenderables,

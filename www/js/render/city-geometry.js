@@ -130,6 +130,19 @@
     return localToIso(x - layout.originX, y - layout.originY);
   }
 
+  /* true if (col,row) -- fractional coordinates allowed -- falls inside the field's whole-map
+     oval. Shared by tileTypeAt (below) and anything else that draws at a fixed row across a wide
+     column range (water-life.js's shoreline foam, in particular) and needs to stop at the actual
+     curved edge instead of the viewport's rectangular visible-column range -- without this check,
+     a fixed-row strip drawn across "every visible column" sails straight past the map's real
+     boundary wherever the oval has narrowed in from the field's rectangular extent. */
+  function insideEllipse(layout, col, row){
+    if(!layout.ellipse) return true;
+    var e = layout.ellipse;
+    var dx = (col-e.cx)/e.rx, dy = (row-e.cy)/e.ry;
+    return dx*dx + dy*dy <= 1;
+  }
+
   /* 'water' | 'promenade' | 'field' for any (col,row) inside the district bounds, else null.
      Pure classification -- doesn't know or care whether a 'field' tile is actually occupied by a
      building or is a road; that's layered on top by computeRoadTiles()/city-renderer.js. */
@@ -139,11 +152,7 @@
     // simply not drawn at all (null), instead of falling back to a rectangular water fill. That's
     // the actual "make the whole map round, not just the island" fix: without this, the corners of
     // the field rectangle (which used to always be water) kept the overall silhouette a diamond.
-    if(layout.ellipse){
-      var e = layout.ellipse;
-      var dx = (col-e.cx)/e.rx, dy = (row-e.cy)/e.ry;
-      if(dx*dx + dy*dy > 1) return null;
-    }
+    if(!insideEllipse(layout, col, row)) return null;
     // inside the oval: north sea, south sea (mirrored), or land in between -- see buildLayout()
     // for how these row bands are sized (waterRows/promenadeRows are a PER-SIDE count).
     if(row <= layout.waterRow1 || row >= layout.waterRow0S) return 'water';
@@ -284,6 +293,7 @@
     centerAt: centerAt,
     anchorAt: anchorAt,
     tileTypeAt: tileTypeAt,
+    insideEllipse: insideEllipse,
     contentToIso: contentToIso,
     depthAt: depthAt,
     wrapScale: wrapScale,

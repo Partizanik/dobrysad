@@ -11,7 +11,20 @@
 (function(global){
   'use strict';
 
+  // Hard ceilings for a fully built-out city -- how many walkers/cars actually appear at any
+  // moment is scaled DOWN from these by targetWalkers()/targetCars() below, based on how many
+  // buildings the player has actually placed, so a brand-new city with one building shows one
+  // person (not a full street's worth of pedestrians and traffic all at once).
   var MAX_WALKERS = 6, MAX_CARS = 2, MAX_EGG = 1;
+  var buildingCount = 0;
+  function targetWalkers(){
+    if(buildingCount <= 0) return 0;
+    return Math.min(MAX_WALKERS, Math.ceil(buildingCount/2));
+  }
+  function targetCars(){
+    if(buildingCount < 3) return 0;
+    return Math.min(MAX_CARS, Math.floor(buildingCount/3));
+  }
   // real painted people (see assets.js's realImageSlot calls) replacing the old flat-colour
   // npc_01..05 placeholders -- this was the original "people don't match the building art style"
   // complaint, now fixed with actual period-costumed figures instead of solid-colour blobs.
@@ -85,13 +98,20 @@
     return s;
   }
 
+  // Both grow AND shrink toward the target -- a decoration/removal action (task #56) or a plot
+  // going back to empty can lower buildingCount, and the street should thin back out to match
+  // rather than staying stuck at whatever peak it once reached.
   function ensureWalkers(){
-    var count = sprites.filter(function(s){ return s.kind === 'person' && !s.temp; }).length;
-    while(count < MAX_WALKERS){ if(!spawn('person')) break; count++; }
+    var want = targetWalkers();
+    var list = sprites.filter(function(s){ return s.kind === 'person' && !s.temp; });
+    while(list.length < want){ var s = spawn('person'); if(!s) break; list.push(s); }
+    while(list.length > want){ var extra = list.pop(); extra.dead = true; }
   }
   function ensureCars(){
-    var count = sprites.filter(function(s){ return s.kind === 'car'; }).length;
-    while(count < MAX_CARS){ if(!spawn('car')) break; count++; }
+    var want = targetCars();
+    var list = sprites.filter(function(s){ return s.kind === 'car'; });
+    while(list.length < want){ var s = spawn('car'); if(!s) break; list.push(s); }
+    while(list.length > want){ var extra = list.pop(); extra.dead = true; }
   }
   function maybeSpawnEasterEgg(dt){
     eggTimer += dt;
@@ -151,7 +171,7 @@
   }
 
   global.NpcLife = {
-    setRoads: function(roads, sig){ ensureGraph(roads, sig); },
+    setRoads: function(roads, sig, count){ ensureGraph(roads, sig); buildingCount = count || 0; },
     start: function(){
       if(running) return;
       reduceMotion = !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);

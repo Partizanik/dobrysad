@@ -244,3 +244,106 @@ Early 20th century Eastern European town street ambience, distant horse-drawn ca
 ```
 
 Готовые файлы кладутся в `www/assets/audio/` под теми же именами (перезаписывают текущие) — код их уже подхватывает через `pauseMusicForBackground()`/`resumeMusicFromBackground()`.
+
+---
+
+## G. Кошки и собаки (уличные животные)
+
+Как и с людьми — референс-картинка (`cottage_01.png`/`market_01.png`) обязательна, иначе стиль может съехать в реализм. Для животных лучше подходит вид сбоку/три четверти, а не строго анфас, и кадр шире, чем выше (сами звери приземистые, не вертикальные, как люди).
+
+**G1. Дворовый пёс (дружелюбный, светлый окрас)**
+```
+single isometric small friendly mixed-breed dog, light tan and white fur, tail wagging, standing pose, side three-quarter view, full body, early 20th century European town stray dog, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 4:3 aspect ratio)
+```
+
+**G2. Дворовый пёс (тёмный окрас, идёт)**
+```
+single isometric small dog with dark brindle fur and floppy ears, mid-walk pose, side three-quarter view, full body, early 20th century European town stray dog, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 4:3 aspect ratio)
+```
+
+**G3. Уличный кот (сидит)**
+```
+single isometric small tabby cat sitting upright, tail curled around its paws, alert ears, side three-quarter view, full body, early 20th century European town alley cat, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 4:3 aspect ratio)
+```
+
+**G4. Уличный кот (чёрно-белый, идёт)**
+```
+single isometric small black and white cat walking, tail raised, side three-quarter view, full body, early 20th century European town alley cat, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 4:3 aspect ratio)
+```
+
+---
+
+## H. Уличный декор для украшения города (лавки, урны, фонари и т.п.)
+
+Это то, чем игрок сможет сам украшать город (см. новое меню украшения) — отдельные штучные объекты, ставятся на любую свободную плитку травы, как дерево. Все — в духе начала XX века (кованый металл, дерево, никакого пластика/бетона).
+
+**H1. Парковая скамейка**
+```
+single isometric wooden park bench with wrought iron armrests and legs, weathered warm wood slats, early 20th century European park furniture, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 3:2 aspect ratio)
+```
+
+**H2. Уличная урна для мусора**
+```
+single isometric small wrought iron and wood street trash bin, round riveted metal body on a short post, early 20th century European street furniture, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 2:3 aspect ratio)
+```
+
+**H3. Уличный фонарь**
+```
+single isometric ornate cast iron street lamppost, tall post with a lantern-style glass lamp head, early 20th century European gas-lamp design, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 1:2 aspect ratio)
+```
+
+**H4. Питьевой фонтанчик**
+```
+single isometric small ornate cast iron drinking water fountain, short pedestal with a basin and spout, early 20th century European park fountain, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 2:3 aspect ratio)
+```
+
+**H5. Колодец с воротом**
+```
+single isometric old stone well with a peaked wooden shingle roof and a hand crank winch with a bucket on a rope, early 20th century European village well, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 3:4 aspect ratio)
+```
+
+**H6. Клумба с цветами**
+```
+single isometric small round flowerbed bordered with painted stones or low wooden edging, bursting with colorful mixed flowers, tidy park flowerbed, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, square image, 1:1 aspect ratio
+```
+
+**H7. Уличные часы на столбе**
+```
+single isometric ornate cast iron street clock on a decorative post, round clock face with roman numerals, early 20th century European town square clock, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 1:2 aspect ratio)
+```
+
+**H8. Деревянный указатель**
+```
+single isometric rustic wooden signpost with a couple of small arrow-shaped direction signs, weathered timber post planted in the ground, early 20th century European village signpost, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 2:3 aspect ratio)
+```
+
+---
+
+## I. Птицы, летящие над городом
+
+В отличие от чаек над морем (уже есть в игре), это обычные городские птицы для вида над самой картой города — рисуй в полёте, без земли под ними, чтобы можно было наложить поверх сцены.
+
+**I1. Пара летящих голубей**
+```
+a pair of pigeons flying together in mid-air, wings spread mid-flap, side view, no ground or background elements, isometric game asset color and rendering style, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 3:2 aspect ratio)
+```
+
+**I2. Одинокая летящая птица (воробей/ласточка)**
+```
+single small sparrow or swallow flying, wings spread mid-flap, side view, no ground or background elements, isometric game asset color and rendering style, soft painterly cel-shaded render, warm terracotta cream and wood-brown color palette, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, landscape image, wider than tall (roughly 3:2 aspect ratio)
+```
+
+---
+
+## J. Воздушный шар (изредка пролетает над городом)
+
+Декоративный спрайт для неба — появляется редко, медленно проплывает через экран поверх города, как чайки, но выше и крупнее.
+
+**J1. Воздушный шар с корзиной**
+```
+single isometric vintage hot air balloon in flight, colorful striped fabric envelope in warm terracotta cream and wood-brown tones, wicker gondola basket with ropes and netting, early 20th century style balloon, no ground or background elements, isometric game asset, 2:1 dimetric perspective, soft painterly cel-shaded render, soft ambient occlusion, soft drop shadow, cozy mobile city-builder game art style, clean edges, plain white background, no text, no watermark, vertical portrait image, taller than wide (roughly 3:4 aspect ratio)
+```
+
+---
+
+Готовые картинки для разделов G/H/I/J присылай так же, как раньше — я вырежу фон и впишу их в `www/js/render/assets.js` новыми именованными слотами (`dog_02`/`cat_02`, `decor_bench_01`, `decor_trashcan_01`, `decor_lamp_02`, `decor_fountain_01`, `decor_well_01`, `decor_flowerbed_01`, `decor_clock_01`, `decor_signpost_01`, `bird_flock_01`, `bird_single_01`, `balloon_01`) — раздел H целиком пойдёт в новое меню украшения города.

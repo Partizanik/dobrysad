@@ -118,6 +118,13 @@
      and the title text was just taking up vertical room the garden view needs to fit without
      scrolling -- see .screen.garden-fixed below. */
   .statusbar{display:flex; justify-content:space-between; align-items:center; padding:6px 14px 4px; font-size:11px; font-weight:700; color:var(--ink-dim); font-variant-numeric:tabular-nums; flex:none; padding-top:max(6px, env(safe-area-inset-top));}
+  /* the language switcher / profile / info row used to be visible from the very first frame,
+     including through the whole "Game Studio" -> "Dobry Sad" boot splash -- nothing ever hid it
+     during boot, it's just a persistent sibling of #screen (which is where #boot lives), so it
+     was always painted regardless of what stage the boot sequence was in. .phone gets a
+     "booting" class up front (removed by finishBoot() in the boot script below) so the real game
+     chrome only appears once the splash sequence is actually done, like a real app's launch. */
+  .phone.booting .statusbar{display:none;}
   .statusbar-group{display:flex; align-items:center; gap:5px;}
   .langsw{display:flex; gap:3px;}
   .langsw button{border:1px solid var(--line); background:var(--surface-2); color:var(--ink-dim); font-size:9.5px; font-weight:800; border-radius:6px; padding:2px 6px; cursor:pointer;}
@@ -357,6 +364,13 @@
      crowding the map itself. */
   .city-build-fab{position:absolute; left:10px; bottom:10px; z-index:2; display:flex; align-items:center; gap:6px; border:none; border-radius:999px; background:var(--gold); color:var(--gold-ink); font-weight:800; font-size:13px; padding:11px 16px 11px 13px; cursor:pointer; box-shadow:0 4px 10px -3px var(--shadow);}
   .cbf-icon{width:18px; height:18px; flex-shrink:0;}
+  /* two smaller round FABs alongside the main "Build" one -- Decorate (plant trees/bushes) and
+     Manage (remove any placed building or decoration). Icon-only + a corner so they read as
+     secondary actions without crowding the primary Build button on a narrow phone screen. */
+  .city-fab-secondary{position:absolute; bottom:10px; z-index:2; width:44px; height:44px; border-radius:999px; border:none; background:var(--surface); color:var(--ink); box-shadow:0 4px 10px -3px var(--shadow); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
+  .city-fab-secondary svg{width:20px; height:20px;}
+  .city-decor-fab{right:62px;}
+  .city-manage-fab{right:10px;}
 
   /* building picker: its own fullscreen window (reuses .city-fullscreen), a grid of square image
      tiles -- real building art baked to a small canvas via CityAssets (no emoji), name below,
@@ -371,6 +385,24 @@
   .bg-count{position:absolute; top:4px; right:4px; background:var(--leaf); color:#fff; font-size:9px; font-weight:800; border-radius:999px; padding:1px 5px; line-height:1.4;}
   .bg-name{font-size:10.5px; font-weight:700; text-align:center; line-height:1.25;}
   .bg-price{font-size:9.5px; font-weight:800; color:var(--gold-ink); background:var(--gold-soft); border-radius:999px; padding:1px 8px;}
+  /* materials-cost breakdown, shown on every regular (non-money/rent) building tile so the
+     player can see exactly what a building needs and how much of it they already have, without
+     opening the warehouse separately and doing the comparison themselves. */
+  .bg-cost{display:flex; flex-wrap:wrap; justify-content:center; gap:3px; max-width:100%;}
+  .bg-cost-item{display:inline-flex; align-items:center; gap:2px; font-size:8.5px; font-weight:800; border-radius:999px; padding:1px 5px; background:var(--surface); color:var(--ink-dim);}
+  .bg-cost-item svg{width:9px; height:9px; flex:none;}
+  .bg-cost-item.short{background:var(--coral-soft); color:#8a2c1a;}
+  /* manage/remove list -- plain labeled rows, each with its own delete button, per the explicit
+     "dropdown with each element labeled" request (this reads better as a simple list than an
+     actual <select> dropdown, but serves the same purpose: pick exactly which placed item to
+     remove, by name, without hunting for it on the map). */
+  .manage-list{display:flex; flex-direction:column; gap:6px; margin:4px 0 12px;}
+  .manage-row{display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--surface-2); border-radius:12px; padding:8px 10px;}
+  .manage-row-icon{width:30px; height:30px; border-radius:8px; background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+  .manage-row-name{flex:1; font-size:12px; font-weight:700; min-width:0;}
+  .manage-row-sub{font-size:9.5px; color:var(--ink-dim); font-weight:600;}
+  .manage-row-remove{border:none; border-radius:999px; background:var(--coral-soft); color:#8a2c1a; font-weight:800; font-size:11px; padding:6px 12px; cursor:pointer; flex-shrink:0;}
+  .manage-empty{font-size:12px; color:var(--ink-dim); text-align:center; padding:20px 10px;}
 
   /* waterfront band along the top of every city — a nod to the reference photo's dock/boat,
      kept in the same flat colorful vector language as the rest of the game. */
@@ -847,7 +879,7 @@
 
   <div class="layout">
     <div class="phone-wrap">
-      <div class="phone">
+      <div class="phone booting" id="phoneShell">
         <div class="statusbar">
           <div class="statusbar-group langsw">
             <button id="soundToggle" class="icon-btn" title="Sound &amp; vibration"><svg class="soundset-icon"><use href="#ic-sound-settings"/></svg></button>
@@ -1084,6 +1116,12 @@
             <svg class="cbf-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
             <span id="cityBuildFabLbl"></span>
           </button>
+          <button class="city-fab-secondary city-decor-fab" id="cityDecorFab" title="">
+            <svg viewBox="0 0 24 24"><path d="M12 2c3 3 5 6 5 9a5 5 0 0 1-10 0c0-3 2-6 5-9z" fill="currentColor"/><path d="M12 15v7M9 22h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button class="city-fab-secondary city-manage-fab" id="cityManageFab" title="">
+            <svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
 
         <!-- Building picker -- its own fullscreen window, same pattern/placement as #cityFullModal
@@ -1099,6 +1137,38 @@
           <div class="build-full-hint" id="buildFullHint"></div>
           <div class="build-grid-wrap">
             <div class="build-grid" id="buildGrid"></div>
+          </div>
+        </div>
+
+        <!-- Decoration picker -- same tile-grid pattern as the building picker above, but for the
+             free (no cost) trees/bushes the player can scatter around their own city. -->
+        <div class="city-fullscreen" id="decorFullModal">
+          <div class="city-full-head">
+            <h3 id="decorFullTitle"></h3>
+            <button class="city-full-back" id="decorFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="decorFullCloseLbl"></span></button>
+          </div>
+          <div class="build-full-hint" id="decorFullHint"></div>
+          <div class="build-grid-wrap">
+            <div class="build-grid" id="decorGrid"></div>
+          </div>
+        </div>
+
+        <!-- Manage/remove -- a plain labeled list of every building and decoration currently
+             placed in the active city, each with its own "Usuń" button, per the explicit request
+             for a dedicated remove function with a labeled dropdown of elements (tapping the map
+             itself only ever lifts/moves something, never deletes it). -->
+        <div class="city-fullscreen" id="manageFullModal">
+          <div class="city-full-head">
+            <h3 id="manageFullTitle"></h3>
+            <button class="city-full-back" id="manageFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="manageFullCloseLbl"></span></button>
+          </div>
+          <div class="build-full-hint" id="manageFullHint"></div>
+          <div class="build-grid-wrap">
+            <div class="section-title" id="manageSectionBuildingsLbl"></div>
+            <div class="manage-list" id="manageBuildingList"></div>
+            <div class="section-title" id="manageSectionDecorLbl"></div>
+            <div class="manage-list" id="manageDecorList"></div>
+            <div class="manage-empty" id="manageEmptyHint" style="display:none;"></div>
           </div>
         </div>
 
@@ -1196,6 +1266,17 @@
       buildFullHint: 'Stuknij budynek, aby zacząć go stawiać — potem wskaż miejsce na mapie.',
       placeBannerText: function(name){ return '📍 Wybierz puste miejsce dla: ' + name; },
       liftedBannerText: '🤚 Wybierz nowe miejsce — stuknij ten sam budynek ponownie, aby anulować.',
+      liftedDecorBannerText: '🤚 Wybierz nowe miejsce — stuknij tę samą ozdobę ponownie, aby anulować.',
+      decorFabLbl: 'Ozdoby',
+      decorFullTitle: 'Wybierz ozdobę',
+      decorFullHint: 'Stuknij drzewko lub krzew, aby zacząć je sadzić — potem wskaż miejsce na mapie. Za darmo — bez zużywania surowców.',
+      manageFabLbl: 'Zarządzaj',
+      manageFullTitle: 'Zarządzaj miastem',
+      manageFullHint: 'Usuń dowolny budynek lub ozdobę ze swojego miasta.',
+      manageSectionBuildings: 'Budynki',
+      manageSectionDecor: 'Ozdoby',
+      manageRemoveBtn: 'Usuń',
+      manageEmpty: 'W tym mieście nie ma jeszcze nic do usunięcia.',
       cityFullHintCatalog: '🏙️ Miasto pełne — kup nowe miasto, aby budować dalej.',
       choosePlotFirst: '📍 Najpierw wybierz miejsce dla budynku w trakcie budowy.',
       rentRenewHintCatalog: 'Wynajmij, a potem stuknij budynek na mapie, aby przedłużyć najem.',
@@ -1226,6 +1307,15 @@
         forge: {name:'Kuźnia Dobrych Serc', desc:'Kuje i naprawia narzędzia rolnicze za darmo dla okolicznych gospodarstw w potrzebie.'},
         foodbank: {name:'Bank Żywności', desc:'Codzienne paczki żywnościowe dla potrzebujących rodzin. Finansowany wyłącznie z realnych wpłat.'},
         mobileclinic: {name:'Mobilna Klinika', desc:'Objazdowa opieka medyczna dla wsi bez dostępu do lekarza. Wynajmowana co miesiąc z realnych wpłat.'}
+      },
+      decor: {
+        tree_apple: {name:'Jabłoń'},
+        tree_birch: {name:'Brzoza'},
+        tree_linden: {name:'Lipa'},
+        tree_poplar: {name:'Topola'},
+        tree_willow: {name:'Wierzba'},
+        tree_spruce: {name:'Świerk'},
+        bush: {name:'Krzew'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Otwórz', confirmNo:'Anuluj',
@@ -1330,9 +1420,13 @@
         notBuildable: 'Tutaj nie można budować.',
         moved: '🔄 Budynek przeniesiony.',
         lifted: '🤚 Wybierz nowe miejsce lub stuknij ten sam budynek, aby anulować.',
+        liftedDecor: '🤚 Wybierz nowe miejsce lub stuknij tę samą ozdobę, aby anulować.',
         cityFull: '🏙️ To miasto jest pełne — kup nowe miasto.',
         cityNotFull: 'Zapełnij obecne miasto, zanim kupisz nowe.',
-        newCity: function(n){ return '🎉 Nowe miasto #' + n + ' odblokowane!'; }
+        newCity: function(n){ return '🎉 Nowe miasto #' + n + ' odblokowane!'; },
+        decorPlaced: function(name){ return '🌳 Posadzono: ' + name + '.'; },
+        decorRemoved: '🗑️ Ozdoba usunięta.',
+        buildingRemoved: function(name){ return '🗑️ Budynek usunięty' + (name ? (': ' + name) : '') + '.'; }
       },
       shop: {
         catFree: 'Podlewanie — zdobywane wyłącznie za oglądanie reklam',
@@ -1423,6 +1517,17 @@
       buildFullHint: 'Tap a building to start placing it — then pick a spot on the map.',
       placeBannerText: function(name){ return '📍 Choose an empty plot for: ' + name; },
       liftedBannerText: '🤚 Choose a new spot — tap the same building again to cancel.',
+      liftedDecorBannerText: '🤚 Choose a new spot — tap the same decoration again to cancel.',
+      decorFabLbl: 'Decorate',
+      decorFullTitle: 'Choose a decoration',
+      decorFullHint: 'Tap a tree or bush to start planting it — then pick a spot on the map. Free — no materials used.',
+      manageFabLbl: 'Manage',
+      manageFullTitle: 'Manage your city',
+      manageFullHint: 'Remove any building or decoration from your city.',
+      manageSectionBuildings: 'Buildings',
+      manageSectionDecor: 'Decorations',
+      manageRemoveBtn: 'Remove',
+      manageEmpty: 'Nothing to remove in this city yet.',
       cityFullHintCatalog: '🏙️ City full — buy a new city to keep building.',
       choosePlotFirst: '📍 First choose a plot for the building you\'re placing.',
       rentRenewHintCatalog: 'Rent it, then tap the building on the map to renew.',
@@ -1453,6 +1558,15 @@
         forge: {name:'Forge of Good Hearts', desc:'Forges and repairs farm tools for free, for local families and smallholders in need.'},
         foodbank: {name:'Food Bank', desc:'Daily food parcels for families in need. Funded only by real donations.'},
         mobileclinic: {name:'Mobile Clinic', desc:'Traveling medical care for villages with no doctor nearby. Rented monthly from real donations.'}
+      },
+      decor: {
+        tree_apple: {name:'Apple tree'},
+        tree_birch: {name:'Birch'},
+        tree_linden: {name:'Linden'},
+        tree_poplar: {name:'Poplar'},
+        tree_willow: {name:'Willow'},
+        tree_spruce: {name:'Spruce'},
+        bush: {name:'Bush'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Unlock', confirmNo:'Cancel',
@@ -1557,9 +1671,13 @@
         notBuildable: 'You can\'t build there.',
         moved: '🔄 Building moved.',
         lifted: '🤚 Choose a new spot, or tap the same building again to cancel.',
+        liftedDecor: '🤚 Choose a new spot, or tap the same decoration again to cancel.',
         cityFull: '🏙️ This city is full — buy a new city.',
         cityNotFull: 'Fill your current city before buying a new one.',
-        newCity: function(n){ return '🎉 New city #' + n + ' unlocked!'; }
+        newCity: function(n){ return '🎉 New city #' + n + ' unlocked!'; },
+        decorPlaced: function(name){ return '🌳 Planted: ' + name + '.'; },
+        decorRemoved: '🗑️ Decoration removed.',
+        buildingRemoved: function(name){ return '🗑️ Building removed' + (name ? (': ' + name) : '') + '.'; }
       },
       shop: {
         catFree: 'Watering — earned only by watching ads',
@@ -1654,6 +1772,17 @@
       buildFullHint: 'Дакраніцеся да будынка, каб пачаць яго ставіць — потым пакажыце месца на карце.',
       placeBannerText: function(name){ return '📍 Абярыце пустое месца для: ' + name; },
       liftedBannerText: '🤚 Абярыце новае месца — дакраніцеся да таго ж будынка яшчэ раз, каб скасаваць.',
+      liftedDecorBannerText: '🤚 Абярыце новае месца — дакраніцеся да той жа ўпрыгожанні яшчэ раз, каб скасаваць.',
+      decorFabLbl: 'Упрыгожыць',
+      decorFullTitle: 'Абярыце ўпрыгожанне',
+      decorFullHint: 'Дакраніцеся да дрэва або куста, каб пачаць яго садзіць — потым пакажыце месца на карце. Бясплатна — без выдаткавання рэсурсаў.',
+      manageFabLbl: 'Кіраваць',
+      manageFullTitle: 'Кіраванне горадам',
+      manageFullHint: 'Выдаліце любы будынак або ўпрыгожанне са свайго горада.',
+      manageSectionBuildings: 'Будынкі',
+      manageSectionDecor: 'Упрыгожанні',
+      manageRemoveBtn: 'Выдаліць',
+      manageEmpty: 'У гэтым горадзе пакуль няма чаго выдаляць.',
       cityFullHintCatalog: '🏙️ Горад поўны — купіце новы горад, каб будаваць далей.',
       choosePlotFirst: '📍 Спачатку абярыце месца для будынка, які будуецца.',
       rentRenewHintCatalog: 'Арандуйце, а потым дакраніцеся да будынка на карце, каб працягнуць арэнду.',
@@ -1684,6 +1813,15 @@
         forge: {name:'Кузня Добрых Сэрцаў', desc:'Куе і рамантуе сельскагаспадарчыя прылады бясплатна для навакольных гаспадарак у патрэбе.'},
         foodbank: {name:'Банк Ежы', desc:'Штодзённыя харчовыя пакункі для сем’яў, якія маюць патрэбу. Фінансуецца выключна за кошт рэальных унёскаў.'},
         mobileclinic: {name:'Мабільная Клініка', desc:'Выязная медычная дапамога для вёсак без доступу да ўрача. Арандуецца штомесяц за кошт рэальных унёскаў.'}
+      },
+      decor: {
+        tree_apple: {name:'Яблыня'},
+        tree_birch: {name:'Бяроза'},
+        tree_linden: {name:'Ліпа'},
+        tree_poplar: {name:'Таполя'},
+        tree_willow: {name:'Вярба'},
+        tree_spruce: {name:'Ель'},
+        bush: {name:'Куст'}
       },
       comboLabel: function(n){ return '🔥 Комба ×' + n; },
       confirmYes:'Адкрыць', confirmNo:'Скасаваць',
@@ -1788,9 +1926,13 @@
         notBuildable: 'Тут нельга будаваць.',
         moved: '🔄 Будынак перанесены.',
         lifted: '🤚 Абярыце новае месца або дакраніцеся да таго ж будынка, каб скасаваць.',
+        liftedDecor: '🤚 Абярыце новае месца або дакраніцеся да той жа ўпрыгожанні, каб скасаваць.',
         cityFull: '🏙️ Гэты горад поўны — купіце новы горад.',
         cityNotFull: 'Запоўніце бягучы горад, перш чым купляць новы.',
-        newCity: function(n){ return '🎉 Новы горад #' + n + ' адкрыты!'; }
+        newCity: function(n){ return '🎉 Новы горад #' + n + ' адкрыты!'; },
+        decorPlaced: function(name){ return '🌳 Пасаджана: ' + name + '.'; },
+        decorRemoved: '🗑️ Упрыгожанне выдалена.',
+        buildingRemoved: function(name){ return '🗑️ Будынак выдалены' + (name ? (': ' + name) : '') + '.'; }
       },
       shop: {
         catFree: 'Паліванне — атрымліваецца толькі за прагляд рэкламы',
@@ -1863,10 +2005,9 @@
   /* gardens that yield raw materials once a plant reaches max level (tap a matured max-level
      plant to harvest it into the warehouse via a short ad, instead of merging it further):
      Ogród Nadziei & Ogród Tropikalny grow food (fed to town residents — see FOOD_PER_PERSON),
-     Gaj Drzewny grows wood (→ planks), Kamieniołom grows stone (→ nails via iron),
-     Huta Szkła grows sand (→ glass), Kuźnia grows iron directly (also buildable via
-     stone → iron refining, see REFINE — two paths into the same warehouse count).
-     Ogród Kwiatowy stays a pure decorative/Dobro garden. */
+     Gaj Drzewny grows wood, Kamieniołom grows stone, Huta Szkła grows sand, Kuźnia grows iron —
+     each one goes straight into construction (see BUILDINGS' cost objects), with no crafting
+     step in between any more. Ogród Kwiatowy stays a pure decorative/Dobro garden. */
   var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'sand', 6:'iron'};
   var MAX_LEVEL = 6, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
@@ -1912,13 +2053,20 @@
   function adWatched(){ adsWatched++; }
 
   /* ---- materials warehouse & town (charity buildings) ---- */
-  var warehouse = {water:0, food:0, wood:0, plank:0, stone:0, iron:0, nails:0, sand:0, glass:0};
+  /* Buildings used to need a "second tier" of refined materials (nails from iron from stone,
+     plank from wood, glass from sand) via an ad-gated refine action -- removed per explicit
+     request: buildings are now built directly from whatever's already sitting in the warehouse,
+     all six of which come straight from a garden (HARVESTABLE_GARDENS above), a "bank" food
+     trade, or an ad (water). One fewer thing for the player to learn before the game's market
+     launch; the plan is to spend that complexity budget on the next-city feature instead. */
+  var warehouse = {water:0, food:0, wood:0, stone:0, iron:0, sand:0};
   var warehouseCap = 40;
-  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', plank:'🟫', stone:'🪨', iron:'⚙️', nails:'🔩', sand:'🏖️', glass:'🪟'};
-  var REFINE = {iron:{from:'stone', need:5}, nails:{from:'iron', need:3}, plank:{from:'wood', need:5}, glass:{from:'sand', need:4}};
+  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', stone:'🪨', iron:'⚙️', sand:'🏖️'};
   /* "bank" — trade a surplus of food for whichever raw material is running low, so the town
      never gets permanently stuck waiting on one specific garden (still ad-gated, same as every
-     other exchange in the warehouse). */
+     other exchange in the warehouse). This is NOT the old refine tier — it trades one raw
+     material (food) for another raw material used directly in construction, no intermediate
+     crafted goods involved. */
   var BANK_EXCHANGE = {wood:{from:'food', need:10}, stone:{from:'food', need:10}, sand:{from:'food', need:10}};
   var RENT_MS = 3*60*1000; /* 1 "month" is compressed to 3 minutes for this demo build */
   var FOOD_PER_PERSON = 0.03; /* Dobro/sec worth of 🍎 each resident eats — keeps the town from running forever on one harvest */
@@ -1928,28 +2076,36 @@
      wallet) so it can be tested without grinding resources first. Flip to false (or delete this
      block) before a real release build. ---- */
   var TEST_UNLOCK_ALL_BUILDINGS = true;
-  var BUILDINGS = [
+  /* Costs below were remapped off the old refined materials (nails/plank/glass) onto the raw
+     material each one used to be crafted from (nails→iron, plank→wood, glass→sand), folding the
+     amount straight into that raw material's existing cost line where the building already
+     needed some. This is a deliberate simplification, not a difficulty-preserving conversion —
+     the old ad-gated refine chain (e.g. 1 nail cost 3 iron which cost 5 stone each) made the
+     effective raw-material price much higher than the numbers below; going forward every
+     building is priced directly in what a player can harvest or bank-trade for, nothing hidden
+     behind an extra crafting step. */
     /* the primary, cheapest building — basic shelter, so residents have somewhere to live
        before any other building goes up. Deliberately the smallest material ask in the list. */
+  var BUILDINGS = [
     {key:'needyhome', icon:'🏘️', fam:'housing', people:6, cost:{wood:6, water:6}},
-    {key:'senior', icon:'🏠', fam:'housing', people:4, cost:{wood:15, nails:8, water:10}},
+    {key:'senior', icon:'🏠', fam:'housing', people:4, cost:{wood:15, iron:8, water:10}},
     {key:'orphan', icon:'🧸', fam:'housing', people:5, cost:{wood:12, stone:8, water:10}},
-    {key:'hospital', icon:'🏥', fam:'care', people:8, cost:{stone:20, iron:10, nails:10, plank:6, glass:4, water:20}},
+    {key:'hospital', icon:'🏥', fam:'care', people:8, cost:{stone:20, iron:20, wood:6, sand:4, water:20}},
     {key:'hospice', icon:'🕊️', fam:'care', people:3, cost:{wood:18, stone:10, water:15}},
-    {key:'chapel', icon:'🕯️', fam:'care', people:3, cost:{wood:16, stone:8, glass:6, water:14}},
+    {key:'chapel', icon:'🕯️', fam:'care', people:3, cost:{wood:16, stone:8, sand:6, water:14}},
     {key:'shelter', icon:'🐾', fam:'care', people:2, cost:{wood:8, stone:5, water:8}},
-    {key:'library', icon:'📚', fam:'culture', people:3, cost:{plank:10, glass:6, nails:4, water:12}},
+    {key:'library', icon:'📚', fam:'culture', people:3, cost:{wood:10, sand:6, iron:4, water:12}},
     /* everyday city infrastructure — more people, and each pulls from more gardens than the
        one before it, so the town keeps needing every garden as it grows (per the "bigger
        building → more varied materials" rule). */
-    {key:'cafe', icon:'☕', fam:'food', people:3, cost:{wood:10, glass:5, water:10}},
-    {key:'florist', icon:'💐', fam:'shop', people:3, cost:{wood:8, glass:6, water:8}},
-    {key:'restaurant', icon:'🍽️', fam:'food', people:4, cost:{wood:14, stone:8, nails:6, water:15}},
-    {key:'cinema', icon:'🎬', fam:'culture', people:6, cost:{stone:16, iron:10, glass:12, nails:8, water:18}},
-    {key:'mall', icon:'🏬', fam:'shop', people:10, cost:{stone:25, iron:15, glass:20, plank:15, nails:12, water:25}},
-    {key:'repairshop', icon:'🔧', fam:'shop', people:4, cost:{stone:14, iron:12, nails:8, water:14}},
-    {key:'clothingpoint', icon:'👕', fam:'care', people:4, cost:{wood:10, plank:8, glass:5, water:12}},
-    {key:'forge', icon:'🔨', fam:'shop', people:4, cost:{stone:16, iron:14, nails:10, water:16}},
+    {key:'cafe', icon:'☕', fam:'food', people:3, cost:{wood:10, sand:5, water:10}},
+    {key:'florist', icon:'💐', fam:'shop', people:3, cost:{wood:8, sand:6, water:8}},
+    {key:'restaurant', icon:'🍽️', fam:'food', people:4, cost:{wood:14, stone:8, iron:6, water:15}},
+    {key:'cinema', icon:'🎬', fam:'culture', people:6, cost:{stone:16, iron:18, sand:12, water:18}},
+    {key:'mall', icon:'🏬', fam:'shop', people:10, cost:{stone:25, iron:27, sand:20, wood:15, water:25}},
+    {key:'repairshop', icon:'🔧', fam:'shop', people:4, cost:{stone:14, iron:20, water:14}},
+    {key:'clothingpoint', icon:'👕', fam:'care', people:4, cost:{wood:18, sand:5, water:12}},
+    {key:'forge', icon:'🔨', fam:'shop', people:4, cost:{stone:16, iron:24, water:16}},
     {key:'foodbank', icon:'🥫', fam:'food', people:6, moneyOnly:true, moneyCost:49},
     {key:'mobileclinic', icon:'🚐', fam:'care', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
   ];
@@ -2014,9 +2170,26 @@
   var FIELD_PACK_STEP = FIELD_MIN_GAP + 1;
   var CITY_PLOTS = Math.ceil(FIELD_COLS/FIELD_PACK_STEP) * Math.ceil(FIELD_LAND_ROWS/FIELD_PACK_STEP);
   var BUILDING_BY_KEY = {}; BUILDINGS.forEach(function(b){ BUILDING_BY_KEY[b.key] = b; });
+  /* ---- city decorations: trees/bushes the player places themselves, free of charge (no
+     materials or money cost -- this is purely cosmetic, not part of the build economy). Uses the
+     real tree art that already exists (assets.js); a dedicated "bush" art asset doesn't exist yet
+     so tree_shrub_01 (already in the game as a small shrub-shaped tree) stands in for "bush" for
+     now. Deliberately scoped to trees/bushes only for this pass -- manual road-drawing is a much
+     bigger feature (the road network is still auto-derived from building positions, see
+     city-geometry.js's computeRoadTiles) and stays out of scope here. */
+  var DECOR = [
+    {key:'tree_apple', icon:'🌸', slot:'tree_apple_01'},
+    {key:'tree_birch', icon:'🌳', slot:'tree_birch_01'},
+    {key:'tree_linden', icon:'🌳', slot:'tree_linden_01'},
+    {key:'tree_poplar', icon:'🌳', slot:'tree_poplar_01'},
+    {key:'tree_willow', icon:'🌳', slot:'tree_willow_01'},
+    {key:'tree_spruce', icon:'🌲', slot:'tree_spruce_01'},
+    {key:'bush', icon:'🌿', slot:'tree_shrub_01'}
+  ];
+  var DECOR_BY_KEY = {}; DECOR.forEach(function(d){ DECOR_BY_KEY[d.key] = d; });
   // name:null means "no custom name yet" -- display falls back to the localized "Miasto N"/"City N"
   // (cityDisplayName below), so every existing/older city with no name keeps looking the same.
-  function makeCity(){ return {plots: new Array(CITY_PLOTS).fill(null), name: null}; }
+  function makeCity(){ return {plots: new Array(CITY_PLOTS).fill(null), name: null, decor: []}; }
   function cityDisplayName(idx){ var c = cities[idx]; return (c && c.name) ? c.name : T().cityCardName(idx+1); }
   function renameCity(idx, raw){
     var name = (raw || '').replace(/\s+/g,' ').trim().slice(0, 18);
@@ -2029,6 +2202,8 @@
   var activeCityIdx = 0;
   var pendingPlacement = null; // building key just bought, waiting for a field-tile tap
   var liftedPlot = null; // {cityIdx, plotIdx} picked up for a move
+  var pendingDecor = null; // decor key chosen from the decorate menu, waiting for a field-tile tap
+  var liftedDecor = null; // {cityIdx, decorIdx} picked up for a move
   /* ---- free-placement field rules: is (col,row) a legal spot to build on right now? Single
      source of truth for both the actual placement mutation (onPlotTap below) and the renderer's
      green/red buildability tint (GameAPI.canBuildAt) — the highlight can never promise a tile
@@ -2053,10 +2228,39 @@
       if(dist === 0) return 'occupied';
       if(dist <= FIELD_MIN_GAP) return 'tooClose';
     }
+    // a tree/bush sitting exactly on the tile is also a hard block (two sprites stacked on one
+    // tile would just draw on top of each other) -- no gap requirement against decor, though,
+    // only against other buildings, so a building can still go right up next to a tree.
+    for(var j=0;j<(city.decor||[]).length;j++){
+      var dd = city.decor[j];
+      if(dd.col===col && dd.row===row) return 'occupied';
+    }
     return null;
   }
   function canBuildAt(cityIdx, col, row, excludeSlotIdx){
     return placementDenyReason(cityIdx, col, row, excludeSlotIdx==null?-1:excludeSlotIdx) === null;
+  }
+  /* ---- same rules for decor (trees/bushes), except there's no FIELD_MIN_GAP requirement between
+     decor items or between decor and buildings -- a hedge/treeline planted tile-to-tile is exactly
+     the point, only the exact same tile is off-limits (can't stack two sprites on one spot). */
+  function findDecorAt(city, col, row){
+    var arr = city.decor||[];
+    for(var i=0;i<arr.length;i++){ if(arr[i].col===col && arr[i].row===row) return i; }
+    return -1;
+  }
+  function decorDenyReason(cityIdx, col, row, excludeDecorIdx){
+    var city = cities[cityIdx]; if(!city) return 'outOfBounds';
+    if(!isFieldBuildableTile(col, row)) return 'outOfBounds';
+    for(var i=0;i<city.plots.length;i++){ var p=city.plots[i]; if(p && p.col===col && p.row===row) return 'occupied'; }
+    var arr = city.decor||[];
+    for(var j=0;j<arr.length;j++){
+      if(j===excludeDecorIdx) continue;
+      if(arr[j].col===col && arr[j].row===row) return 'occupied';
+    }
+    return null;
+  }
+  function canDecorAt(cityIdx, col, row, excludeDecorIdx){
+    return decorDenyReason(cityIdx, col, row, excludeDecorIdx==null?-1:excludeDecorIdx) === null;
   }
   function buildingCount(key){
     var n = 0;
@@ -2183,7 +2387,14 @@
             plots.push({key:p.key, col:pos.col, row:pos.row, rentUntil: typeof p.rentUntil==='number'?p.rentUntil:undefined});
           }
           var nm = (c && typeof c.name === 'string' && c.name.trim()) ? c.name.trim().slice(0,18) : null;
-          return {plots:plots, name:nm};
+          // decor didn't exist in older saves -- Array.isArray guards that, and each entry is
+          // re-validated against the current DECOR catalog (a key from a removed decor type in a
+          // future update should just quietly vanish, not crash the load).
+          var rawDecor = Array.isArray(c && c.decor) ? c.decor : [];
+          var decor = rawDecor.filter(function(d){
+            return d && typeof d==='object' && DECOR_BY_KEY[d.key] && typeof d.col==='number' && typeof d.row==='number';
+          }).map(function(d){ return {key:d.key, col:d.col, row:d.row}; });
+          return {plots:plots, name:nm, decor:decor};
         });
       } else if(s.townBuilt && typeof s.townBuilt==='object'){
         /* pre-plots save (townBuilt/townPeople/townRent) — line the old buildings up into
@@ -2293,6 +2504,10 @@
   var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine');
   var cityBuildFab=$('cityBuildFab'), cityBuildFabLbl=$('cityBuildFabLbl');
   var buildFullModal=$('buildFullModal'), buildFullTitle=$('buildFullTitle'), buildFullClose=$('buildFullClose'), buildFullCloseLbl=$('buildFullCloseLbl'), buildFullHint=$('buildFullHint');
+  var cityDecorFab=$('cityDecorFab'), cityManageFab=$('cityManageFab');
+  var decorFullModal=$('decorFullModal'), decorFullTitle=$('decorFullTitle'), decorFullClose=$('decorFullClose'), decorFullCloseLbl=$('decorFullCloseLbl'), decorFullHint=$('decorFullHint');
+  var manageFullModal=$('manageFullModal'), manageFullTitle=$('manageFullTitle'), manageFullClose=$('manageFullClose'), manageFullCloseLbl=$('manageFullCloseLbl'), manageFullHint=$('manageFullHint');
+  var manageSectionBuildingsLbl=$('manageSectionBuildingsLbl'), manageSectionDecorLbl=$('manageSectionDecorLbl'), manageBuildingList=$('manageBuildingList'), manageDecorList=$('manageDecorList'), manageEmptyHint=$('manageEmptyHint');
   var cityMapOpen=$('cityMapOpen'), cityHereLbl=$('cityHereLbl');
   var cityFullModal=$('cityFullModal'), cityFullTitle=$('cityFullTitle'), cityFullClose=$('cityFullClose'), cityFullHint=$('cityFullHint'), cityFullWrap=$('cityFullWrap');
   var cityFullCanvas=$('cityFullCanvas');
@@ -2305,7 +2520,7 @@
   var settingsModal=$('settingsModal'), settingsTitleEl=$('settingsTitle'), settingsClose=$('settingsClose');
   var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel'), settingsVibrateLabel=$('settingsVibrateLabel');
   var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn'), vibrateToggleBtn=$('vibrateToggleBtn');
-  var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta');
+  var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta'), phoneShell=$('phoneShell');
   var nickScreen=$('nickScreen'), nickTitleEl=$('nickTitle'), nickSubtitleEl=$('nickSubtitle'), nickInput=$('nickInput'), nickError=$('nickError'), nickSaveBtn=$('nickSaveBtn'), nickDividerEl=$('nickDivider'), nickGoogleBtn=$('nickGoogleBtn'), nickGoogleLbl=$('nickGoogleLbl');
   var infoBtn=$('infoBtn'), infoModal=$('infoModal'), infoTitle=$('infoTitle'), infoP1=$('infoP1'), infoP2=$('infoP2'), infoP3=$('infoP3'), infoP4=$('infoP4'), infoClose=$('infoClose');
   var profileBtn=$('profileBtn'), profileModal=$('profileModal'), profileClose=$('profileClose'), profileCloseBtn=$('profileCloseBtn');
@@ -2876,22 +3091,6 @@
     }, 900);
   }
 
-  /* ---- refine one material into the next (stone->iron->nails), ad-based ---- */
-  var refineLoading = {};
-  function refineMaterial(key){
-    var def = REFINE[key]; if(!def || refineLoading[key]) return;
-    if(warehouse[def.from] < def.need){ toast(T().toast.notEnoughMaterial); sfx('deny'); return; }
-    var room = warehouseCap - warehouseTotal();
-    if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
-    refineLoading[key] = true;
-    setTimeout(function(){
-      warehouse[def.from] -= def.need; warehouse[key] = (warehouse[key]||0)+1;
-      refineLoading[key] = false;
-      adWatched();
-      renderWarehouse(); toast(T().toast.refined(MATERIAL_ICON[key]), 2400); sfx('harvest');
-    }, 900);
-  }
-
   /* ---- "bank": trade surplus food for whichever raw material is running short, ad-gated
      exactly like refining — this is what stops one bad garden day from ever hard-blocking a
      building. ---- */
@@ -2981,6 +3180,51 @@
     else toast(t.toast.notBuildable);
     sfx('deny');
   }
+  /* ---- remove a building outright (not a move) -- the game never had this before: the only way
+     to get rid of one was to lift it and drop it somewhere else. This is the direct answer to
+     "если он захочет удалить здание" — used from the new manage/remove panel, not from tapping
+     the map (tapping an existing building still lifts it, exactly as before). No materials
+     refund: the building already did its job (residents/Dobro) while it stood. */
+  function removeBuildingAt(cityIdx, plotIdx){
+    var city = cities[cityIdx]; if(!city) return;
+    var plot = city.plots[plotIdx]; if(!plot) return;
+    var def = BUILDING_BY_KEY[plot.key];
+    city.plots[plotIdx] = null;
+    if(liftedPlot && liftedPlot.cityIdx===cityIdx && liftedPlot.plotIdx===plotIdx) liftedPlot = null;
+    toast(T().toast.buildingRemoved(def ? T().buildings[plot.key].name : ''), 2400); sfx('deny');
+    renderWarehouse();
+  }
+  /* ---- city decoration: trees/bushes the player places themselves, free of charge. Mirrors the
+     building placement flow above (startPlacement/placeBuildingAt/onPlotTap) but through its own
+     pendingDecor/liftedDecor state, since decor has no cost/afford-check/rent to worry about. ---- */
+  function startDecorPlacement(key){
+    if(!DECOR_BY_KEY[key]) return;
+    pendingDecor = key; liftedDecor = null;
+    renderWarehouse();
+    if(cityFullModal && !cityFullModal.classList.contains('show')) openCityFull();
+    toast(T().toast.choosePlot(T().decor[key].name), 3200);
+  }
+  function cancelDecorPlacement(){
+    if(!pendingDecor) return;
+    pendingDecor = null; renderCityMap(); renderWarehouse();
+  }
+  function placeDecorAt(cityIdx, col, row, key){
+    cities[cityIdx].decor = cities[cityIdx].decor || [];
+    cities[cityIdx].decor.push({key:key, col:col, row:row});
+    pendingDecor = null;
+    toast(T().toast.decorPlaced(T().decor[key].name), 2400); haptic('light');
+    renderWarehouse();
+  }
+  function removeDecorAt(cityIdx, decorIdx){
+    var city = cities[cityIdx]; if(!city || !city.decor) return;
+    city.decor.splice(decorIdx, 1);
+    if(liftedDecor && liftedDecor.cityIdx===cityIdx){
+      if(liftedDecor.decorIdx===decorIdx) liftedDecor = null;
+      else if(liftedDecor.decorIdx>decorIdx) liftedDecor.decorIdx--;
+    }
+    toast(T().toast.decorRemoved, 2200); sfx('deny');
+    renderWarehouse();
+  }
   /* ---- tapping a field tile in the city view: three modes, depending on what's already "in
      hand" — placing a just-bought building, dropping a lifted one, or picking one up. col/row is
      whatever grass tile the player actually tapped (free placement — see canBuildAt above), not
@@ -2991,6 +3235,12 @@
       var reason = placementDenyReason(cityIdx, col, row, -1);
       if(reason){ denyPlacement(reason); return; }
       placeBuildingAt(cityIdx, col, row, pendingPlacement);
+      return;
+    }
+    if(pendingDecor){
+      var dreason = decorDenyReason(cityIdx, col, row, -1);
+      if(dreason){ denyPlacement(dreason); return; }
+      placeDecorAt(cityIdx, col, row, pendingDecor);
       return;
     }
     if(liftedPlot){
@@ -3006,14 +3256,35 @@
       renderWarehouse();
       return;
     }
+    if(liftedDecor){
+      var ld = cities[liftedDecor.cityIdx] && cities[liftedDecor.cityIdx].decor[liftedDecor.decorIdx];
+      if(!ld){ liftedDecor=null; renderCityMap(); return; }
+      if(liftedDecor.cityIdx===cityIdx && ld.col===col && ld.row===row){ liftedDecor=null; renderCityMap(); return; }
+      var excludeDIdx = liftedDecor.cityIdx===cityIdx ? liftedDecor.decorIdx : -1;
+      var dreason2 = decorDenyReason(cityIdx, col, row, excludeDIdx);
+      if(dreason2){ denyPlacement(dreason2); return; }
+      ld.col = col; ld.row = row;
+      liftedDecor = null;
+      toast(t.toast.moved, 2000); sfx('click');
+      renderWarehouse();
+      return;
+    }
     var plotIdx = findPlotAt(city, col, row);
-    if(plotIdx < 0) return;
-    var plot = city.plots[plotIdx];
-    var def = BUILDING_BY_KEY[plot.key];
-    if(def.rentable && !(plot.rentUntil > Date.now())){ renewRentAtPlot(cityIdx, plotIdx); return; }
-    liftedPlot = {cityIdx:cityIdx, plotIdx:plotIdx};
-    toast(t.toast.lifted, 2400);
-    renderCityMap();
+    if(plotIdx >= 0){
+      var plot = city.plots[plotIdx];
+      var def = BUILDING_BY_KEY[plot.key];
+      if(def.rentable && !(plot.rentUntil > Date.now())){ renewRentAtPlot(cityIdx, plotIdx); return; }
+      liftedPlot = {cityIdx:cityIdx, plotIdx:plotIdx};
+      toast(t.toast.lifted, 2400);
+      renderCityMap();
+      return;
+    }
+    var decorIdx = findDecorAt(city, col, row);
+    if(decorIdx >= 0){
+      liftedDecor = {cityIdx:cityIdx, decorIdx:decorIdx};
+      toast(t.toast.liftedDecor, 2400);
+      renderCityMap();
+    }
   }
   function buyNewCity(){
     var cost = newCityCost();
@@ -3195,7 +3466,9 @@
   var CITY_NS = 'http://www.w3.org/2000/svg';
   function cityMapSignature(){
     return activeCityIdx+':'+pendingPlacement+':'+(liftedPlot?liftedPlot.cityIdx+'-'+liftedPlot.plotIdx:'')+':'+
-      cities.map(function(c){ return c.plots.map(function(p){ return p ? p.key+(p.rentUntil?(p.rentUntil>Date.now()?'1':'0'):''):'.'; }).join(''); }).join('|');
+      pendingDecor+':'+(liftedDecor?liftedDecor.cityIdx+'-'+liftedDecor.decorIdx:'')+':'+
+      cities.map(function(c){ return c.plots.map(function(p){ return p ? p.key+(p.rentUntil?(p.rentUntil>Date.now()?'1':'0'):''):'.'; }).join('')
+        + '#' + (c.decor||[]).map(function(d){ return d.key+d.col+','+d.row; }).join(''); }).join('|');
   }
   function svgEl(tag, attrs){
     var el = document.createElementNS(CITY_NS, tag);
@@ -3348,7 +3621,7 @@
         '</div>'+
         '<button class="cr-rename-btn" title="'+t.cityRenameTitle+'">✎</button>';
       row.addEventListener('click', function(){
-        activeCityIdx = idx; liftedPlot=null; pendingPlacement=null; lastCityMapSig=null;
+        activeCityIdx = idx; liftedPlot=null; pendingPlacement=null; liftedDecor=null; pendingDecor=null; lastCityMapSig=null;
         renderWarehouse(); openCityFull();
       });
       var renameBtn = row.querySelector('.cr-rename-btn');
@@ -3391,11 +3664,21 @@
       cityPlaceBannerText.textContent = t.placeBannerText(t.buildings[pendingPlacement].name);
       cityPlaceCancelBtn.style.display = '';
       cityPlaceCancelBtn.onclick = cancelPlacement;
+    } else if(pendingDecor){
+      cityPlaceBanner.style.visibility = 'visible'; cityPlaceBanner.style.pointerEvents = '';
+      cityPlaceBannerText.textContent = t.placeBannerText(t.decor[pendingDecor].name);
+      cityPlaceCancelBtn.style.display = '';
+      cityPlaceCancelBtn.onclick = cancelDecorPlacement;
     } else if(liftedPlot){
       cityPlaceBanner.style.visibility = 'visible'; cityPlaceBanner.style.pointerEvents = '';
       cityPlaceBannerText.textContent = t.liftedBannerText;
       cityPlaceCancelBtn.style.display = '';
       cityPlaceCancelBtn.onclick = function(){ liftedPlot=null; renderCityMap(); };
+    } else if(liftedDecor){
+      cityPlaceBanner.style.visibility = 'visible'; cityPlaceBanner.style.pointerEvents = '';
+      cityPlaceBannerText.textContent = t.liftedDecorBannerText;
+      cityPlaceCancelBtn.style.display = '';
+      cityPlaceCancelBtn.onclick = function(){ liftedDecor=null; renderCityMap(); };
     } else {
       cityPlaceBanner.style.visibility = 'hidden'; cityPlaceBanner.style.pointerEvents = 'none';
     }
@@ -3416,7 +3699,7 @@
     whHereLbl.textContent = t.whHereLbl(total, warehouseCap);
     whHereBar.style.width = pct + '%';
     whGrid.innerHTML = '';
-    ['water','food','wood','plank','stone','iron','nails','sand','glass'].forEach(function(k){
+    ['water','food','wood','stone','iron','sand'].forEach(function(k){
       var chip = document.createElement('div'); chip.className = 'wh-chip';
       var fillPct = Math.min(100, Math.round((warehouse[k]||0)/warehouseCap*100));
       chip.innerHTML = '<span class="wi"><svg><use href="#ic-mat-'+k+'"/></svg></span>'+
@@ -3427,15 +3710,6 @@
     whWaterBtn.textContent = waterGenLoading ? t.whWaterBtnLoading : t.whWaterBtn;
     whExpandBtn.textContent = expandLoading ? t.whExpandBtnLoading : t.whExpandBtn(warehouseCap);
     whRefine.innerHTML = '';
-    Object.keys(REFINE).forEach(function(key){
-      var def = REFINE[key];
-      var can = warehouse[def.from] >= def.need && warehouseTotal() < warehouseCap;
-      var btn = document.createElement('button');
-      btn.disabled = !can || !!refineLoading[key];
-      btn.innerHTML = '<span>'+t.refineLabel(def.need, MATERIAL_ICON[def.from], MATERIAL_ICON[key])+'</span><span>'+(refineLoading[key]?'⏳':'📺')+'</span>';
-      btn.onclick = function(){ refineMaterial(key); };
-      whRefine.appendChild(btn);
-    });
     var bankHead = document.createElement('div');
     bankHead.style.cssText = 'font-size:9.5px;font-weight:800;color:var(--ink-dim);margin-top:6px;';
     bankHead.textContent = t.bankTitle;
@@ -3461,8 +3735,22 @@
     buildFullTitle.textContent = t.buildFullTitle;
     buildFullCloseLbl.textContent = t.cityFullBackBtn;
     buildFullHint.textContent = t.buildFullHint;
+    if(cityDecorFab) cityDecorFab.title = t.decorFabLbl;
+    if(cityManageFab) cityManageFab.title = t.manageFabLbl;
+    if(decorFullTitle){
+      decorFullTitle.textContent = t.decorFullTitle;
+      decorFullCloseLbl.textContent = t.cityFullBackBtn;
+      decorFullHint.textContent = t.decorFullHint;
+    }
+    if(manageFullTitle){
+      manageFullTitle.textContent = t.manageFullTitle;
+      manageFullCloseLbl.textContent = t.cityFullBackBtn;
+      manageFullHint.textContent = t.manageFullHint;
+    }
     renderCityMap();
     if(buildFullModal && buildFullModal.classList.contains('show')) renderBuildGrid();
+    if(decorFullModal && decorFullModal.classList.contains('show')) renderDecorGrid();
+    if(manageFullModal && manageFullModal.classList.contains('show')) renderManageList();
   }
   /* ---- building picker: its own fullscreen window (see #buildFullModal above), showing every
      buildable charity building as a square tile -- a small canvas with the real in-game building
@@ -3500,11 +3788,24 @@
       var afford = TEST_UNLOCK_ALL_BUILDINGS ? true : def.moneyOnly ? (dobro >= moneyCostFor(def)) : def.rentable ? (dobro >= def.rentCost) : canAfford(buildingCost(def));
       var blocked = cityFull || holding || !afford;
       var priceLabel = def.moneyOnly ? (moneyCostFor(def)+' zł') : def.rentable ? (def.rentCost+' zł') : '';
+      // materials breakdown: every raw amount this building needs, each tinted red the moment
+      // the warehouse doesn't have enough of it yet -- this is the direct answer to "how do I
+      // know what a building needs", shown right on the tile instead of requiring a tap-through.
+      var costHtml = '';
+      if(!def.moneyOnly && !def.rentable && def.cost){
+        var costObj = buildingCost(def);
+        costHtml = '<span class="bg-cost">' + Object.keys(costObj).map(function(mk){
+          var need = costObj[mk], have = warehouse[mk]||0;
+          var short = !TEST_UNLOCK_ALL_BUILDINGS && have < need;
+          return '<span class="bg-cost-item'+(short?' short':'')+'"><svg><use href="#ic-mat-'+mk+'"/></svg>'+need+'</span>';
+        }).join('') + '</span>';
+      }
       var tile = document.createElement('button');
       tile.className = 'bg-tile'; tile.disabled = blocked; tile.title = bt.name;
       tile.innerHTML = '<span class="bg-thumb-wrap"><canvas class="bg-thumb" width="150" height="150"></canvas>'+
         (count?'<span class="bg-count">×'+count+'</span>':'')+'</span>'+
         '<span class="bg-name">'+bt.name+'</span>'+
+        costHtml+
         (priceLabel?'<span class="bg-price">'+priceLabel+'</span>':'');
       gridEl.appendChild(tile);
       if(Assets){
@@ -3525,6 +3826,104 @@
   function openBuildFull(){ buildFullModal.classList.add('show'); renderBuildGrid(); sfx('click'); }
   function closeBuildFull(){ buildFullModal.classList.remove('show'); }
   cityBuildFab.addEventListener('click', openBuildFull);
+
+  /* ---- decoration picker: same tile-grid pattern as the building picker, but every item is
+     free (no cost/afford check, no city-full gate -- decor doesn't consume plot capacity) so the
+     signature is much simpler than buildGridSignature's. ---- */
+  var lastDecorGridSig = null;
+  function renderDecorGrid(){
+    var gridEl = $('decorGrid'); if(!gridEl) return;
+    var sig = LANG+':'+(!!pendingDecor);
+    if(sig === lastDecorGridSig) return;
+    lastDecorGridSig = sig;
+    gridEl.innerHTML = '';
+    var t = T();
+    var holding = !!pendingDecor;
+    var Assets = window.CityAssets;
+    if(Assets && !Assets.isBaked()) Assets.bakeAll();
+    DECOR.forEach(function(def){
+      var dt = t.decor[def.key];
+      var tile = document.createElement('button');
+      tile.className = 'bg-tile'; tile.disabled = holding; tile.title = dt.name;
+      tile.innerHTML = '<span class="bg-thumb-wrap"><canvas class="bg-thumb" width="150" height="150"></canvas></span>'+
+        '<span class="bg-name">'+dt.name+'</span>';
+      gridEl.appendChild(tile);
+      if(Assets){
+        var cv = tile.querySelector('canvas'), cctx = cv.getContext('2d');
+        var fp = Assets.footprint(def.slot) || {w:70,h:70};
+        var k = Math.min((cv.width*0.72)/fp.w, (cv.height*0.62)/fp.h);
+        Assets.blit(cctx, def.slot, cv.width/2, cv.height*0.86, k);
+      }
+      tile.addEventListener('click', function(k){ return function(){
+        startDecorPlacement(k);
+        closeDecorFull();
+      }; }(def.key));
+    });
+  }
+  function openDecorFull(){ decorFullModal.classList.add('show'); renderDecorGrid(); sfx('click'); }
+  function closeDecorFull(){ decorFullModal.classList.remove('show'); }
+  cityDecorFab.addEventListener('click', openDecorFull);
+  decorFullClose.addEventListener('click', function(){ closeDecorFull(); sfx('click'); });
+
+  /* ---- manage/remove: a plain list of every building and decoration currently placed in the
+     active city, each with its own remove button -- the dedicated delete function the map's
+     tap-to-lift-and-move interaction never provided on its own. Rebuilt every time the panel is
+     opened or a row is removed (small lists, CITY_PLOTS-bounded, no need for a dirty-check). ---- */
+  function renderManageList(){
+    var t = T();
+    var city = cities[activeCityIdx]; if(!city) return;
+    manageSectionBuildingsLbl.textContent = t.manageSectionBuildings;
+    manageSectionDecorLbl.textContent = t.manageSectionDecor;
+    manageEmptyHint.textContent = t.manageEmpty;
+    manageBuildingList.innerHTML = '';
+    manageDecorList.innerHTML = '';
+    var builtPlots = [];
+    city.plots.forEach(function(p, idx){ if(p) builtPlots.push({p:p, idx:idx}); });
+    builtPlots.forEach(function(entry){
+      var def = BUILDING_BY_KEY[entry.p.key]; if(!def) return;
+      var bt = t.buildings[entry.p.key];
+      var row = document.createElement('div'); row.className = 'manage-row';
+      var sub = def.rentable ? (GameAPIRentLabel(entry.p)) : '';
+      row.innerHTML = '<span class="manage-row-icon">'+def.icon+'</span>'+
+        '<span class="manage-row-name">'+bt.name+(sub?'<div class="manage-row-sub">'+sub+'</div>':'')+'</span>'+
+        '<button class="manage-row-remove">'+t.manageRemoveBtn+'</button>';
+      row.querySelector('.manage-row-remove').addEventListener('click', function(){
+        removeBuildingAt(activeCityIdx, entry.idx);
+        renderManageList();
+      });
+      manageBuildingList.appendChild(row);
+    });
+    (city.decor||[]).forEach(function(d, idx){
+      var dd = DECOR_BY_KEY[d.key]; if(!dd) return;
+      var dt = t.decor[d.key];
+      var row = document.createElement('div'); row.className = 'manage-row';
+      row.innerHTML = '<span class="manage-row-icon">'+dd.icon+'</span>'+
+        '<span class="manage-row-name">'+dt.name+'</span>'+
+        '<button class="manage-row-remove">'+t.manageRemoveBtn+'</button>';
+      row.querySelector('.manage-row-remove').addEventListener('click', function(){
+        removeDecorAt(activeCityIdx, idx);
+        renderManageList();
+      });
+      manageDecorList.appendChild(row);
+    });
+    var empty = builtPlots.length===0 && (city.decor||[]).length===0;
+    manageEmptyHint.style.display = empty ? '' : 'none';
+    manageSectionBuildingsLbl.style.display = builtPlots.length ? '' : 'none';
+    manageSectionDecorLbl.style.display = (city.decor||[]).length ? '' : 'none';
+  }
+  /* short "expires in Xm" sub-label for a rentable building row, reusing the same rent state the
+     map's own renewal-hint already reads (isRentActive/rentUntil) -- just enough context to tell
+     an active rental apart from a lapsed one, without duplicating the map's full rent UI here. */
+  function GameAPIRentLabel(plot){
+    var t = T();
+    if(!plot.rentUntil) return '';
+    var active = plot.rentUntil > Date.now();
+    return active ? '' : t.buildRentExpired;
+  }
+  function openManageFull(){ manageFullModal.classList.add('show'); renderManageList(); sfx('click'); }
+  function closeManageFull(){ manageFullModal.classList.remove('show'); }
+  cityManageFab.addEventListener('click', openManageFull);
+  manageFullClose.addEventListener('click', function(){ closeManageFull(); sfx('click'); });
   buildFullClose.addEventListener('click', function(){ closeBuildFull(); sfx('click'); });
   buildFullModal.addEventListener('click', function(e){ if(e.target === buildFullModal) closeBuildFull(); });
   whWaterBtn.addEventListener('click', watchWaterGenAd);
@@ -3666,7 +4065,7 @@
     matEl.querySelector('button').onclick = function(){
       var room = warehouseCap - warehouseTotal();
       if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
-      var bundle = {wood:3, stone:3, iron:3, nails:3, plank:3, sand:3, glass:3, food:3};
+      var bundle = {wood:6, stone:6, iron:6, sand:6, food:3};
       for(var mk in bundle){
         if(room<=0) break;
         var give = Math.min(bundle[mk], room);
@@ -3776,13 +4175,15 @@
     startCityAmbience();
   }
   cityMapOpen.addEventListener('click', function(){
-    activeCityIdx = activeCityIdx || 0; liftedPlot=null; pendingPlacement=null; lastCityMapSig=null;
+    activeCityIdx = activeCityIdx || 0; liftedPlot=null; pendingPlacement=null; liftedDecor=null; pendingDecor=null; lastCityMapSig=null;
     openCityFull(); sfx('click');
   });
   function closeCityFull(){
     cityFullModal.classList.remove('show'); if(window.CityRenderer) window.CityRenderer.unmount();
     stopCityAmbience();
     closeBuildFull();
+    closeDecorFull();
+    closeManageFull();
   }
   cityFullClose.addEventListener('click', function(){ closeCityFull(); sfx('click'); });
   cityFullModal.addEventListener('click', function(e){ if(e.target === cityFullModal) closeCityFull(); });
@@ -4102,6 +4503,7 @@
     if(ctx && ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
     if(musicOn) startMusic();
     boot.classList.add('hide');
+    if(phoneShell) phoneShell.classList.remove('booting');
     setTimeout(function(){
       boot.style.display='none';
       if(playerNick){ enterGarden(); }
@@ -4305,6 +4707,15 @@
     canBuildAt: function(cityIdx, col, row){
       var excludeIdx = (liftedPlot && liftedPlot.cityIdx===cityIdx) ? liftedPlot.plotIdx : -1;
       return canBuildAt(cityIdx, col, row, excludeIdx);
+    },
+    getDecorCatalog: function(){ return DECOR; },
+    getDecorDef: function(key){ return DECOR_BY_KEY[key] || null; },
+    getDecorDisplay: function(key){ var t = T(); return t.decor[key] || {name:key}; },
+    getPendingDecor: function(){ return pendingDecor; },
+    getLiftedDecor: function(){ return liftedDecor; },
+    canDecorAt: function(cityIdx, col, row){
+      var excludeIdx = (liftedDecor && liftedDecor.cityIdx===cityIdx) ? liftedDecor.decorIdx : -1;
+      return canDecorAt(cityIdx, col, row, excludeIdx);
     },
     tapPlot: function(cityIdx, col, row){ onPlotTap(cityIdx, col, row); },
     movePlot: movePlot,
