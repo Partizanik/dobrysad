@@ -240,7 +240,9 @@
 
   /* where the close-up initial shot should center: the middle of the player's own built plots
      (so the town they've actually built is what greets them), or -- for a brand-new empty city --
-     the street just past the promenade, which is where building naturally starts. */
+     right at the waterfront/promenade edge (not further into the field) so the very first frame
+     the player sees already shows the shore, making it obvious there's a draggable map beyond it
+     instead of opening on a patch of anonymous grass. */
   function computeFocusCell(GameAPI, L){
     var cities = GameAPI.getCities();
     var city = cities[GameAPI.getActiveCityIdx()];
@@ -250,7 +252,7 @@
       plots.forEach(function(p){ sc+=p.col; sr+=p.row; });
       return { col: sc/plots.length, row: sr/plots.length };
     }
-    return { col: (L.minCol+L.maxCol)/2, row: L.fieldRow0 + 3 };
+    return { col: (L.minCol+L.maxCol)/2, row: L.promRow1 + 1 };
   }
 
   function mount(){
@@ -333,6 +335,6 @@
     getGeom: function(){ return layout; },
     getWaterProximity: getWaterProximity,
     getWrapRect: function(){ return wrap ? wrap.getBoundingClientRect() : {left:0, top:0, width:0, height:0}; },
-    clampView: function(){ if(deps()) GEO.clampView(view); }
+    clampView: function(){ if(deps() && wrap) GEO.clampView(view, wrap.getBoundingClientRect()); }
   };
 })(window);

@@ -103,7 +103,7 @@
         var view0 = CR.getView();
         view0.tx += (mid.x - pinchStartMid.x) / k;
         view0.ty += (mid.y - pinchStartMid.y) / k;
-        GEO.clampView(view0);
+        GEO.clampView(view0, rect);
       }
       pinchStartMid = mid;
     } else {
@@ -113,7 +113,7 @@
       var k2 = GEO.wrapScale(CR.getView(), rect2);
       var view = CR.getView();
       view.tx += dxPx / k2; view.ty += dyPx / k2;
-      GEO.clampView(view);
+      GEO.clampView(view, rect2);
       if(velTracker){
         var now = performance.now(), dt = Math.max(1, now - velTracker.t);
         // exponential moving average so one jittery sample can't dominate the flick velocity
@@ -178,7 +178,7 @@
     if(inertia){
       var view = CR.getView();
       view.tx += inertia.vx*dt; view.ty += inertia.vy*dt;
-      GEO.clampView(view);
+      GEO.clampView(view, CR.getWrapRect());
       var decay = Math.pow(INERTIA_DECAY, dt);
       inertia.vx *= decay; inertia.vy *= decay;
       if(Math.hypot(inertia.vx, inertia.vy) < INERTIA_MIN_SPEED) inertia = null;

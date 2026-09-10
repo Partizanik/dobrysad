@@ -19,12 +19,21 @@
 
   var TW = 84, TH = 42;              // tile width/height in content-space units (2:1 iso)
   var BUILD_HEADROOM = 190;          // extra top padding so tall buildings never clip the fit view
-  var MIN_SCALE = 0.5, MAX_SCALE = 5.0;
+  /* NOTE on what "scale" actually means here: view.scale is only HALF of the effective zoom --
+     wrapScale() (see below) first shrinks the whole content-space field down by a k factor so
+     the ENTIRE (huge, FIELD_COLS x FIELD_ROWS) field could fit the viewport at scale=1, and
+     view.scale multiplies on top of that. Since the field is ~100x100 tiles, k alone is tiny
+     (~0.045-0.05 on a typical phone) -- a "scale" of 5.0 used to mean an on-screen tile width of
+     only ~10-20px, nowhere near close enough to read as a Hay Day/Township-style close-up (the
+     player's repeatedly-reported "still too zoomed out even at max zoom" bug). These values are
+     picked so a tile lands around ~80-90px wide at INITIAL_SCALE and ~150px+ at MAX_SCALE on a
+     normal phone -- verified against the real FIELD_COLS/ROWS + TW/TH constants, not guessed. */
+  var MIN_SCALE = 0.5, MAX_SCALE = 42;
   // how close the view starts when the fullscreen city first opens -- a Hay Day/Township-style
   // close-up on the player's own street, not a zoomed-out view of the whole (huge) field. The
   // player can always pinch or hit the reset button to zoom back out to fitView's full-field shot.
   // MAX_SCALE sits well above this so pinch/+ still has real extra room to zoom in further.
-  var INITIAL_SCALE = 2.6;
+  var INITIAL_SCALE = 20;
 
   function isoToLocal(col, row){
     return { x: (col - row) * (TW/2), y: (col + row) * (TH/2) };
@@ -169,10 +178,26 @@
     return roads;
   }
 
-  function clampView(view){
+  /* Clamp tx/ty to keep the content from panning off into empty space, with a small overscroll
+     allowance (margin) on each edge. This needs the actual on-screen viewport size (wrapRect) to
+     get right -- a version that only looked at view.contentW/H (an earlier draft of this file)
+     let the player pan almost an entire content-width off the map at high zoom, since the old
+     formula's bounds didn't scale with the viewport at all. wrapRect is optional only so a stray
+     call before the wrap element exists (or the public CityRenderer.clampView() convenience,
+     currently unused) can't throw; every real call site below always has one. */
+  function clampView(view, wrapRect){
     var margin = 60;
-    view.tx = Math.max(-(view.contentW*view.scale)+margin, Math.min(view.contentW-margin, view.tx));
-    view.ty = Math.max(-(view.contentH*view.scale)+margin, Math.min(view.contentH-margin, view.ty));
+    if(!wrapRect || wrapRect.width<=0 || wrapRect.height<=0){
+      view.tx = Math.max(-(view.contentW*view.scale)+margin, Math.min(view.contentW-margin, view.tx));
+      view.ty = Math.max(-(view.contentH*view.scale)+margin, Math.min(view.contentH-margin, view.ty));
+      return;
+    }
+    var k = wrapScale(view, wrapRect);
+    var localW = wrapRect.width / k, localH = wrapRect.height / k;
+    var minTx = Math.min(0, localW - view.contentW*view.scale) - margin;
+    var minTy = Math.min(0, localH - view.contentH*view.scale) - margin;
+    view.tx = Math.max(minTx, Math.min(margin, view.tx));
+    view.ty = Math.max(minTy, Math.min(margin, view.ty));
   }
 
   function fitView(view, wrapRect){
@@ -181,7 +206,7 @@
     view.scale = Math.max(MIN_SCALE, Math.min(1, 0.94));
     view.tx = (localW - view.contentW*view.scale) / 2;
     view.ty = (localH - view.contentH*view.scale) / 2;
-    clampView(view);
+    clampView(view, wrapRect);
   }
 
   /* close-up starting shot for a freshly-opened city: same idea as fitView (compute local-space
@@ -195,7 +220,7 @@
     var focus = isoToContent(layout, focusCol, focusRow);
     view.tx = localW/2 - focus.x*view.scale;
     view.ty = localH/2 - focus.y*view.scale;
-    clampView(view);
+    clampView(view, wrapRect);
   }
 
   function zoomTo(view, wrapRect, screenX, screenY, newScaleRaw){
@@ -206,7 +231,7 @@
     view.tx = localX - newScale*contentX;
     view.ty = localY - newScale*contentY;
     view.scale = newScale;
-    clampView(view);
+    clampView(view, wrapRect);
   }
 
   global.CityGeometry = {
