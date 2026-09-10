@@ -832,7 +832,7 @@
         <div class="statusbar">
           <div class="statusbar-group langsw">
             <button id="soundToggle" class="icon-btn" title="Sound &amp; vibration"><svg class="soundset-icon"><use href="#ic-sound-settings"/></svg></button>
-            <button id="langPl" class="active">PL</button><button id="langEn">EN</button>
+            <button id="langPl" class="active">PL</button><button id="langEn">EN</button><button id="langBe">BE</button>
           </div>
           <div class="statusbar-group head-actions">
             <button id="profileBtn" class="icon-btn" title="Profile"><svg class="profile-btn-icon"><use href="#ic-profile"/></svg></button>
@@ -1592,6 +1592,240 @@
         pastTitle:'Last month',
         past: 'Winner: <b>"Together Healthier" Foundation</b> — 2,450 PLN transferred ✅ (illustrative example)'
       }
+    },
+    /* Belarusian -- added for testing at the user's request (their native language). Translated
+       from the Polish text (closer in register/tone to Belarusian than the English copy), keeping
+       every key and function signature identical to pl/en so T()/LANG need no special-casing
+       anywhere else in the file. */
+    be: {
+      tagline: 'Дапамагайце бясплатна, гледзячы рэкламу',
+      gardenLabelSuffix: '',
+      impactLabel: 'Ваша Дабро з пачатку',
+      plantFree: '(бясплатна)',
+      plantCost: function(c){ return '(' + c + ' 🌾)'; },
+      plantBtn: '🌰 Пасадзіць насенне',
+      adBtn: '📺 Паглядзець рэкламу і зрабіць дабро',
+      adBtnLoading: '⏳ Паказ рэкламы (дэма)...',
+      offlineBtn: '🕐 Сімуляцыя: гадзіна афлайн',
+      navGarden:'Сад', navShop:'Крама', navRank:'Рэйтынг', navVote:'Галасаванне',
+      cityOpenBtn:'Горад', mapOpenBtn:'Сады',
+      mapHint: 'Правядзіце пальцам, каб убачыць усе сады — новыя адкрываюцца без канца.',
+      mapClose: '← Вярнуцца ў сад',
+      bpTitle: '🎒 Заплечнік — прымяніць да выбранай расліны',
+      bpApply: 'Прымяніць',
+      whTitle: '📦 Склад рэсурсаў',
+      whCapText: function(total, cap){ return total + ' / ' + cap + ' — ёмістасць склада'; },
+      whHereLbl: function(total, cap){ return 'Вашы рэсурсы: ' + total + ' / ' + cap; },
+      whWaterBtn: '📺 Паглядзець рэкламу і атрымаць ваду',
+      whWaterBtnLoading: '⏳ Паказ рэкламы...',
+      whExpandBtn: function(cap){ return '📺 Павялічыць склад (да ' + (cap+20) + ')'; },
+      whExpandBtnLoading: '⏳ Паказ рэкламы...',
+      refineLabel: function(need, fromIcon, toIcon){ return need + ' ' + fromIcon + ' → 1 ' + toIcon; },
+      townTitle: '🏘️ Мястэчка дабра',
+      townPeopleLine: function(n){ return n>0 ? ('Жыхары: ' + n + ' — кожны дадае трохі Дабра штосекунды.') : 'Пабудуйце першы аб’ект, каб у ім пасяліліся людзі.'; },
+      townFoodWarn: '🍎 Няма ежы! Жыхары не дапамагаюць, пакуль вы не збераце плады ў Садзе Надзеі ці Трапічным.',
+      bankTitle: '🏦 Банк — абмяняць лішнюю ежу',
+      cityMapTitle: 'Карта горада',
+      cityHereLbl: 'Ваш горад — гл. ніжэй',
+      cityMapEmpty: 'Пабудуйце першы дом, і ён з’явіцца на карце разам з дарогай.',
+      cityMapInactive: ' (арэнда скончылася)',
+      cityExpandTitle: 'Павялічыць горад',
+      cityFullHint: 'Сцісніце пальцы або выкарыстайце кола, каб наблізіць — перацягвайце, каб азірнуцца.',
+      cityRenewHint: 'Дакраніцеся да будынка з скончанай арэндай на карце, каб працягнуць арэнду.',
+      cityCardName: function(n){ return 'Горад ' + n; },
+      cityNewBtn: '+ Новы горад',
+      cityFullBackBtn: 'Назад',
+      cityRenameTitle: 'Змяніць назву горада',
+      cityBuildFabLbl: 'Будаваць',
+      buildFullTitle: 'Абярыце будынак',
+      buildFullHint: 'Дакраніцеся да будынка, каб пачаць яго ставіць — потым пакажыце месца на карце.',
+      placeBannerText: function(name){ return '📍 Абярыце пустое месца для: ' + name; },
+      liftedBannerText: '🤚 Абярыце новае месца — дакраніцеся да таго ж будынка яшчэ раз, каб скасаваць.',
+      cityFullHintCatalog: '🏙️ Горад поўны — купіце новы горад, каб будаваць далей.',
+      choosePlotFirst: '📍 Спачатку абярыце месца для будынка, які будуецца.',
+      rentRenewHintCatalog: 'Арандуйце, а потым дакраніцеся да будынка на карце, каб працягнуць арэнду.',
+      buildBtn: 'Будаваць',
+      buildRentBtn: 'Арандаваць на месяц',
+      buildRenewBtn: 'Працягнуць на месяц',
+      buildCost: 'Кошт',
+      buildMoneyTag: '💳 Толькі за рэальны ўнёсак — не выкарыстоўвае рэсурсы з садоў',
+      buildRentTag: function(left){ return '📅 Арандавана — засталося: ' + left; },
+      buildRentExpired: '📅 Арэнда скончылася — працягніце, каб жыхары вярнуліся.',
+      peopleUnit: 'жых.',
+      buildings: {
+        needyhome: {name:'Дом для Патрабуючых', desc:'Першы дах над галавой для сем’яў, якія яго не маюць — самая танная і найважнейшая пабудова ў горадзе.'},
+        senior: {name:'Дом Састарэлых', desc:'Догляд і цёплая ежа для людзей сталага веку.'},
+        orphan: {name:'Дзіцячы Дом', desc:'Бяспечны дом для дзяцей без апекі.'},
+        hospital: {name:'Бальніца', desc:'Лячэнне для тых, каму гэта не па кішэні.'},
+        hospice: {name:'Хоспіс', desc:'Годны догляд на апошнім этапе жыцця.'},
+        chapel: {name:'Капліца Адкрытых Дзвярэй', desc:'Ціхае месца духоўнай падтрымкі і размовы — адкрыта для кожнага, каму гэта трэба.'},
+        shelter: {name:'Прытулак для Жывёл', desc:'Дом для пакінутых жывёл.'},
+        library: {name:'Бібліятэка', desc:'Бясплатны доступ да кніг і навучання для ўсёй акругі.'},
+        cafe: {name:'Кавярня', desc:'Месца сустрэч жыхароў за кубкам кавы.'},
+        florist: {name:'Кветкарня Надзеі', desc:'Дае працу людзям з інваліднасцю і перадае кветкі ў бальніцы і хоспісы.'},
+        restaurant: {name:'Рэстаран', desc:'Цёплая ежа і праца для жыхароў горада.'},
+        cinema: {name:'Кінатэатр', desc:'Забавы і культура для ўсёй супольнасці.'},
+        mall: {name:'Гандлёвы Цэнтр', desc:'Крамы і паслугі ў адным месцы — сэрца гарадской інфраструктуры.'},
+        repairshop: {name:'Майстэрня Рамонту', desc:'Бясплатна рамантуе хатнюю тэхніку і ровары сем’ям, якія не могуць гэта аплаціць.'},
+        clothingpoint: {name:'Пункт Выдачы Адзення', desc:'Збірае і бясплатна выдае адзенне і абутак сем’ям, якія маюць патрэбу.'},
+        forge: {name:'Кузня Добрых Сэрцаў', desc:'Куе і рамантуе сельскагаспадарчыя прылады бясплатна для навакольных гаспадарак у патрэбе.'},
+        foodbank: {name:'Банк Ежы', desc:'Штодзённыя харчовыя пакункі для сем’яў, якія маюць патрэбу. Фінансуецца выключна за кошт рэальных унёскаў.'},
+        mobileclinic: {name:'Мабільная Клініка', desc:'Выязная медычная дапамога для вёсак без доступу да ўрача. Арандуецца штомесяц за кошт рэальных унёскаў.'}
+      },
+      comboLabel: function(n){ return '🔥 Комба ×' + n; },
+      confirmYes:'Адкрыць', confirmNo:'Скасаваць',
+      confirmTitle: function(name){ return 'Адкрыць «' + name + '»?'; },
+      confirmText: function(cost){ return 'Кошт: ' + cost + ' 🌾 Дабра. Вы атрымаеце новую градку 5×5 з уласным наборам раслін.'; },
+      bootStudio: 'Game Studio',
+      bootTips: [
+        'Падказка: злучыце дзве аднолькавыя расліны побач, каб палепшыць іх.',
+        'Адкрывайце новыя сады на карце свету 🗺️ — іх бясконца шмат.',
+        'Сакрэтныя расліны свецяцца фіялетавым — збірайце іх асобна!',
+        'Лавіце манеты і плады, якія падаюць, каб зрабіць комба 🔥.'
+      ],
+      bootFinal: 'Рабіце дабро без выдаткаў',
+      bootCta: 'Дакраніцеся, каб пачаць',
+      nickTitle: 'Як вас прадставіць у садзе?',
+      nickSubtitle: 'Гэты псеўданім будзе бачны ў рэйтынгу — ніхто не ўбачыць вашага сапраўднага імя, калі вы гэтага не хочаце.',
+      nickPlaceholder: 'Ваш псеўданім',
+      nickErrorEmpty: 'Увядзіце псеўданім, каб пачаць гульню.',
+      nickSaveBtn: 'Захаваць і гуляць',
+      nickDivider: 'або',
+      nickGoogleBtn: 'Увайсці праз Google',
+      nickGoogleLoading: 'Злучэнне з Google…',
+      nickGoogleUnavailable: 'Уваход праз Google будзе даступны пасля поўнага наладжвання ва ўсталяванай версіі — пакуль увядзіце псеўданім уручную.',
+      nickGoogleError: 'Не ўдалося ўвайсці праз Google — паспрабуйце яшчэ раз ці ўвядзіце псеўданім уручную.',
+      nickWelcome: function(name){ return 'Вітаем у садзе, ' + name + '! 🌱'; },
+      tutHintText: '👆 Дакраніцеся да расліны, а потым да такой жа побач — яны злучацца ў вышэйшы ўзровень.',
+      tutHintOk: 'Зразумела',
+      watchAdShort: '📺 Рэклама',
+      watchAdShortLoading: '⏳...',
+      infoTitle: 'Як гэта працуе',
+      infoP1: '📺 Прагляд рэкламы — асноўны спосаб дапамогі — гэта бясплатна для вас, а прыбытак з рэкламы ідзе ў фонд.',
+      infoP2: '💛 Пакупкі ў краме цалкам неабавязковыя. Толькі пакупкі з пазнакай «ідзе ў фонд» сапраўды папаўняюць фонд — 🌾 Дабро, атрыманае самой гульнёй, гэта звычайная гульнявая эканоміка.',
+      infoP3: '🏆 Рэйтынг паказвае самых актыўных людзей паводле часу і паводле падтрымкі — кожны вынік мае значэнне, а не толькі лідары.',
+      infoP4: '🌱 Пасля злучэння расліна нейкі час расце, перш чым яе зноў можна злучыць — ручное злучэнне заўсёды бясплатнае. Аўта-злучэнне ў краме — гэта толькі неабавязковая эканомія часу.',
+      infoClose: 'Закрыць',
+      settingsTitle: 'Гук і вібрацыя',
+      settingsMusic: 'Музыка на фоне',
+      settingsSfx: 'Гукі гульні',
+      settingsVibrate: 'Вібрацыя',
+      settingsOn: 'Уключана', settingsOff: 'Выключана',
+      settingsClose: 'Закрыць',
+      profileTitle: '👤 Ваш профіль',
+      profileGuest: 'Госць',
+      profileProviderGoogle: 'Уваход праз Google',
+      profileProviderGuest: 'Гульня як госць',
+      profileAdsWatched: '📺 Прагледжана рэкламы',
+      profileImpactLabel: '💚 Ваш уклад у дабрачынную мэту з пачатку',
+      profileCitiesLabel: '🏙️ Пабудаваныя гарады',
+      profileNextMilestone: function(label){ return 'Наступны рубеж: ' + label; },
+      profileClose: 'Закрыць',
+      notif: {
+        title: 'Dobry Sad',
+        day1: function(remain){ return remain>0 ? ('🌱 Ваш сад чакае! Засталося толькі '+remain+' Дабра да наступнай мэты.') : '🌱 Ваш сад чакае вас — зазірніце сабраць ураджай!'; },
+        day3: '☀️ Расліны падраслі без мяне? Зазірніце на хвілінку ў сад.',
+        day7: '💛 Мінуў тыдзень — ваш сад усё яшчэ тут і ўсё яшчэ дапамагае, калі вы гуляеце.'
+      },
+      gardenNames: ['Сад Надзеі','Трапічны Сад','Дрэўны Гай','Кветкавы Сад','Каменяломня','Шклозавод','Кузня'],
+      adjectives: ['Загадкавы','Крыштальны','Месяцовы','Сонечны','Смарагдавы','Нябесны','Магічны','Старажытны','Казачны','Вясёлкавы'],
+      nouns: ['сад','аазіс','лес','востраў','парк','куток','рай','крыштальны сад'],
+      milestones: ['набор гародніны','адзін абед','20 літраў вады','падручнік','сапраўднае дрэва','цацка','візіт да ўрача','дзень у школе','месяц даху над галавой для сям’і'],
+      milestoneToast: function(icon,t,label){ return icon + ' Рубеж: ' + t + ' Дабра — быццам аплачана: ' + label; },
+      toast: {
+        notEnoughSoft: 'Замала 🌾 Дабра.',
+        notEnoughHeart: 'Замала 💛 Сэрцайкаў.',
+        gridFull: 'Градка поўная — злучыце расліны, каб вызваліць месца.',
+        maxSameLine: 'Гэтая расліна ўжо на максімальным узроўні.',
+        secretSpawn: '✨ Сакрэтная расліна! Збірайце іх як асобную калекцыю.',
+        maxReached: 'Расліна дасягнула максімальнага ўзроўню!',
+        adReward: 'Дзякуй за прагляд! +10 💛. У поўнай версіі гэты прыбытак таксама ідзе ў фонд.',
+        offline: function(v){ return '🕐 За час вашай адсутнасці сад зарабіў ' + v + ' Дабра.'; },
+        noCandidates: 'Няма раслін, якія можна паскорыць.',
+        alreadyGuaranteed: 'У вас ужо ёсць невыкарыстаная гарантыя.',
+        stillGrowing: function(s){ return '🌱 Яшчэ расце — засталося ' + s + ' с.'; },
+        instantGrown: '⚡ Гатова! Расліна адразу дазрэла.',
+        warehouseFull: '📦 Склад поўны — павялічце яго, каб збіраць больш.',
+        harvested: function(n, icon){ return '📺 Сабрана +' + n + ' ' + icon + '! Трапіла на склад.'; },
+        gotWater: function(n){ return '📺 Дзякуй! +' + n + ' 💧 вады на складзе.'; },
+        warehouseExpanded: function(cap){ return '📦 Склад павялічаны да ' + cap + '!'; },
+        materialsBought: '📦 Матэрыялы дададзены на склад — дзякуй за падтрымку!',
+        notEnoughMaterial: 'Замала рэсурсаў на складзе.',
+        refined: function(icon){ return '📺 Перапрацавана! +1 ' + icon + '.'; },
+        built: function(name){ return '🏗️ Пабудавана: ' + name + '! Новыя жыхары павялічваюць Дабро.'; },
+        rented: function(name){ return '📅 Арандавана: ' + name + ' на месяц (дэма).'; },
+        rentRenewed: function(name){ return '📅 Арэнда працягнута: ' + name + '.'; },
+        addedToBackpack: function(name){ return '🎒 ' + name + ' трапіла ў заплечнік. Абярыце расліну, каб прымяніць.'; },
+        boosterApplied: function(name){ return '✅ ' + name + ' прыменена да выбранай расліны!'; },
+        boosterOn: function(name){ return name + ' актываваны!'; },
+        instantGrowth: '🧪 Расліна імгненна вырасла на ўзровень!',
+        guaranteeReady: '🌟 Гатова — наступнае ўдалае злучэнне дасць сакрэтную расліну!',
+        heartsBought: '💛 +50 Сэрцайкаў!',
+        honeyApplied: '🍯 Пастаянны бонус +5% прыменены!',
+        skinApplied: function(name){ return '🎨 Выгляд «' + name + '» прыменены!'; },
+        gardenUnlocked: function(name){ return '🎉 Адкрыты сад «' + name + '»!'; },
+        notEnoughForGarden: 'Замала Дабра — развівайце бягучы сад далей.',
+        roundupThanks: 'Дзякуй за вашу дапамогу! 💛',
+        donateThanks: function(amount){ return 'Дзякуй за ' + amount + ' зл падтрымкі! 💛'; },
+        donateInvalid: 'Увядзіце суму, большую за нуль.',
+        voted: function(name){ return 'Ваш голас за «' + name + '» захаваны (дэма).'; },
+        choosePlot: function(name){ return '📍 Абярыце пустое месца для: ' + name; },
+        plotTaken: 'Гэтае месца ўжо занята.',
+        tooClose: 'Занадта блізка да іншага будынка — пакіньце як мінімум 1 пустую клетку адступу.',
+        notBuildable: 'Тут нельга будаваць.',
+        moved: '🔄 Будынак перанесены.',
+        lifted: '🤚 Абярыце новае месца або дакраніцеся да таго ж будынка, каб скасаваць.',
+        cityFull: '🏙️ Гэты горад поўны — купіце новы горад.',
+        cityNotFull: 'Запоўніце бягучы горад, перш чым купляць новы.',
+        newCity: function(n){ return '🎉 Новы горад #' + n + ' адкрыты!'; }
+      },
+      shop: {
+        catFree: 'Паліванне — атрымліваецца толькі за прагляд рэкламы',
+        catHeart: 'Актыватары за Сэрцайкі — частка ідзе ў фонд',
+        catSupport: 'Падтрымка праекта — злотыя (дэма)',
+        catCosmetic: 'Дэкарацыі — толькі для выгляду',
+        water: {name:'💧 Паліванне', desc:'+25% даходу сада на 10 хвілін.'},
+        growboost: {name:'⚡ Хуткі рост', desc:'Зарад на потым: дакраніцеся да расліны, якая расце, і выкарыстайце яго, каб яна адразу дарасла — без чакання наступнай рэкламы.'},
+        fertilizer: {name:'⚡ Каталізатар прагрэсу', desc:'+40% бонуса за злучэнне на 20 хвілін — дзейнічае ва ўсіх садах.'},
+        growlamp: {name:'☀️ Лямпа росту ×2', desc:'Падвойвае ўвесь даход сада на выбраны час.'},
+        automerge: {name:'⚙️ Аўта-злучэнне', desc:'Спелыя расліны злучаюцца самі на працягу 30 хвілін — без націскаў. Ручное злучэнне заўсёды застаецца бясплатным.'},
+        automergeOneBtn: 'Гэты сад',
+        automergeAllBtn: 'Усе сады',
+        bio: {name:'🧪 Біяактыватар', desc:'Імгненна павышае выпадковую расліну на 1 узровень.'},
+        rareSeed: {name:'🌟 Рэдкае насенне', desc:'Наступнае ўдалае злучэнне гарантавана дасць сакрэтную расліну.'},
+        honey: {name:'🍯 Пчаліны мёд', desc:'Пастаянны бонус +5% да даходу (макс. 5 пакупак = +25%).'},
+        heartsPack: {name:'💛 Пакет Сэрцайкаў ×50', desc:'Хуткае папаўненне цвёрдай валюты.'},
+        boostAllGarden: {name:'🚀 Поўны росквіт сада', desc:'Імгненна павышае ЎСЁ ў актыўным садзе на адзін узровень — адзін клік, увесь экран.'},
+        seedPack10: {name:'🌰 Пакет насення ×10', desc:'10 насенняў для імгненнай пасадкі.'},
+        seedPack30: {name:'🌰 Пакет насення ×30', desc:'30 насенняў для імгненнай пасадкі.'},
+        seedPack50: {name:'🌰 Пакет насення ×50', desc:'50 насенняў для імгненнай пасадкі.'},
+        materialsPack: {name:'📦 Пакет матэрыялаў', desc:'Набор будаўнічых рэсурсаў на склад.'},
+        skinSunset: {name:'🎨 Заход сонца', desc:'Змяняе каляровы акцэнт градкі.'},
+        skinMidnight:{name:'🎨 Паўночны сад', desc:'Змяняе каляровы акцэнт градкі.'},
+        charityHeart: '≈30% чыстага прыбытку ад Сэрцайкаў ідзе ў фонд-партнёр',
+        charityMoney: '30% гэтай пакупкі ідзе ў фонд',
+        charityCosmetic: '40% гэтай пакупкі ідзе ў фонд',
+        donateAny: {name:'💛 Ахвяраваць любую суму', desc:'Увядзіце суму, якую хочаце перадаць на добрыя мэты — без якіх-небудзь умоў.'},
+        donatePlaceholder: 'Сума ў зл', donateBtn: 'Перадаць',
+        max:'Максімум', owned:'Куплена'
+      },
+      rank: {
+        banner: 'У гэтым месяцы супольнасць паглядзела <b>128 400 рэклам</b> і падтрымала сумай <b>3 260 зл</b> — гэта амаль уся месячная мэта.',
+        tabTime:'Паводле часу (рэклама)', tabMoney:'Паводле падтрымкі (зл)',
+        unitAds: ' рэклам', unitPln:' зл',
+        you: function(rank,total,value,unit,name){ return (name?('<b>'+name+'</b> — '):'') + 'Ваша месца: <b>#' + rank + '</b> з ' + total + ' удзельнікаў — ' + value + unit + ' у гэтым месяцы. Кожны ўнёсак мае значэнне, дзякуй! 💚'; }
+      },
+      vote: {
+        note: 'Папярэдні прагляд функцыі: у поўнай версіі раз на месяц супольнасць галасуе, куды пойдзе сабраная сума. Ніжэй прыклад галасавання (дэма, галасы не сапраўдныя).',
+        voteBtn:'Прагаласаваць', voted:'Прагаласавана ✓',
+        candidates: [
+          {name:'Фонд «Малы Герой»', desc:'Падтрымка лячэння дзяцей з анкалогіяй.'},
+          {name:'Прытулак «Чатыры Лапы»', desc:'Догляд пакінутых жывёл.'},
+          {name:'Фонд «Чыстая Вада»', desc:'Доступ да чыстай вады ў малых населеных пунктах.'}
+        ],
+        pastTitle:'Мінулы месяц',
+        past: 'Перамог: <b>Фонд «Разам Здаравей»</b> — перададзена 2 450 зл ✅ (ілюстрацыйны прыклад)'
+      }
     }
   };
   function T(){ return I18N[LANG]; }
@@ -2042,7 +2276,7 @@
   var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
   var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
   var voteNote=$('voteNote'), voteList=$('voteList');
-  var langPl=$('langPl'), langEn=$('langEn'), soundToggle=$('soundToggle');
+  var langPl=$('langPl'), langEn=$('langEn'), langBe=$('langBe'), soundToggle=$('soundToggle');
   var settingsModal=$('settingsModal'), settingsTitleEl=$('settingsTitle'), settingsClose=$('settingsClose');
   var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel'), settingsVibrateLabel=$('settingsVibrateLabel');
   var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn'), vibrateToggleBtn=$('vibrateToggleBtn');
@@ -2093,7 +2327,8 @@
     try{ if(navigator.vibrate) navigator.vibrate(style==='medium' ? 16 : 9); }catch(e){}
   }
 
-  function fmt(n){ return Math.floor(n).toLocaleString(LANG==='pl'?'pl-PL':'en-US'); }
+  var FMT_LOCALE = {pl:'pl-PL', en:'en-US', be:'be-BY'};
+  function fmt(n){ return Math.floor(n).toLocaleString(FMT_LOCALE[LANG] || 'en-US'); }
   function fmtLeft(ms){ var s=Math.max(0,Math.round(ms/1000)), mm=Math.floor(s/60), ss=s%60; return mm+':'+(ss<10?'0':'')+ss; }
   function toast(msg, ms){
     toastEl.textContent = msg; toastEl.classList.add('show');
@@ -2170,6 +2405,7 @@
     gardenNameTag.textContent = gardenDef(active).name;
     langPl.classList.toggle('active', LANG==='pl');
     langEn.classList.toggle('active', LANG==='en');
+    langBe.classList.toggle('active', LANG==='be');
     infoTitle.textContent = t.infoTitle;
     infoP1.textContent = t.infoP1;
     infoP2.textContent = t.infoP2;
@@ -2885,7 +3121,9 @@
       var def = gardenDef(i); var g = ensureGarden(i);
       var card = document.createElement('div');
       card.className = 'garden-card'+(i===active?' active':'')+(!g.unlocked?' locked':'');
-      var statusTxt = g.unlocked ? (i===active ? (LANG==='pl'?'Aktywny':'Active') : (LANG==='pl'?'Otwarty':'Unlocked')) : ('🌾 '+fmt(def.cost));
+      var GARDEN_STATUS_ACTIVE = {pl:'Aktywny', en:'Active', be:'Актыўны'};
+      var GARDEN_STATUS_UNLOCKED = {pl:'Otwarty', en:'Unlocked', be:'Адкрыты'};
+      var statusTxt = g.unlocked ? (i===active ? (GARDEN_STATUS_ACTIVE[LANG]||GARDEN_STATUS_ACTIVE.en) : (GARDEN_STATUS_UNLOCKED[LANG]||GARDEN_STATUS_UNLOCKED.en)) : ('🌾 '+fmt(def.cost));
       card.innerHTML = '<span class="gicon">'+def.plants[def.plants.length-1]+'</span><span class="gname">'+def.name+'</span><span class="gcost">'+statusTxt+'</span>';
       card.addEventListener('click', (function(idx){ return function(){ onGardenCardTap(idx); }; })(i));
       attachTilt(card, 8);
@@ -3525,6 +3763,10 @@
   offlineBtn.addEventListener('click', simulateOffline);
   langPl.addEventListener('click', function(){ LANG='pl'; applyStatic(); renderAll(); sfx('click'); });
   langEn.addEventListener('click', function(){ LANG='en'; applyStatic(); renderAll(); sfx('click'); });
+  // Belarusian -- added at the user's request for testing (their native language); wired up
+  // exactly like PL/EN, no special-casing anywhere else needed since T()/LANG are already
+  // generic over any I18N key.
+  langBe.addEventListener('click', function(){ LANG='be'; applyStatic(); renderAll(); sfx('click'); });
 
   /* ---- sound engine (Web Audio API, synthesized — no external audio files) ---- */
   function getAudioCtx(){
