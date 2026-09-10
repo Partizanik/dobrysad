@@ -1,0 +1,71 @@
+package com.dobrysad.app;
+
+import android.os.Bundle;
+import android.webkit.ValueCallback;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    /* True fullscreen / edge-to-edge immersive mode: the WebView draws behind both the status
+       bar and the 3-button/gesture navigation bar (WindowCompat.setDecorFitsSystemWindows(...,
+       false)), and both bars are hidden by default (WindowInsetsControllerCompat.hide(...)).
+       BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE is what gives the standard Android "swipe from an
+       edge to peek the bars, they float on top of the content and hide themselves again after a
+       moment" behaviour, entirely handled by the OS -- nothing in the web app needs to poll for
+       or re-hide anything itself. index.html's own CSS already reads env(safe-area-inset-*) for
+       its header/nav padding (from the scroll-crop fix earlier in this project), and those
+       values correctly collapse to ~0 while the bars are hidden, so the layout doesn't need to
+       change based on this. */
+    private void hideSystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowInsetsControllerCompat controller =
+            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller == null) return;
+        controller.setSystemBarsBehavior(
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        controller.hide(WindowInsetsCompat.Type.systemBars());
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        hideSystemBars();
+    }
+
+    /* Re-hide whenever the window regains focus -- the system can bring the bars back on its own
+       (returning from another app, dismissing a system dialog/keyboard, etc.), and this is the
+       standard place to reassert immersive mode after any of that. */
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideSystemBars();
+    }
+
+    /* Hardware back button: @capacitor/app (the plugin that normally exposes a JS 'backButton'
+       event) isn't installed in this project, so instead of that we ask the web app directly,
+       via plain WebView.evaluateJavascript() (no extra native plugin needed for this), whether
+       it handled the press itself -- closed a modal, switched tabs -- or whether there's truly
+       nothing left to close. Only in that last case do we minimize the app, matching normal
+       Android back-button behaviour instead of always minimizing regardless of what's on screen
+       (see index.html's window.__handleAndroidBack). */
+    @Override
+    public void onBackPressed() {
+        if (bridge == null || bridge.getWebView() == null) {
+            super.onBackPressed();
+            return;
+        }
+        bridge.getWebView().evaluateJavascript(
+            "(function(){ try { return window.__handleAndroidBack ? window.__handleAndroidBack() : true; } catch(e) { return true; } })()",
+            new ValueCallback<String>() {
+                @Override
+                public void onReceiveValue(String value) {
+                    if ("true".equals(value)) {
+                        moveTaskToBack(true);
+                    }
+                }
+            }
+        );
+    }
+}
