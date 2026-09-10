@@ -227,6 +227,9 @@
   .switch.on{background:var(--leaf); border-color:var(--leaf);}
   .switch.on::after{transform:translateX(19px);}
 
+  .city-here-banner{display:flex; align-items:center; gap:9px; background:var(--gold-soft); border:1px solid var(--gold); border-radius:14px; padding:11px 14px; margin-bottom:10px; cursor:pointer; font-size:12.5px; font-weight:800; color:var(--gold-ink);}
+  .chb-icon{width:24px; height:24px; flex-shrink:0; filter:drop-shadow(0 2px 3px var(--shadow));}
+  .chb-arrow{width:16px; height:16px; margin-left:auto; opacity:.55; flex-shrink:0;}
   .city-map-wrap{position:relative; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:6px; margin-bottom:10px; overflow:hidden;}
   .city-map-svg{width:100%; height:auto; display:block;}
   .city-map-hint{font-size:11px; color:var(--ink-dim); text-align:center; padding:18px 8px;}
@@ -258,21 +261,103 @@
   .city-sprite-body{filter:drop-shadow(0 1px 1px var(--shadow));}
   .city-sprite.bob{animation:citySpriteBob .46s ease-in-out infinite alternate;}
   @keyframes citySpriteBob{ from{transform:translateY(0);} to{transform:translateY(-1.4px);} }
-  @keyframes cityMiniWalk0{ 0%{transform:translateX(0);} 50%{transform:translateX(258px);} 100%{transform:translateX(0);} }
-  @keyframes cityMiniWalk1{ 0%{transform:translateX(258px);} 50%{transform:translateX(0);} 100%{transform:translateX(258px);} }
-  .city-mini-ped0{ animation:cityMiniWalk0 16s linear infinite; }
-  .city-mini-ped1{ animation:cityMiniWalk1 12s linear infinite; }
-  @media (prefers-reduced-motion:reduce){ .city-sprite.bob, .city-mini-ped0, .city-mini-ped1{ animation:none; } }
+  @media (prefers-reduced-motion:reduce){ .city-sprite.bob{ animation:none; } }
 
-  .modal-city{max-width:420px; width:96%; max-height:92vh; display:flex; flex-direction:column;}
-  .city-full-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px;}
-  .city-full-head h3{margin:0;}
   .btn-x{border:none; background:var(--surface-2); color:var(--ink-dim); width:27px; height:27px; border-radius:50%; cursor:pointer; font-size:13px; line-height:1; flex-shrink:0;}
-  .city-full-wrap{position:relative; flex:1; min-height:230px; background:var(--bg-2); border:1px solid var(--line); border-radius:12px; overflow:hidden; touch-action:none;}
+
+  /* true fullscreen city view -- position:fixed against the real viewport (see the HTML comment
+     at this element's markup, near the end of <body>, for why it has to live outside .screen and
+     use fixed rather than absolute). Capped to the same width the phone mockup/native app uses
+     and centered, so on a wide desktop browser it still reads as "one phone-shaped screen" rather
+     than stretching edge to edge across the whole window -- on an actual phone screen (or inside
+     the real app) that cap never even applies since the viewport itself is already that narrow. */
+  .city-fullscreen{position:fixed; inset:0; max-width:480px; margin:0 auto; z-index:22; background:var(--bg); display:none; flex-direction:column; overflow:hidden;}
+  .city-fullscreen.show{display:flex;}
+  .city-full-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px 6px; flex-shrink:0;}
+  .city-full-head h3{margin:0; font-size:15px;}
+  .city-full-back{display:flex; align-items:center; gap:5px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:999px; padding:6px 12px 6px 10px; cursor:pointer; font-size:12px; font-weight:800; flex-shrink:0;}
+  .cfb-arrow{font-size:14px; line-height:1;}
+  .city-full-wrap{position:relative; flex:1; min-height:0; background:var(--bg-2); overflow:hidden; touch-action:none;}
   .city-map-svg-full{width:100%; height:100%; display:block;}
-  .city-zoom-controls{display:flex; gap:8px; justify-content:center; margin-top:8px;}
-  .city-zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-size:16px; font-weight:800; cursor:pointer;}
-  .city-full-hint{font-size:10.5px; color:var(--ink-dim); text-align:center; margin-top:6px;}
+  .city-zoom-controls{position:absolute; right:10px; bottom:10px; display:flex; flex-direction:column; gap:8px; z-index:2;}
+  .city-zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 3px 8px -3px var(--shadow);}
+  .city-full-hint{font-size:10.5px; color:var(--ink-dim); text-align:center; padding:4px 10px; flex-shrink:0;}
+
+  /* floating "Build" button docked over the fullscreen city view -- opens the building picker,
+     its own separate fullscreen window (#buildFullModal below), instead of a strip of icons
+     crowding the map itself. */
+  .city-build-fab{position:absolute; left:10px; bottom:10px; z-index:2; display:flex; align-items:center; gap:6px; border:none; border-radius:999px; background:var(--gold); color:var(--gold-ink); font-weight:800; font-size:13px; padding:11px 16px 11px 13px; cursor:pointer; box-shadow:0 4px 10px -3px var(--shadow);}
+  .cbf-icon{width:18px; height:18px; flex-shrink:0;}
+
+  /* building picker: its own fullscreen window (reuses .city-fullscreen), a grid of square image
+     tiles -- real building art baked to a small canvas via CityAssets (no emoji), name below,
+     wrapping rows/columns and scrolling by finger when there are many. */
+  .build-full-hint{font-size:10.5px; color:var(--ink-dim); text-align:center; padding:2px 10px 6px; flex-shrink:0;}
+  .build-grid-wrap{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 10px 16px;}
+  .build-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;}
+  .bg-tile{display:flex; flex-direction:column; align-items:center; gap:4px; border:1.5px solid var(--line); background:var(--surface-2); border-radius:14px; padding:8px 6px 9px; cursor:pointer;}
+  .bg-tile:disabled{opacity:.42; cursor:default;}
+  .bg-thumb-wrap{position:relative; width:100%; aspect-ratio:1/1; background:linear-gradient(180deg, var(--bg-2), var(--surface)); border-radius:10px; overflow:hidden;}
+  .bg-thumb{width:100%; height:100%; display:block; pointer-events:none;}
+  .bg-count{position:absolute; top:4px; right:4px; background:var(--leaf); color:#fff; font-size:9px; font-weight:800; border-radius:999px; padding:1px 5px; line-height:1.4;}
+  .bg-name{font-size:10.5px; font-weight:700; text-align:center; line-height:1.25;}
+  .bg-price{font-size:9.5px; font-weight:800; color:var(--gold-ink); background:var(--gold-soft); border-radius:999px; padding:1px 8px;}
+
+  /* waterfront band along the top of every city — a nod to the reference photo's dock/boat,
+     kept in the same flat colorful vector language as the rest of the game. */
+  .city-water{fill:var(--blue-soft); opacity:.9;}
+  .city-wave{fill:none; stroke:var(--blue); stroke-width:1; opacity:.35;}
+
+  /* empty plots: a bare lot with a couple of rocks and a crate, dashed outline, so it reads as
+     vacant construction ground waiting for the player to drop a building on it — like the dirt
+     lot with the excavator in the reference photo. */
+  .plot-empty{fill:var(--bg-2); stroke:var(--line); stroke-width:1; stroke-dasharray:3 3;}
+  .plot-rock{fill:var(--ink-dim); opacity:.35;}
+  .plot-crate{fill:var(--gold-soft); stroke:var(--gold); stroke-width:1; opacity:.8;}
+  .city-plot.tappable{cursor:pointer;}
+  .city-plot.tappable:hover .plot-empty, .city-plot.drop-target .plot-empty{fill:var(--gold-soft); stroke:var(--gold); stroke-width:1.4;}
+  .city-plot.lifted{animation:plotLiftedPulse 1s ease-in-out infinite;}
+  @keyframes plotLiftedPulse{ 0%,100%{opacity:1;} 50%{opacity:.65;} }
+  .city-plot-renew{font-size:6px; font-weight:800; fill:var(--coral); pointer-events:none;}
+
+  /* vertical column of cities, each a little house-icon card with its own (optionally custom)
+     name — tapping a row selects that city AND opens it fullscreen in one tap; the pencil button
+     renames it inline without navigating away. Buying a brand-new empty city (once the active one
+     fills up completely) is the last row — no ceiling on how many a player can own. */
+  .city-strip{display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+  .city-row{display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--surface-2); border-radius:14px; padding:8px 10px; cursor:pointer;}
+  .city-row.active{border-color:var(--leaf); background:var(--gold-soft); box-shadow:0 3px 0 var(--gold);}
+  .cr-icon{flex:0 0 auto; width:38px; height:38px; border-radius:10px; background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:19px;}
+  .cr-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .cr-name{font-size:12.5px; font-weight:800; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cr-fill{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
+  /* pinned to the row's own far right edge (its own flex item, not inline with the name) so its
+     hit target never drifts toward the row's center as the city name gets longer or shorter --
+     a tap anywhere in the middle of the row reliably opens the city, never the rename field. */
+  .cr-rename-btn{border:none; background:none; color:var(--ink-dim); font-size:13px; cursor:pointer; padding:6px; flex-shrink:0;}
+  .cr-name-input{font:inherit; font-size:12.5px; font-weight:800; color:var(--ink); background:var(--surface); border:1px solid var(--leaf); border-radius:6px; padding:2px 6px; width:100%; max-width:140px;}
+  .city-row.city-row-new{border-style:dashed; border-color:var(--leaf); background:transparent;}
+  .city-row.city-row-new .cr-name{color:var(--leaf-deep);}
+  .city-row.city-row-new .cr-icon{background:transparent; color:var(--leaf-deep);}
+  .city-row.city-row-new.locked{opacity:.5; cursor:default;}
+
+  /* banner shown over the full city view while a bought building is "in hand" waiting for a
+     plot, or while an existing building has been picked up to be moved. */
+  .city-place-banner{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--gold-soft); border:1px solid var(--gold); border-radius:10px; padding:7px 10px; margin-bottom:6px; font-size:11px; font-weight:700; color:var(--gold-ink);}
+  .city-place-cancel{border:none; background:none; color:var(--gold-ink); font-size:13px; cursor:pointer; flex-shrink:0;}
+
+  .profile-btn-icon{width:16px; height:16px; display:block;}
+  .modal-profile{max-width:300px;}
+  .profile-head{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .profile-avatar{width:40px; height:40px; border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--surface-2);}
+  .profile-avatar svg{width:100%; height:100%; display:block;}
+  .profile-head > div:nth-child(2){flex:1;}
+  .profile-name{font-weight:800; font-size:14px; color:var(--ink);}
+  .profile-provider{font-size:10px; color:var(--ink-dim); margin-top:1px;}
+  .profile-stat-row{display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--ink-dim); font-weight:700; padding:6px 0; border-bottom:1px solid var(--line);}
+  .profile-stat-row b{color:var(--ink); font-variant-numeric:tabular-nums;}
+  .profile-impact-block{margin-top:10px;}
+  .profile-next-milestone{font-size:10px; color:var(--ink-dim); margin-top:5px; line-height:1.4;}
 
   .map-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:4px;}
   .garden-card{flex:0 0 auto; width:96px; border-radius:14px; padding:9px 8px; text-align:center; border:1.5px solid var(--line); background:var(--surface-2); cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.08), 0 6px 12px -6px var(--shadow); transition:transform .1s ease, box-shadow .1s ease;}
@@ -284,12 +369,24 @@
   .garden-card .gcost{font-size:9.5px; color:var(--ink-dim); font-weight:700;}
 
   .section-title{font-size:11px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:var(--ink-dim); margin:14px 0 7px;}
-  .wh-wrap{border:1px solid var(--line); border-radius:14px; padding:10px 11px; background:var(--surface-2);}
-  .wh-wrap .bar{margin-bottom:4px;}
+  /* compact "your resources" banner on the map screen -- opens the full graphical warehouse
+     window below instead of cramming the whole material grid into this screen. */
+  .wh-here-banner{display:flex; align-items:center; gap:10px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:10px 12px; margin-bottom:10px; cursor:pointer;}
+  .whb-icon{font-size:22px; flex-shrink:0;}
+  .whb-mid{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}
+  .whb-mid span{font-size:11.5px; font-weight:800;}
+  .whb-bar{width:100%;}
   .wh-cap-text{font-size:10px; color:var(--ink-dim); font-weight:700; margin-bottom:8px;}
-  .wh-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:9px;}
-  .wh-chip{text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:6px 2px; font-size:9.5px; font-weight:800;}
-  .wh-chip .wi{font-size:15px; display:block; margin-bottom:2px;}
+  .wh-full-scroll{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 14px 20px;}
+  .wh-full-bar{margin-bottom:4px;}
+  /* graphical resource cards -- icon, amount and each material's own fill (relative to the
+     shared warehouse cap), colour-coded per material so the whole picture reads at a glance. */
+  .wh-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:9px; margin-bottom:12px;}
+  .wh-chip{position:relative; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:10px 4px 8px; font-size:9.5px; font-weight:800; overflow:hidden;}
+  .wh-chip .wi{font-size:22px; display:block; margin-bottom:4px;}
+  .wh-chip .wamt{display:block; font-size:12px; margin-bottom:6px;}
+  .wh-chip .wfill-track{display:block; width:100%; height:5px; border-radius:999px; background:var(--bg-2); overflow:hidden;}
+  .wh-chip .wfill{display:block; height:100%; border-radius:999px; background:linear-gradient(90deg, var(--leaf), var(--gold)); transition:width .5s ease;}
   .wh-actions{display:flex; gap:6px; margin-bottom:8px;}
   .wh-actions button{flex:1; font-size:10px; padding:7px 4px;}
   .wh-refine{display:flex; flex-direction:column; gap:6px;}
@@ -314,6 +411,10 @@
   .shop-item button[disabled]{opacity:.4;}
   .tier-row{display:flex; gap:6px; margin-top:7px;}
   .tier-row button{flex:1; border:none; background:var(--gold); color:var(--gold-ink); font-weight:800; border-radius:8px; padding:6px 3px; font-size:10px; cursor:pointer; line-height:1.3;}
+  .donate-row{display:flex; gap:6px; margin-top:7px; align-items:center;}
+  .donate-row input{flex:1; min-width:0; border:1px solid var(--line); border-radius:8px; padding:7px 8px; font-size:12px; font-weight:700; background:var(--surface); color:var(--ink);}
+  .donate-row button{border:none; background:var(--gold); color:var(--gold-ink); font-weight:800; border-radius:8px; padding:7px 12px; font-size:11px; cursor:pointer; white-space:nowrap;}
+  .shop-item.donate-item{background:linear-gradient(135deg, var(--surface-2), var(--surface)); border:1.5px solid var(--gold);}
   .scroll420{max-height:430px; overflow-y:auto; padding-right:2px;}
 
   .rank-banner{background:var(--blue-soft); border:1px solid var(--blue); border-radius:13px; padding:9px 11px; font-size:11px; color:var(--ink); line-height:1.5; margin-bottom:9px;}
@@ -401,6 +502,25 @@
   .boot-cta.show{opacity:1;}
   .boot-final{font-size:13px; font-weight:700; color:var(--ink); max-width:24ch; line-height:1.45; opacity:0; transition:opacity .3s ease;}
   .boot-final.show{opacity:1;}
+
+  /* ---- nickname gate: shown once right after the boot splash, before the player ever sees
+     the garden. Always required — there is no "skip" button — because a nickname is what
+     will eventually make Ranking mean something (see the honest note in the Ranking tab that
+     it's still demo data). Google sign-in is offered as a faster alternative that also fills
+     the nickname in, not a separate step. ---- */
+  .nick-screen{position:absolute; inset:0; z-index:29; background:var(--surface); display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:26px; text-align:center; border-radius:28px;}
+  .nick-screen.show{display:flex;}
+  .nick-logo svg{width:52px; height:52px;}
+  .nick-title{font-family:'PT Serif',serif; font-weight:700; font-size:18px; color:var(--leaf-deep); max-width:22ch;}
+  .nick-subtitle{font-size:11.5px; color:var(--ink-dim); max-width:26ch; line-height:1.5;}
+  .nick-input{width:100%; max-width:230px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:12px; padding:10px 12px; font-size:14px; font-family:inherit; text-align:center; box-sizing:border-box;}
+  .nick-input:focus{outline:none; border-color:var(--focus); box-shadow:0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent);}
+  .nick-error{font-size:11px; color:var(--coral); min-height:14px;}
+  .nick-actions{display:flex; flex-direction:column; gap:8px; width:100%; max-width:230px;}
+  .nick-divider{display:flex; align-items:center; gap:8px; width:100%; max-width:230px; font-size:10.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em;}
+  .nick-divider::before, .nick-divider::after{content:''; flex:1; height:1px; background:var(--line);}
+  .btn-google{background:var(--surface); color:var(--ink); border:1px solid var(--line);}
+  .google-icon{width:17px; height:17px;}
 
   /* ---- first-run tutorial hint ---- */
   .tut-hint{position:absolute; inset:0; background:rgba(15,23,18,.4); border-radius:16px; display:flex; align-items:center; justify-content:center; padding:14px; z-index:4;}
@@ -537,6 +657,25 @@
       <path d="M22 34 V44 h10 M22 44 l9 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M42 34 V44 H32 M42 44 l-9 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
+    <!-- standard four-color Google "G" mark for the "Zaloguj przez Google" button, per Google's
+       own sign-in branding guidelines — not a page or logo we're recreating, just the mark
+       every app's Google sign-in button carries. -->
+    <symbol id="ic-google" viewBox="0 0 48 48">
+      <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+      <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+      <path fill="#FBBC05" d="M11.69 28.18A13.99 13.99 0 0 1 10.94 24c0-1.45.25-2.86.7-4.18v-5.7H4.34A21.99 21.99 0 0 0 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z"/>
+      <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+    </symbol>
+    <linearGradient id="profileGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8b6bf0"></stop>
+      <stop offset="100%" stop-color="#5a3fc2"></stop>
+    </linearGradient>
+    <!-- simple person-in-a-circle badge for the profile/stats header button -->
+    <symbol id="ic-profile" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="30" fill="url(#profileGrad)"/>
+      <circle cx="32" cy="25" r="9" fill="#fff"/>
+      <path d="M14 50c2.5-9.5 10-14 18-14s15.5 4.5 18 14c-5.5 4-11.5 6-18 6s-12.5-2-18-6z" fill="#fff"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -575,8 +714,22 @@
             </div>
           </div>
 
+          <div class="nick-screen" id="nickScreen">
+            <div class="nick-logo"><svg><use href="#ic-logo"/></svg></div>
+            <div class="nick-title" id="nickTitle"></div>
+            <div class="nick-subtitle" id="nickSubtitle"></div>
+            <input type="text" class="nick-input" id="nickInput" maxlength="16" autocomplete="off" autocapitalize="words">
+            <div class="nick-error" id="nickError"></div>
+            <div class="nick-actions">
+              <button class="btn btn-primary" id="nickSaveBtn"></button>
+              <div class="nick-divider" id="nickDivider"></div>
+              <button class="btn btn-google" id="nickGoogleBtn"><svg class="google-icon"><use href="#ic-google"/></svg><span id="nickGoogleLbl"></span></button>
+            </div>
+          </div>
+
           <div class="header-logo"><svg><use href="#ic-logo"/></svg><span class="word">Dobry Sad</span></div>
           <div class="head-actions">
+            <button id="profileBtn" class="icon-btn" title="Profile"><svg class="profile-btn-icon"><use href="#ic-profile"/></svg></button>
             <button id="infoBtn" title="Info">ℹ️</button>
           </div>
           <div class="garden-row">
@@ -624,61 +777,30 @@
             <div style="font-size:11px; color:var(--ink-dim); margin-bottom:6px;" id="mapHint"></div>
             <div class="map-strip" id="mapStrip"></div>
 
-            <div class="section-title" id="whTitle"></div>
-            <div class="wh-wrap">
-              <div class="bar"><span id="whBar" style="width:0%"></span></div>
-              <div class="wh-cap-text" id="whCapText"></div>
-              <div class="wh-grid" id="whGrid"></div>
-              <div class="wh-actions">
-                <button class="btn btn-ghost" id="whWaterBtn"></button>
-                <button class="btn btn-ghost" id="whExpandBtn"></button>
+            <div class="wh-here-banner" id="whHereBanner">
+              <span class="whb-icon">🎒</span>
+              <div class="whb-mid">
+                <span id="whHereLbl"></span>
+                <div class="bar whb-bar"><span id="whHereBar" style="width:0%"></span></div>
               </div>
-              <div class="wh-refine" id="whRefine"></div>
+              <svg class="chb-arrow" viewBox="0 0 24 24"><path d="M12 16l-6-6h12z" fill="currentColor"/></svg>
             </div>
 
             <div class="section-title" id="townTitle"></div>
             <div class="town-people" id="townPeopleLine"></div>
             <div class="town-people" id="townFoodLine" style="color:var(--coral); display:none;"></div>
 
-            <div class="section-title" id="cityMapTitle"></div>
-            <div class="city-map-wrap" id="cityMapOpen">
-              <svg class="city-map-svg" id="cityMapSvg" viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet">
-                <g id="cityRoadGroupMini"></g>
-                <g id="cityBuildGroupMini"></g>
-                <g id="cityPedGroupMini"></g>
-              </svg>
-              <div class="city-map-hint" id="cityMapHint"></div>
-              <button class="city-expand-btn" id="cityExpandBtn" title=""><svg class="ce-icon"><use href="#ic-expand"/></svg></button>
+            <div class="city-here-banner" id="cityMapOpen">
+              <svg class="chb-icon"><use href="#ic-city"/></svg>
+              <span id="cityHereLbl"></span>
+              <svg class="chb-arrow" viewBox="0 0 24 24"><path d="M12 16l-6-6h12z" fill="currentColor"/></svg>
             </div>
 
-            <div class="modal-overlay" id="cityFullModal">
-              <div class="modal modal-city">
-                <div class="city-full-head">
-                  <h3 id="cityFullTitle"></h3>
-                  <button class="btn-x" id="cityFullClose">✕</button>
-                </div>
-                <div class="city-full-wrap" id="cityFullWrap">
-                  <svg class="city-map-svg city-map-svg-full" id="cityFullSvg" viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet">
-                    <g id="cityViewportFull">
-                      <g id="cityRoadGroupFull"></g>
-                      <g id="cityBuildGroupFull"></g>
-                      <g id="cityPedGroupFull"></g>
-                    </g>
-                  </svg>
-                </div>
-                <div class="city-zoom-controls">
-                  <button class="city-zoom-btn" id="cityZoomOut">−</button>
-                  <button class="city-zoom-btn" id="cityZoomReset">⟳</button>
-                  <button class="city-zoom-btn" id="cityZoomIn">+</button>
-                </div>
-                <div class="city-full-hint" id="cityFullHint"></div>
-              </div>
-            </div>
-
-            <div class="scroll420" id="buildList"></div>
+            <div class="city-strip" id="cityStrip"></div>
 
             <button class="btn btn-ghost" id="mapCloseBtn" style="width:100%; margin-top:10px;"></button>
           </div>
+
 
           <div id="viewShop" style="display:none;"><div class="scroll420" id="shopScroll"></div></div>
 
@@ -738,18 +860,113 @@
             </div>
           </div>
 
-          <div class="modal-overlay" id="roundupModal">
-            <div class="modal">
-              <h3 id="roundupTitle"></h3>
-              <p id="roundupText"></p>
-              <div style="display:flex; gap:8px;">
-                <button class="btn btn-ghost" style="flex:1" id="roundupNo"></button>
-                <button class="btn btn-gold" style="flex:1" id="roundupYes"></button>
+          <div class="modal-overlay" id="profileModal">
+            <div class="modal modal-profile">
+              <div class="profile-head">
+                <div class="profile-avatar"><svg><use href="#ic-profile"/></svg></div>
+                <div>
+                  <div class="profile-name" id="profileName"></div>
+                  <div class="profile-provider" id="profileProvider"></div>
+                </div>
+                <button class="btn-x" id="profileClose">✕</button>
               </div>
+              <h3 id="profileTitle" style="display:none;"></h3>
+              <div class="profile-stat-row">
+                <span id="profileAdsWatchedLabel"></span>
+                <b id="profileAdsWatchedNum">0</b>
+              </div>
+              <div class="profile-stat-row">
+                <span id="profileCitiesLabel"></span>
+                <b id="profileCitiesNum">1</b>
+              </div>
+              <div class="profile-impact-block">
+                <div class="profile-stat-row"><span id="profileImpactLabelText"></span><b id="profileImpactVal"></b></div>
+                <div class="bar"><span id="profileImpactBar" style="width:0%"></span></div>
+                <div class="profile-next-milestone" id="profileNextMilestone"></div>
+              </div>
+              <button class="btn btn-primary" style="width:100%; margin-top:10px;" id="profileCloseBtn"></button>
             </div>
           </div>
 
         </div>
+
+        <!-- True fullscreen city view -- a sibling of #screen (not nested inside it) on purpose:
+             #screen has `perspective` set, which (like `transform`/`filter`) turns it into the
+             containing block for position:fixed descendants too, not just absolute ones, so
+             anything placed inside it could never actually escape to the real device/browser
+             viewport -- it would only ever fill however tall #screen's own current content
+             happens to be (once the map tab's warehouse/city-list/build-list content is showing,
+             that's taller than one screen, so an inset:0 overlay nested in there wouldn't be
+             "fullscreen" at all, just as tall+scrollable as that content). Sitting here instead,
+             with no such ancestor, position:fixed really does cover the whole visible screen edge
+             to edge -- on a real phone screen no less than in the Capacitor app -- with a clear
+             back button, instead of the small centered modal card the older version was. It still
+             has to be BEFORE the closing </body> script tags below run, though, since the main
+             script queries it by id as soon as it starts (document.getElementById needs the
+             element to already exist in the DOM at that point). Reachable from a tap on any city
+             in the list (renderCityStrip), from the small map-preview's expand button, or
+             automatically when starting to rent a building. -->
+        <div class="city-fullscreen" id="cityFullModal">
+          <div class="city-full-head">
+            <h3 id="cityFullTitle"></h3>
+            <button class="city-full-back" id="cityFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="cityFullCloseLbl"></span></button>
+          </div>
+          <div class="city-place-banner" id="cityPlaceBanner" style="visibility:hidden;">
+            <span id="cityPlaceBannerText"></span>
+            <button class="city-place-cancel" id="cityPlaceCancelBtn">✕</button>
+          </div>
+          <div class="city-full-wrap" id="cityFullWrap">
+            <canvas class="city-map-svg city-map-svg-full" id="cityFullCanvas"></canvas>
+            <div class="city-zoom-controls">
+              <button class="city-zoom-btn" id="cityZoomOut">−</button>
+              <button class="city-zoom-btn" id="cityZoomReset">⟳</button>
+              <button class="city-zoom-btn" id="cityZoomIn">+</button>
+            </div>
+          </div>
+          <div class="city-full-hint" id="cityFullHint"></div>
+          <button class="city-build-fab" id="cityBuildFab">
+            <svg class="cbf-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            <span id="cityBuildFabLbl"></span>
+          </button>
+        </div>
+
+        <!-- Building picker -- its own fullscreen window, same pattern/placement as #cityFullModal
+             above (sibling of #screen, before the main script tag) and for the same reason
+             (perspective containing-block trap -- see the comment above #cityFullModal). Shows
+             every buildable charity building as a square image tile (real in-game art rendered to
+             a small canvas via CityAssets, no emoji) with its name below, in a scrollable grid. -->
+        <div class="city-fullscreen" id="buildFullModal">
+          <div class="city-full-head">
+            <h3 id="buildFullTitle"></h3>
+            <button class="city-full-back" id="buildFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="buildFullCloseLbl"></span></button>
+          </div>
+          <div class="build-full-hint" id="buildFullHint"></div>
+          <div class="build-grid-wrap">
+            <div class="build-grid" id="buildGrid"></div>
+          </div>
+        </div>
+
+        <!-- Warehouse/resources -- its own fullscreen window, same pattern/placement as the two
+             modals above. A graphical at-a-glance view of what the player has: each material as
+             its own card with an icon, amount and a fill bar, instead of the old plain icon+number
+             grid crammed into the map screen alongside everything else. -->
+        <div class="city-fullscreen" id="warehouseFullModal">
+          <div class="city-full-head">
+            <h3 id="warehouseFullTitle"></h3>
+            <button class="city-full-back" id="warehouseFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="warehouseFullCloseLbl"></span></button>
+          </div>
+          <div class="wh-full-scroll">
+            <div class="bar wh-full-bar"><span id="whBar" style="width:0%"></span></div>
+            <div class="wh-cap-text" id="whCapText"></div>
+            <div class="wh-grid" id="whGrid"></div>
+            <div class="wh-actions">
+              <button class="btn btn-ghost" id="whWaterBtn"></button>
+              <button class="btn btn-ghost" id="whExpandBtn"></button>
+            </div>
+            <div class="wh-refine" id="whRefine"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -797,6 +1014,7 @@
       bpApply: 'Zastosuj',
       whTitle: '📦 Magazyn surowców',
       whCapText: function(total, cap){ return total + ' / ' + cap + ' — pojemność magazynu'; },
+      whHereLbl: function(total, cap){ return 'Twoje zasoby: ' + total + ' / ' + cap; },
       whWaterBtn: '📺 Obejrzyj reklamę i zdobądź wodę',
       whWaterBtnLoading: '⏳ Wyświetlanie reklamy...',
       whExpandBtn: function(cap){ return '📺 Powiększ magazyn (do ' + (cap+20) + ')'; },
@@ -807,10 +1025,24 @@
       townFoodWarn: '🍎 Brak jedzenia! Mieszkańcy nie pomagają, dopóki nie zbierzesz owoców w Ogrodzie Nadziei lub Tropikalnym.',
       bankTitle: '🏦 Bank — wymień nadmiar jedzenia',
       cityMapTitle: 'Mapa miasta',
+      cityHereLbl: 'Twoje miasto — zobacz poniżej',
       cityMapEmpty: 'Zbuduj pierwszy dom, a pojawi się na mapie razem z drogą.',
       cityMapInactive: ' (wynajem wygasł)',
       cityExpandTitle: 'Powiększ miasto',
       cityFullHint: 'Uszczypnij lub użyj kółka, aby przybliżyć — przeciągnij, aby się rozejrzeć.',
+      cityRenewHint: 'Stuknij wygasły budynek na mapie, aby przedłużyć najem.',
+      cityCardName: function(n){ return 'Miasto ' + n; },
+      cityNewBtn: '+ Nowe miasto',
+      cityFullBackBtn: 'Wróć',
+      cityRenameTitle: 'Zmień nazwę miasta',
+      cityBuildFabLbl: 'Buduj',
+      buildFullTitle: 'Wybierz budynek',
+      buildFullHint: 'Stuknij budynek, aby zacząć go stawiać — potem wskaż miejsce na mapie.',
+      placeBannerText: function(name){ return '📍 Wybierz puste miejsce dla: ' + name; },
+      liftedBannerText: '🤚 Wybierz nowe miejsce — stuknij ten sam budynek ponownie, aby anulować.',
+      cityFullHintCatalog: '🏙️ Miasto pełne — kup nowe miasto, aby budować dalej.',
+      choosePlotFirst: '📍 Najpierw wybierz miejsce dla budynku w trakcie budowy.',
+      rentRenewHintCatalog: 'Wynajmij, a potem stuknij budynek na mapie, aby przedłużyć najem.',
       buildBtn: 'Buduj',
       buildRentBtn: 'Wynajmij na miesiąc',
       buildRenewBtn: 'Przedłuż o miesiąc',
@@ -825,12 +1057,17 @@
         orphan: {name:'Dom Dziecka', desc:'Bezpieczny dom dla dzieci bez opieki.'},
         hospital: {name:'Szpital', desc:'Leczenie dla tych, których na nie nie stać.'},
         hospice: {name:'Hospicjum', desc:'Godna opieka w ostatnim etapie życia.'},
+        chapel: {name:'Kaplica Otwartych Drzwi', desc:'Ciche miejsce wsparcia duchowego i rozmowy — otwarte dla każdego, kto tego potrzebuje.'},
         shelter: {name:'Schronisko dla Zwierząt', desc:'Dom dla porzuconych zwierząt.'},
         library: {name:'Biblioteka', desc:'Bezpłatny dostęp do książek i nauki dla całej okolicy.'},
         cafe: {name:'Kawiarnia', desc:'Miejsce spotkań mieszkańców przy filiżance kawy.'},
+        florist: {name:'Kwiaciarnia Nadziei', desc:'Zatrudnia osoby z niepełnosprawnościami i przekazuje kwiaty do szpitali oraz hospicjów.'},
         restaurant: {name:'Restauracja', desc:'Ciepłe posiłki i praca dla mieszkańców miasta.'},
         cinema: {name:'Kino', desc:'Rozrywka i kultura dla całej społeczności.'},
         mall: {name:'Centrum Handlowe', desc:'Sklepy i usługi w jednym miejscu — serce miejskiej infrastruktury.'},
+        repairshop: {name:'Warsztat Napraw', desc:'Bezpłatnie naprawia sprzęt domowy i rowery rodzinom, których na to nie stać.'},
+        clothingpoint: {name:'Punkt Wydawania Odzieży', desc:'Zbiera i bezpłatnie wydaje ubrania oraz obuwie potrzebującym rodzinom.'},
+        forge: {name:'Kuźnia Dobrych Serc', desc:'Kuje i naprawia narzędzia rolnicze za darmo dla okolicznych gospodarstw w potrzebie.'},
         foodbank: {name:'Bank Żywności', desc:'Codzienne paczki żywnościowe dla potrzebujących rodzin. Finansowany wyłącznie z realnych wpłat.'},
         mobileclinic: {name:'Mobilna Klinika', desc:'Objazdowa opieka medyczna dla wsi bez dostępu do lekarza. Wynajmowana co miesiąc z realnych wpłat.'}
       },
@@ -838,9 +1075,6 @@
       confirmYes:'Otwórz', confirmNo:'Anuluj',
       confirmTitle: function(name){ return 'Otworzyć „' + name + '"?'; },
       confirmText: function(cost){ return 'Koszt: ' + cost + ' 🌾 Dobra. Otrzymasz nową grządkę 5×5 z własnym zestawem roślin.'; },
-      roundupTitle: 'Dziękujemy za wsparcie 💛',
-      roundupText: function(extra){ return 'Chcesz zaokrąglić tę wpłatę na rzecz fundacji? Dotychczas dodatkowo przekazano: ' + extra + ' zł.'; },
-      roundupYes: 'Zaokrąglij (+2 zł)', roundupNo:'Nie teraz',
       bootStudio: 'Game Studio',
       bootTips: [
         'Wskazówka: połącz dwie takie same rośliny obok siebie, aby je ulepszyć.',
@@ -850,6 +1084,17 @@
       ],
       bootFinal: 'Rób dobro za darmo',
       bootCta: 'Dotknij, aby zacząć',
+      nickTitle: 'Jak Cię przedstawić w ogrodzie?',
+      nickSubtitle: 'Ten pseudonim będzie widoczny w rankingu — nikt nie zobaczy Twojego prawdziwego imienia, jeśli tego nie chcesz.',
+      nickPlaceholder: 'Twój pseudonim',
+      nickErrorEmpty: 'Wpisz pseudonim, aby zacząć grać.',
+      nickSaveBtn: 'Zapisz i graj',
+      nickDivider: 'lub',
+      nickGoogleBtn: 'Zaloguj przez Google',
+      nickGoogleLoading: 'Łączenie z Google…',
+      nickGoogleUnavailable: 'Logowanie przez Google będzie dostępne po pełnej konfiguracji w wersji instalowanej — na razie wpisz pseudonim ręcznie.',
+      nickGoogleError: 'Nie udało się zalogować przez Google — spróbuj ponownie lub wpisz pseudonim ręcznie.',
+      nickWelcome: function(name){ return 'Witaj w ogrodzie, ' + name + '! 🌱'; },
       tutHintText: '👆 Stuknij roślinę, a potem drugą taką samą obok — połączą się w wyższy poziom.',
       tutHintOk: 'Rozumiem',
       watchAdShort: '📺 Reklama',
@@ -866,6 +1111,15 @@
       settingsVibrate: 'Wibracje',
       settingsOn: 'Włączone', settingsOff: 'Wyłączone',
       settingsClose: 'Zamknij',
+      profileTitle: '👤 Twój profil',
+      profileGuest: 'Gość',
+      profileProviderGoogle: 'Zalogowano przez Google',
+      profileProviderGuest: 'Gra jako gość',
+      profileAdsWatched: '📺 Obejrzane reklamy',
+      profileImpactLabel: '💚 Twój wkład w cel dobroczynny od startu',
+      profileCitiesLabel: '🏙️ Zbudowane miasta',
+      profileNextMilestone: function(label){ return 'Następny kamień milowy: ' + label; },
+      profileClose: 'Zamknij',
       notif: {
         title: 'Dobry Sad',
         day1: function(remain){ return remain>0 ? ('🌱 Twój ogród czeka! Zostało tylko '+remain+' Dobra do następnego celu.') : '🌱 Twój ogród czeka na Ciebie — wpadnij zebrać plony!'; },
@@ -909,8 +1163,19 @@
         skinApplied: function(name){ return '🎨 Wygląd „' + name + '" zastosowany!'; },
         gardenUnlocked: function(name){ return '🎉 Otwarto ogród „' + name + '"!'; },
         notEnoughForGarden: 'Za mało Dobra — rozwijaj obecny ogród dalej.',
-        roundupThanks: 'Dziękujemy! Dodatkowe 2 zł trafi do funduszu razem z zakupem.',
-        voted: function(name){ return 'Twój głos na „' + name + '" został zapisany (demo).'; }
+        roundupThanks: 'Dziękujemy za Twoją pomoc! 💛',
+        donateThanks: function(amount){ return 'Dziękujemy za ' + amount + ' zł wsparcia! 💛'; },
+        donateInvalid: 'Wpisz kwotę większą od zera.',
+        voted: function(name){ return 'Twój głos na „' + name + '" został zapisany (demo).'; },
+        choosePlot: function(name){ return '📍 Wybierz puste miejsce dla: ' + name; },
+        plotTaken: 'To miejsce jest już zajęte.',
+        tooClose: 'Za blisko innego budynku — zostaw co najmniej 1 puste pole odstępu.',
+        notBuildable: 'Tutaj nie można budować.',
+        moved: '🔄 Budynek przeniesiony.',
+        lifted: '🤚 Wybierz nowe miejsce lub stuknij ten sam budynek, aby anulować.',
+        cityFull: '🏙️ To miasto jest pełne — kup nowe miasto.',
+        cityNotFull: 'Zapełnij obecne miasto, zanim kupisz nowe.',
+        newCity: function(n){ return '🎉 Nowe miasto #' + n + ' odblokowane!'; }
       },
       shop: {
         catFree: 'Podlewanie — zdobywane wyłącznie za oglądanie reklam',
@@ -931,13 +1196,15 @@
         charityHeart: '≈30% czystego przychodu z Serduszek trafia do fundacji partnerskiej',
         charityMoney: '30% tego zakupu trafia do fundacji',
         charityCosmetic: '40% tego zakupu trafia do fundacji',
+        donateAny: {name:'💛 Podaruj dowolną kwotę', desc:'Wpisz sumę, którą chcesz przekazać na dobre cele — bez żadnych warunków.'},
+        donatePlaceholder: 'Kwota w zł', donateBtn: 'Przekaż',
         max:'Maksimum', owned:'Kupione'
       },
       rank: {
         banner: 'W tym miesiącu społeczność obejrzała <b>128 400 reklam</b> i wsparła kwotą <b>3 260 zł</b> — to prawie cały cel miesiąca.',
         tabTime:'Wg czasu (reklamy)', tabMoney:'Wg wsparcia (zł)',
         unitAds: ' reklam', unitPln:' zł',
-        you: function(rank,total,value,unit){ return 'Twoje miejsce: <b>#' + rank + '</b> z ' + total + ' uczestników — ' + value + unit + ' w tym miesiącu. Każdy wkład się liczy, dziękujemy! 💚'; }
+        you: function(rank,total,value,unit,name){ return (name?('<b>'+name+'</b> — '):'') + 'Twoje miejsce: <b>#' + rank + '</b> z ' + total + ' uczestników — ' + value + unit + ' w tym miesiącu. Każdy wkład się liczy, dziękujemy! 💚'; }
       },
       vote: {
         note: 'Podgląd funkcji: w pełnej wersji raz w miesiącu społeczność głosuje, dokąd trafi zebrana kwota. Poniżej przykładowe głosowanie (demo, głosy nie są prawdziwe).',
@@ -969,6 +1236,7 @@
       bpApply: 'Apply',
       whTitle: '📦 Materials Warehouse',
       whCapText: function(total, cap){ return total + ' / ' + cap + ' — warehouse capacity'; },
+      whHereLbl: function(total, cap){ return 'Your resources: ' + total + ' / ' + cap; },
       whWaterBtn: '📺 Watch an ad for water',
       whWaterBtnLoading: '⏳ Showing ad...',
       whExpandBtn: function(cap){ return '📺 Expand warehouse (to ' + (cap+20) + ')'; },
@@ -979,10 +1247,24 @@
       townFoodWarn: '🍎 Out of food! Residents stop helping until you harvest fruit in Garden of Hope or Tropical Garden.',
       bankTitle: '🏦 Bank — trade surplus food',
       cityMapTitle: 'City map',
+      cityHereLbl: 'Your city — see it below',
       cityMapEmpty: 'Build your first house and it will appear on the map along with a road.',
       cityMapInactive: ' (rent expired)',
       cityExpandTitle: 'Expand the city',
       cityFullHint: 'Pinch or scroll to zoom — drag to look around.',
+      cityRenewHint: 'Tap an expired building on the map to renew its rent.',
+      cityCardName: function(n){ return 'City ' + n; },
+      cityNewBtn: '+ New city',
+      cityFullBackBtn: 'Back',
+      cityRenameTitle: 'Rename city',
+      cityBuildFabLbl: 'Build',
+      buildFullTitle: 'Choose a building',
+      buildFullHint: 'Tap a building to start placing it — then pick a spot on the map.',
+      placeBannerText: function(name){ return '📍 Choose an empty plot for: ' + name; },
+      liftedBannerText: '🤚 Choose a new spot — tap the same building again to cancel.',
+      cityFullHintCatalog: '🏙️ City full — buy a new city to keep building.',
+      choosePlotFirst: '📍 First choose a plot for the building you\'re placing.',
+      rentRenewHintCatalog: 'Rent it, then tap the building on the map to renew.',
       buildBtn: 'Build',
       buildRentBtn: 'Rent for a month',
       buildRenewBtn: 'Renew for a month',
@@ -997,12 +1279,17 @@
         orphan: {name:'Orphanage', desc:'A safe home for children without care.'},
         hospital: {name:'Hospital', desc:'Treatment for those who cannot afford it.'},
         hospice: {name:'Hospice', desc:'Dignified care in life’s final stage.'},
+        chapel: {name:'Chapel of Open Doors', desc:'A quiet place of spiritual comfort and conversation, open to anyone who needs it.'},
         shelter: {name:'Animal Shelter', desc:'A home for abandoned animals.'},
         library: {name:'Library', desc:'Free access to books and learning for the whole area.'},
         cafe: {name:'Café', desc:'A cozy place for residents to meet over coffee.'},
+        florist: {name:'Flower Shop of Hope', desc:'Employs people with disabilities and donates flowers to hospitals and hospices.'},
         restaurant: {name:'Restaurant', desc:'Warm meals and jobs for the town\'s residents.'},
         cinema: {name:'Cinema', desc:'Entertainment and culture for the whole community.'},
         mall: {name:'Shopping Mall', desc:'Shops and services under one roof — the heart of city infrastructure.'},
+        repairshop: {name:'Repair Workshop', desc:'Fixes household appliances and bikes for free, for families who can\'t afford repairs.'},
+        clothingpoint: {name:'Clothing Donation Point', desc:'Collects and hands out clothes and shoes, free of charge, to families in need.'},
+        forge: {name:'Forge of Good Hearts', desc:'Forges and repairs farm tools for free, for local families and smallholders in need.'},
         foodbank: {name:'Food Bank', desc:'Daily food parcels for families in need. Funded only by real donations.'},
         mobileclinic: {name:'Mobile Clinic', desc:'Traveling medical care for villages with no doctor nearby. Rented monthly from real donations.'}
       },
@@ -1010,9 +1297,6 @@
       confirmYes:'Unlock', confirmNo:'Cancel',
       confirmTitle: function(name){ return 'Unlock "' + name + '"?'; },
       confirmText: function(cost){ return 'Cost: ' + cost + ' 🌾 Good. You get a new 5×5 plot with its own set of plants.'; },
-      roundupTitle: 'Thank you for your support 💛',
-      roundupText: function(extra){ return 'Want to round up this purchase for the foundation? Extra given so far: ' + extra + ' PLN.'; },
-      roundupYes: 'Round up (+2 PLN)', roundupNo:'Not now',
       bootStudio: 'Game Studio',
       bootTips: [
         'Tip: merge two matching plants next to each other to upgrade them.',
@@ -1022,6 +1306,17 @@
       ],
       bootFinal: 'Do good for free',
       bootCta: 'Tap to start',
+      nickTitle: 'What should we call you in the garden?',
+      nickSubtitle: 'This nickname will show up in the ranking — nobody sees your real name unless you use it here.',
+      nickPlaceholder: 'Your nickname',
+      nickErrorEmpty: 'Enter a nickname to start playing.',
+      nickSaveBtn: 'Save and play',
+      nickDivider: 'or',
+      nickGoogleBtn: 'Sign in with Google',
+      nickGoogleLoading: 'Connecting to Google…',
+      nickGoogleUnavailable: 'Google sign-in will be available once the installed app is fully set up — enter a nickname by hand for now.',
+      nickGoogleError: 'Google sign-in failed — try again or enter a nickname by hand.',
+      nickWelcome: function(name){ return 'Welcome to the garden, ' + name + '! 🌱'; },
       tutHintText: '👆 Tap a plant, then tap another matching one next to it — they merge into a higher level.',
       tutHintOk: 'Got it',
       watchAdShort: '📺 Ad',
@@ -1038,6 +1333,15 @@
       settingsVibrate: 'Vibration',
       settingsOn: 'On', settingsOff: 'Off',
       settingsClose: 'Close',
+      profileTitle: '👤 Your profile',
+      profileGuest: 'Guest',
+      profileProviderGoogle: 'Signed in with Google',
+      profileProviderGuest: 'Playing as guest',
+      profileAdsWatched: '📺 Ads watched',
+      profileImpactLabel: '💚 Your contribution to the charity goal since day one',
+      profileCitiesLabel: '🏙️ Cities built',
+      profileNextMilestone: function(label){ return 'Next milestone: ' + label; },
+      profileClose: 'Close',
       notif: {
         title: 'Dobry Sad',
         day1: function(remain){ return remain>0 ? ('🌱 Your garden is waiting! Only '+remain+' Good left to the next goal.') : '🌱 Your garden is waiting for you — come collect the harvest!'; },
@@ -1081,8 +1385,19 @@
         skinApplied: function(name){ return '🎨 "' + name + '" theme applied!'; },
         gardenUnlocked: function(name){ return '🎉 Unlocked garden "' + name + '"!'; },
         notEnoughForGarden: 'Not enough Good — keep growing your current garden.',
-        roundupThanks: 'Thank you! An extra 2 PLN will go to the fund with your purchase.',
-        voted: function(name){ return 'Your vote for "' + name + '" was recorded (demo).'; }
+        roundupThanks: 'Thank you for your help! 💛',
+        donateThanks: function(amount){ return 'Thank you for your ' + amount + ' PLN gift! 💛'; },
+        donateInvalid: 'Enter an amount greater than zero.',
+        voted: function(name){ return 'Your vote for "' + name + '" was recorded (demo).'; },
+        choosePlot: function(name){ return '📍 Choose an empty plot for: ' + name; },
+        plotTaken: 'That plot is already taken.',
+        tooClose: 'Too close to another building — leave at least 1 empty tile of gap.',
+        notBuildable: 'You can\'t build there.',
+        moved: '🔄 Building moved.',
+        lifted: '🤚 Choose a new spot, or tap the same building again to cancel.',
+        cityFull: '🏙️ This city is full — buy a new city.',
+        cityNotFull: 'Fill your current city before buying a new one.',
+        newCity: function(n){ return '🎉 New city #' + n + ' unlocked!'; }
       },
       shop: {
         catFree: 'Watering — earned only by watching ads',
@@ -1103,13 +1418,15 @@
         charityHeart: '≈30% of net Hearts revenue goes to the partner foundation',
         charityMoney: '30% of this purchase goes to the foundation',
         charityCosmetic: '40% of this purchase goes to the foundation',
+        donateAny: {name:'💛 Donate any amount', desc:'Type in the amount you\'d like to give to a good cause — no strings attached.'},
+        donatePlaceholder: 'Amount in PLN', donateBtn: 'Donate',
         max:'Max', owned:'Owned'
       },
       rank: {
         banner: 'This month the community watched <b>128,400 ads</b> and gave <b>3,260 PLN</b> — almost the whole monthly goal.',
         tabTime:'By time (ads)', tabMoney:'By support (PLN)',
         unitAds: ' ads', unitPln:' PLN',
-        you: function(rank,total,value,unit){ return 'Your rank: <b>#' + rank + '</b> of ' + total + ' participants — ' + value + unit + ' this month. Every bit counts, thank you! 💚'; }
+        you: function(rank,total,value,unit,name){ return (name?('<b>'+name+'</b> — '):'') + 'Your rank: <b>#' + rank + '</b> of ' + total + ' participants — ' + value + unit + ' this month. Every bit counts, thank you! 💚'; }
       },
       vote: {
         note: 'Feature preview: in the full version the community votes once a month on where the collected amount goes. Below is a sample vote (demo, not real).',
@@ -1185,6 +1502,17 @@
   var activeBoosts = {}; var combo = 1, comboResetTimer = null;
   var screen = 'garden'; var rankTab = 'time'; var votes = {}; var votedAlready = false;
   var skins = {sunset:false, midnight:false};
+  /* ---- player identity: a nickname is always required before the garden opens (see the
+     nick-screen shown from finishBoot). authProvider stays 'guest' for a hand-typed nickname
+     and becomes 'google' once FirebaseAuthentication.signInWithGoogle() succeeds — that's
+     prep for the real (non-demo) leaderboard, not used for anything yet. */
+  var playerNick = '', authProvider = 'guest';
+  /* ---- lightweight lifetime stats for the profile panel — every simulated ad-watch anywhere
+     in the game (garden ad, warehouse water/refine/bank/expand, backpack, offline-earnings
+     button excluded since it's a debug-only stand-in) increments this once, in adWatched()
+     below, rather than each button tracking its own counter. */
+  var adsWatched = 0;
+  function adWatched(){ adsWatched++; }
 
   /* ---- materials warehouse & town (charity buildings) ---- */
   var warehouse = {water:0, food:0, wood:0, plank:0, stone:0, iron:0, nails:0, sand:0, glass:0};
@@ -1206,15 +1534,20 @@
     {key:'orphan', icon:'🧸', fam:'housing', people:5, cost:{wood:12, stone:8, water:10}},
     {key:'hospital', icon:'🏥', fam:'care', people:8, cost:{stone:20, iron:10, nails:10, plank:6, glass:4, water:20}},
     {key:'hospice', icon:'🕊️', fam:'care', people:3, cost:{wood:18, stone:10, water:15}},
+    {key:'chapel', icon:'🕯️', fam:'care', people:3, cost:{wood:16, stone:8, glass:6, water:14}},
     {key:'shelter', icon:'🐾', fam:'care', people:2, cost:{wood:8, stone:5, water:8}},
     {key:'library', icon:'📚', fam:'culture', people:3, cost:{plank:10, glass:6, nails:4, water:12}},
     /* everyday city infrastructure — more people, and each pulls from more gardens than the
        one before it, so the town keeps needing every garden as it grows (per the "bigger
        building → more varied materials" rule). */
     {key:'cafe', icon:'☕', fam:'food', people:3, cost:{wood:10, glass:5, water:10}},
+    {key:'florist', icon:'💐', fam:'shop', people:3, cost:{wood:8, glass:6, water:8}},
     {key:'restaurant', icon:'🍽️', fam:'food', people:4, cost:{wood:14, stone:8, nails:6, water:15}},
     {key:'cinema', icon:'🎬', fam:'culture', people:6, cost:{stone:16, iron:10, glass:12, nails:8, water:18}},
     {key:'mall', icon:'🏬', fam:'shop', people:10, cost:{stone:25, iron:15, glass:20, plank:15, nails:12, water:25}},
+    {key:'repairshop', icon:'🔧', fam:'shop', people:4, cost:{stone:14, iron:12, nails:8, water:14}},
+    {key:'clothingpoint', icon:'👕', fam:'care', people:4, cost:{wood:10, plank:8, glass:5, water:12}},
+    {key:'forge', icon:'🔨', fam:'shop', people:4, cost:{stone:16, iron:14, nails:10, water:16}},
     {key:'foodbank', icon:'🥫', fam:'food', people:6, moneyOnly:true, moneyCost:49},
     {key:'mobileclinic', icon:'🚐', fam:'care', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
   ];
@@ -1225,20 +1558,94 @@
     food:{a:'#dcefd4', b:'var(--leaf)', c:'var(--leaf-deep)'},
     shop:{a:'var(--blue-soft)', b:'var(--blue)', c:'#1c3a52'}
   };
-  var townBuilt = {}; var townPeople = 0; var townRent = {};
-  function buildingCount(key){ return townBuilt[key]||0; }
+  /* ---- city plots: every charity building lives on a specific plot in a specific city, not
+     just in a type→count tally. CITY_PLOTS (30) is a CAPACITY, not a physical layout any more —
+     a city is a big free-placement grass field (FIELD_COLS×FIELD_ROWS, past a water+promenade
+     band along one edge) and the player chooses exactly which tile each building goes on, subject
+     to a minimum gap (FIELD_MIN_GAP) from every other building already on the field. `plots` is
+     still a fixed-length array of CITY_PLOTS slots (a slot is just capacity bookkeeping, not a
+     position) — a slot is either null (unused capacity) or {key, col, row, rentUntil?}, where
+     col/row is wherever the player tapped to place it. Once every slot in the active city is
+     filled, the player can buy a brand-new, empty city and keep going — there's no ceiling on how
+     many. CITY_COLS/CITY_ROWS below are unrelated to the field — they're only the small fixed
+     layout the decorative always-visible mini city-strip preview (renderCityStrip's thumbnail)
+     arranges its icons in, purely for that glance-sized visual, never for real placement. */
+  var CITY_COLS = 5, CITY_ROWS = 6;
+  var FIELD_COLS = 100, FIELD_ROWS = 100, FIELD_WATER_ROWS = 5, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
+  var FIELD_ROW0 = FIELD_WATER_ROWS + FIELD_PROMENADE_ROWS; // first buildable field row
+  /* true max capacity of one city's field: buildings must sit at least FIELD_MIN_GAP tiles apart
+     (Chebyshev distance) in every direction, so the densest legal packing places one building
+     every (FIELD_MIN_GAP+1) tiles along each axis -- this is the honest "how many charity
+     buildings actually fit here" number the city list/fullscreen header show as X/CITY_PLOTS,
+     replacing the old fixed 30-slot cap that had nothing to do with the field's real size. */
+  var FIELD_PACK_STEP = FIELD_MIN_GAP + 1;
+  var CITY_PLOTS = Math.ceil(FIELD_COLS/FIELD_PACK_STEP) * Math.ceil((FIELD_ROWS-FIELD_ROW0)/FIELD_PACK_STEP);
+  var BUILDING_BY_KEY = {}; BUILDINGS.forEach(function(b){ BUILDING_BY_KEY[b.key] = b; });
+  // name:null means "no custom name yet" -- display falls back to the localized "Miasto N"/"City N"
+  // (cityDisplayName below), so every existing/older city with no name keeps looking the same.
+  function makeCity(){ return {plots: new Array(CITY_PLOTS).fill(null), name: null}; }
+  function cityDisplayName(idx){ var c = cities[idx]; return (c && c.name) ? c.name : T().cityCardName(idx+1); }
+  function renameCity(idx, raw){
+    var name = (raw || '').replace(/\s+/g,' ').trim().slice(0, 18);
+    cities[idx].name = name || null;
+    saveGame();
+    renderCityMap();
+    if(cityFullTitle && idx === activeCityIdx) cityFullTitle.textContent = cityDisplayName(idx);
+  }
+  var cities = [makeCity()];
+  var activeCityIdx = 0;
+  var pendingPlacement = null; // building key just bought, waiting for a field-tile tap
+  var liftedPlot = null; // {cityIdx, plotIdx} picked up for a move
+  /* ---- free-placement field rules: is (col,row) a legal spot to build on right now? Single
+     source of truth for both the actual placement mutation (onPlotTap below) and the renderer's
+     green/red buildability tint (GameAPI.canBuildAt) — the highlight can never promise a tile
+     that the tap would then deny. excludeSlotIdx lets a lift-in-progress check against every
+     OTHER building without rejecting the tile the lifted building is already standing on. */
+  function isFieldBuildableTile(col, row){
+    return col>=0 && col<FIELD_COLS && row>=FIELD_ROW0 && row<FIELD_ROWS;
+  }
+  function findPlotAt(city, col, row){
+    for(var i=0;i<city.plots.length;i++){ var p=city.plots[i]; if(p && p.col===col && p.row===row) return i; }
+    return -1;
+  }
+  function placementDenyReason(cityIdx, col, row, excludeSlotIdx){
+    var city = cities[cityIdx]; if(!city) return 'outOfBounds';
+    if(!isFieldBuildableTile(col, row)) return 'outOfBounds';
+    for(var i=0;i<city.plots.length;i++){
+      if(i===excludeSlotIdx) continue;
+      var p = city.plots[i]; if(!p) continue;
+      var dist = Math.max(Math.abs(p.col-col), Math.abs(p.row-row));
+      if(dist === 0) return 'occupied';
+      if(dist <= FIELD_MIN_GAP) return 'tooClose';
+    }
+    return null;
+  }
+  function canBuildAt(cityIdx, col, row, excludeSlotIdx){
+    return placementDenyReason(cityIdx, col, row, excludeSlotIdx==null?-1:excludeSlotIdx) === null;
+  }
+  function buildingCount(key){
+    var n = 0;
+    cities.forEach(function(c){ c.plots.forEach(function(p){ if(p && p.key===key) n++; }); });
+    return n;
+  }
   function buildingCost(def){
-    var n = buildingCount(def.key), mult = Math.pow(1.35, n), out = {};
-    for(var k in def.cost) out[k] = Math.ceil(def.cost[k]*mult);
+    var out = {};
+    for(var k in def.cost) out[k] = Math.ceil(def.cost[k]);
     return out;
   }
-  function moneyCostFor(def){ return Math.ceil(def.moneyCost * Math.pow(1.35, buildingCount(def.key))); }
-  function rentPeopleActive(){
+  function moneyCostFor(def){ return Math.ceil(def.moneyCost); }
+  function totalResidents(){
     var sum = 0;
-    BUILDINGS.forEach(function(b){ if(b.rentable && townRent[b.key] && townRent[b.key] > Date.now()) sum += b.people; });
+    cities.forEach(function(c){ c.plots.forEach(function(p){
+      if(!p) return; var def = BUILDING_BY_KEY[p.key]; if(!def) return;
+      if(def.rentable){ if(p.rentUntil && p.rentUntil > Date.now()) sum += def.people; }
+      else sum += def.people;
+    }); });
     return sum;
   }
-  function totalResidents(){ return townPeople + rentPeopleActive(); }
+  function cityEmptyCount(idx){ return cities[idx].plots.filter(function(p){ return !p; }).length; }
+  function cityIsFull(idx){ return cityEmptyCount(idx) === 0; }
+  function newCityCost(){ return Math.round(180 * Math.pow(1.6, cities.length-1)); }
   function canAfford(cost){ for(var k in cost){ if((warehouse[k]||0) < cost[k]) return false; } return true; }
 
   function newBoard(){ return new Array(25).fill(0); }
@@ -1278,8 +1685,9 @@
         gardens:serializeGardens(),
         warehouse:warehouse, warehouseCap:warehouseCap,
         inventory:inventory, activeBoosts:activeBoosts,
-        townBuilt:townBuilt, townPeople:townPeople, townRent:townRent, cityFed:cityFed,
+        cities:cities, activeCityIdx:activeCityIdx, cityFed:cityFed,
         votes:votes, votedAlready:votedAlready, skins:skins, tutorialShown:tutorialShown,
+        playerNick:playerNick, authProvider:authProvider, adsWatched:adsWatched,
         lastSeenAt: Date.now()
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
@@ -1317,14 +1725,51 @@
       if(typeof s.warehouseCap === 'number') warehouseCap = s.warehouseCap;
       if(s.inventory && typeof s.inventory==='object'){ for(var ik in inventory){ if(typeof s.inventory[ik]==='number') inventory[ik]=s.inventory[ik]; } }
       if(s.activeBoosts && typeof s.activeBoosts==='object') activeBoosts = s.activeBoosts;
-      if(s.townBuilt && typeof s.townBuilt==='object') townBuilt = s.townBuilt;
-      if(typeof s.townPeople === 'number') townPeople = s.townPeople;
-      if(s.townRent && typeof s.townRent==='object') townRent = s.townRent;
+      if(Array.isArray(s.cities) && s.cities.length){
+        /* a save from before free placement has {key, rentUntil} plots at fixed indices, implying
+           position via the old 5x6 block layout — spacing that layout's cells 2 apart (instead of
+           1) lands every legacy building on the new field with exactly the "at least 1 empty tile
+           of gap" the new rule requires, while keeping everyone's city looking basically the same
+           as before instead of scattering it. A save that already has col/row (this version)
+           keeps them untouched. */
+        cities = s.cities.map(function(c){
+          var raw = Array.isArray(c && c.plots) ? c.plots : [];
+          var plots = [];
+          for(var i=0;i<CITY_PLOTS;i++){
+            var p = raw[i];
+            if(!p || typeof p!=='object' || typeof p.key!=='string'){ plots.push(null); continue; }
+            var hasPos = typeof p.col==='number' && typeof p.row==='number';
+            var pos = hasPos ? {col:p.col, row:p.row} : {col:(i%CITY_COLS)*2, row:FIELD_ROW0+Math.floor(i/CITY_COLS)*2};
+            plots.push({key:p.key, col:pos.col, row:pos.row, rentUntil: typeof p.rentUntil==='number'?p.rentUntil:undefined});
+          }
+          var nm = (c && typeof c.name === 'string' && c.name.trim()) ? c.name.trim().slice(0,18) : null;
+          return {plots:plots, name:nm};
+        });
+      } else if(s.townBuilt && typeof s.townBuilt==='object'){
+        /* pre-plots save (townBuilt/townPeople/townRent) — line the old buildings up into
+           plots, one city at a time, so nobody's progress just vanishes under the new system */
+        var list = [];
+        for(var bk in s.townBuilt){ var n = s.townBuilt[bk]||0; for(var bi=0;bi<n;bi++) list.push(bk); }
+        var migrated = [makeCity()], mci = 0, mpi = 0;
+        list.forEach(function(key){
+          if(mpi >= CITY_PLOTS){ migrated.push(makeCity()); mci++; mpi = 0; }
+          var mDef = BUILDING_BY_KEY[key];
+          var mPlot = {key:key, col:(mpi%CITY_COLS)*2, row:FIELD_ROW0+Math.floor(mpi/CITY_COLS)*2};
+          if(mDef && mDef.rentable && s.townRent && typeof s.townRent[key]==='number') mPlot.rentUntil = s.townRent[key];
+          migrated[mci].plots[mpi] = mPlot; mpi++;
+        });
+        cities = migrated;
+      }
+      if(!cities.length) cities = [makeCity()];
+      if(typeof s.activeCityIdx === 'number' && cities[s.activeCityIdx]) activeCityIdx = s.activeCityIdx;
       if(typeof s.cityFed === 'boolean') cityFed = s.cityFed;
+      if(typeof s.adsWatched === 'number') adsWatched = s.adsWatched;
       if(s.votes && typeof s.votes==='object') votes = s.votes;
       if(typeof s.votedAlready === 'boolean') votedAlready = s.votedAlready;
       if(s.skins && typeof s.skins==='object'){ for(var sk in skins){ if(typeof s.skins[sk]==='boolean') skins[sk]=s.skins[sk]; } }
       if(typeof s.tutorialShown === 'boolean') tutorialShown = s.tutorialShown;
+      if(typeof s.playerNick === 'string') playerNick = s.playerNick;
+      if(typeof s.authProvider === 'string') authProvider = s.authProvider;
       if(typeof s.lastSeenAt === 'number') pendingLastSeenAt = s.lastSeenAt;
       return true;
     }catch(e){ return false; }
@@ -1401,14 +1846,18 @@
   var viewGarden=$('viewGarden'), viewMap=$('viewMap'), viewShop=$('viewShop'), viewRank=$('viewRank'), viewVote=$('viewVote');
   var navGarden=$('navGarden'), navShop=$('navShop'), navRank=$('navRank'), navVote=$('navVote');
   var mapStrip=$('mapStrip'), shopScroll=$('shopScroll'), mapHint=$('mapHint'), mapCloseBtn=$('mapCloseBtn'), mapOpenBtn=$('mapOpenBtn'), cityOpenBtn=$('cityOpenBtn');
-  var whTitle=$('whTitle'), whBar=$('whBar'), whCapText=$('whCapText'), whGrid=$('whGrid'), whWaterBtn=$('whWaterBtn'), whExpandBtn=$('whExpandBtn'), whRefine=$('whRefine');
-  var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine'), buildList=$('buildList');
-  var cityMapOpen=$('cityMapOpen'), cityMapTitleEl=$('cityMapTitle'), cityMapSvg=$('cityMapSvg'), cityMapHint=$('cityMapHint'), cityRoadGroupMini=$('cityRoadGroupMini'), cityBuildGroupMini=$('cityBuildGroupMini'), cityPedGroupMini=$('cityPedGroupMini');
-  var cityExpandBtn=$('cityExpandBtn'), cityFullModal=$('cityFullModal'), cityFullTitle=$('cityFullTitle'), cityFullClose=$('cityFullClose'), cityFullHint=$('cityFullHint'), cityFullWrap=$('cityFullWrap');
-  var cityFullSvg=$('cityFullSvg'), cityViewportFull=$('cityViewportFull'), cityRoadGroupFull=$('cityRoadGroupFull'), cityBuildGroupFull=$('cityBuildGroupFull'), cityPedGroupFull=$('cityPedGroupFull');
+  var whBar=$('whBar'), whCapText=$('whCapText'), whGrid=$('whGrid'), whWaterBtn=$('whWaterBtn'), whExpandBtn=$('whExpandBtn'), whRefine=$('whRefine');
+  var whHereBanner=$('whHereBanner'), whHereLbl=$('whHereLbl'), whHereBar=$('whHereBar');
+  var warehouseFullModal=$('warehouseFullModal'), warehouseFullTitle=$('warehouseFullTitle'), warehouseFullClose=$('warehouseFullClose'), warehouseFullCloseLbl=$('warehouseFullCloseLbl');
+  var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine');
+  var cityBuildFab=$('cityBuildFab'), cityBuildFabLbl=$('cityBuildFabLbl');
+  var buildFullModal=$('buildFullModal'), buildFullTitle=$('buildFullTitle'), buildFullClose=$('buildFullClose'), buildFullCloseLbl=$('buildFullCloseLbl'), buildFullHint=$('buildFullHint');
+  var cityMapOpen=$('cityMapOpen'), cityHereLbl=$('cityHereLbl');
+  var cityFullModal=$('cityFullModal'), cityFullTitle=$('cityFullTitle'), cityFullClose=$('cityFullClose'), cityFullHint=$('cityFullHint'), cityFullWrap=$('cityFullWrap');
+  var cityFullCanvas=$('cityFullCanvas');
   var cityZoomIn=$('cityZoomIn'), cityZoomOut=$('cityZoomOut'), cityZoomReset=$('cityZoomReset');
+  var cityStrip=$('cityStrip'), cityPlaceBanner=$('cityPlaceBanner'), cityPlaceBannerText=$('cityPlaceBannerText'), cityPlaceCancelBtn=$('cityPlaceCancelBtn');
   var confirmModal=$('confirmModal'), confirmTitle=$('confirmTitle'), confirmText=$('confirmText'), confirmYes=$('confirmYes'), confirmNo=$('confirmNo');
-  var roundupModal=$('roundupModal'), roundupTitle=$('roundupTitle'), roundupText=$('roundupText'), roundupYes=$('roundupYes'), roundupNo=$('roundupNo');
   var rankBanner=$('rankBanner'), rankTabTime=$('rankTabTime'), rankTabMoney=$('rankTabMoney'), rankList=$('rankList'), rankYou=$('rankYou');
   var voteNote=$('voteNote'), voteList=$('voteList');
   var langPl=$('langPl'), langEn=$('langEn'), soundToggle=$('soundToggle');
@@ -1416,7 +1865,13 @@
   var settingsMusicLabel=$('settingsMusicLabel'), settingsSfxLabel=$('settingsSfxLabel'), settingsVibrateLabel=$('settingsVibrateLabel');
   var musicToggleBtn=$('musicToggleBtn'), sfxToggleBtn=$('sfxToggleBtn'), vibrateToggleBtn=$('vibrateToggleBtn');
   var boot=$('boot'), bootStudio=$('bootStudio'), bootGame=$('bootGame'), bootTip=$('bootTip'), bootBarFill=$('bootBarFill'), bootFinalEl=$('bootFinal'), bootCta=$('bootCta');
+  var nickScreen=$('nickScreen'), nickTitleEl=$('nickTitle'), nickSubtitleEl=$('nickSubtitle'), nickInput=$('nickInput'), nickError=$('nickError'), nickSaveBtn=$('nickSaveBtn'), nickDividerEl=$('nickDivider'), nickGoogleBtn=$('nickGoogleBtn'), nickGoogleLbl=$('nickGoogleLbl');
   var infoBtn=$('infoBtn'), infoModal=$('infoModal'), infoTitle=$('infoTitle'), infoP1=$('infoP1'), infoP2=$('infoP2'), infoP3=$('infoP3'), infoP4=$('infoP4'), infoClose=$('infoClose');
+  var profileBtn=$('profileBtn'), profileModal=$('profileModal'), profileClose=$('profileClose'), profileCloseBtn=$('profileCloseBtn');
+  var profileName=$('profileName'), profileProvider=$('profileProvider'), profileTitleEl=$('profileTitle');
+  var profileAdsWatchedLabel=$('profileAdsWatchedLabel'), profileAdsWatchedNum=$('profileAdsWatchedNum');
+  var profileCitiesLabel=$('profileCitiesLabel'), profileCitiesNum=$('profileCitiesNum');
+  var profileImpactLabelText=$('profileImpactLabelText'), profileImpactVal=$('profileImpactVal'), profileImpactBar=$('profileImpactBar'), profileNextMilestone=$('profileNextMilestone');
   var tutHint=$('tutHint'), tutHintText=$('tutHintText'), tutHintOk=$('tutHintOk');
   var selected = null;
   var musicOn = true, sfxOn = true, vibrateOn = true, audioCtx = null, tutorialShown = false;
@@ -1525,11 +1980,9 @@
     $('mapOpenLbl').textContent = t.mapOpenBtn;
     mapHint.textContent = t.mapHint;
     mapCloseBtn.textContent = t.mapClose;
+    $('cityFullCloseLbl').textContent = t.cityFullBackBtn;
     confirmYes.textContent = t.confirmYes;
     confirmNo.textContent = t.confirmNo;
-    roundupTitle.textContent = t.roundupTitle;
-    roundupYes.textContent = t.roundupYes;
-    roundupNo.textContent = t.roundupNo;
     rankTabTime.textContent = t.rank.tabTime;
     rankTabMoney.textContent = t.rank.tabMoney;
     gardenNameTag.textContent = gardenDef(active).name;
@@ -1543,6 +1996,12 @@
     infoClose.textContent = t.infoClose;
     tutHintText.textContent = t.tutHintText;
     tutHintOk.textContent = t.tutHintOk;
+    nickTitleEl.textContent = t.nickTitle;
+    nickSubtitleEl.textContent = t.nickSubtitle;
+    nickInput.placeholder = t.nickPlaceholder;
+    nickSaveBtn.textContent = t.nickSaveBtn;
+    nickDividerEl.textContent = t.nickDivider;
+    nickGoogleLbl.textContent = nickGoogleBtn._loading ? t.nickGoogleLoading : t.nickGoogleBtn;
   }
 
   /* ---- stats/boosts render ---- */
@@ -1574,6 +2033,34 @@
     if(honeyStacks>0){ var hc=document.createElement('span'); hc.className='boost-chip'; hc.textContent='🍯 +'+(honeyStacks*5)+'%'; boostsEl.appendChild(hc); }
     gardenNameTag.textContent = gardenDef(active).name;
     plantBtn.textContent = t.plantBtn + ' (' + (seedAdLoading ? t.watchAdShortLoading : t.watchAdShort) + ')';
+  }
+
+  /* ---- profile / stats panel: nickname + sign-in state, lifetime ads watched, and the same
+     charity-impact readout/milestones shown under the garden, plus how many cities the player
+     has built — everything a player might want to check on before showing a friend. ---- */
+  function renderProfile(){
+    var t = T();
+    profileTitleEl.textContent = t.profileTitle;
+    profileName.textContent = playerNick || t.profileGuest;
+    profileProvider.textContent = authProvider==='google' ? t.profileProviderGoogle : t.profileProviderGuest;
+    profileAdsWatchedLabel.textContent = t.profileAdsWatched;
+    profileAdsWatchedNum.textContent = fmt(adsWatched);
+    profileCitiesLabel.textContent = t.profileCitiesLabel;
+    profileCitiesNum.textContent = fmt(cities.length);
+    profileImpactLabelText.textContent = t.profileImpactLabel;
+    var mIdx = milestoneIdx;
+    if(mIdx < MILESTONE_T.length){
+      var base = mIdx>0 ? MILESTONE_T[mIdx-1] : 0, target = MILESTONE_T[mIdx];
+      var pct = Math.min(100, Math.round((allTime-base)/(target-base)*100));
+      profileImpactBar.style.width = pct+'%';
+      profileImpactVal.textContent = fmt(allTime) + ' / ' + target;
+      profileNextMilestone.textContent = t.profileNextMilestone(MILESTONE_ICON[mIdx]+' '+t.milestones[mIdx]);
+    } else {
+      profileImpactBar.style.width = '100%';
+      profileImpactVal.textContent = fmt(allTime);
+      profileNextMilestone.textContent = '';
+    }
+    profileCloseBtn.textContent = t.profileClose;
   }
 
   function renderGrid(){
@@ -1835,6 +2322,7 @@
       if(!empties2.length){ toast(T().toast.gridFull); sfx('deny'); renderStats(); return; }
       var idx = empties2[Math.floor(Math.random()*empties2.length)];
       g2.board[idx]=1; g2.readyAt[idx]=Date.now()+MATURE_MS; g2.seeds++;
+      adWatched();
       renderGrid(); renderStats(); sfx('click');
     }, 900);
   }
@@ -1895,6 +2383,7 @@
     setTimeout(function(){
       var amount = Math.min(12, warehouseCap-warehouseTotal());
       warehouse.water += amount; waterGenLoading = false;
+      adWatched();
       renderWarehouse(); toast(T().toast.gotWater(amount), 2400); sfx('ad');
     }, 900);
   }
@@ -1906,6 +2395,7 @@
     expandLoading = true;
     setTimeout(function(){
       warehouseCap += 20; expandLoading = false;
+      adWatched();
       renderWarehouse(); toast(T().toast.warehouseExpanded(warehouseCap), 2400); sfx('unlock');
     }, 900);
   }
@@ -1921,6 +2411,7 @@
     setTimeout(function(){
       warehouse[def.from] -= def.need; warehouse[key] = (warehouse[key]||0)+1;
       refineLoading[key] = false;
+      adWatched();
       renderWarehouse(); toast(T().toast.refined(MATERIAL_ICON[key]), 2400); sfx('harvest');
     }, 900);
   }
@@ -1938,38 +2429,123 @@
     setTimeout(function(){
       warehouse[def.from] -= def.need; warehouse[key] = (warehouse[key]||0)+1;
       bankLoading[key] = false;
+      adWatched();
       renderWarehouse(); toast(T().toast.refined(MATERIAL_ICON[key]), 2400); sfx('harvest');
     }, 900);
   }
 
-  /* ---- build a charity building — three ways to fund one, matching the three-tier
-     monetization plan (materials from play, a one-off real donation, or a monthly one) ---- */
+  /* ---- build a charity building — three ways to fund one (materials from play, a one-off
+     real donation, or a monthly one), matching the three-tier monetization plan. Buying one
+     never places it automatically: it hands the player a "held" building (pendingPlacement)
+     that has to be dropped onto an empty plot on the city map — see onPlotTap below. ---- */
+  function startPlacement(key){
+    pendingPlacement = key; liftedPlot = null;
+    renderWarehouse();
+    /* jump straight into the interactive city view so the just-bought building's plot is
+       immediately visible to tap — buying and placing reads as one motion, not two separate
+       menus the player has to find their way between. */
+    if(cityFullModal && !cityFullModal.classList.contains('show')) openCityFull();
+    toast(T().toast.choosePlot(T().buildings[key].name), 3200);
+  }
   function buildBuilding(key){
-    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def || def.moneyOnly || def.rentable) return;
+    var def = BUILDING_BY_KEY[key]; if(!def || def.moneyOnly || def.rentable) return;
+    if(cityIsFull(activeCityIdx)){ toast(T().toast.cityFull); sfx('deny'); return; }
     var cost = buildingCost(def);
     if(!canAfford(cost)){ toast(T().toast.notEnoughMaterial); sfx('deny'); return; }
     for(var k in cost) warehouse[k] -= cost[k];
-    townBuilt[key] = buildingCount(key)+1; townPeople += def.people;
-    renderWarehouse(); toast(T().toast.built(T().buildings[key].name), 3000); sfx('build');
+    renderWarehouse(); sfx('build');
+    startPlacement(key);
   }
   /* money-only building — a one-off real-money donation (demo), no warehouse materials involved */
   function buildWithMoney(key){
-    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def || !def.moneyOnly) return;
-    townBuilt[key] = buildingCount(key)+1; townPeople += def.people;
-    renderWarehouse(); toast(T().toast.built(T().buildings[key].name), 3000); sfx('build');
-    maybeRoundup();
+    var def = BUILDING_BY_KEY[key]; if(!def || !def.moneyOnly) return;
+    if(cityIsFull(activeCityIdx)){ toast(T().toast.cityFull); sfx('deny'); return; }
+    sfx('build'); startPlacement(key);
+    setTimeout(thankSupporter, 3400);
   }
-  /* rentable building — a monthly real-money donation (demo-compressed to a few minutes) keeps
-     it running; letting the rent lapse just pauses its residents until it's renewed, it never
-     disappears — nothing about renewing it is urgent or time-pressured. */
+  /* rentable building — a monthly real-money donation (demo-compressed to a few minutes) funds
+     a brand-new instance each time; an already-placed one that lapses doesn't disappear, it
+     just pauses its residents until renewed by tapping it directly on the city map. */
   function rentBuilding(key){
-    var def = BUILDINGS.filter(function(b){ return b.key===key; })[0]; if(!def || !def.rentable) return;
-    var wasActive = townRent[key] && townRent[key] > Date.now();
-    townRent[key] = Math.max(Date.now(), townRent[key]||0) + def.rentMs;
-    if(!townBuilt[key]) townBuilt[key] = 1;
+    var def = BUILDING_BY_KEY[key]; if(!def || !def.rentable) return;
+    if(cityIsFull(activeCityIdx)){ toast(T().toast.cityFull); sfx('deny'); return; }
+    sfx('build'); startPlacement(key);
+    setTimeout(thankSupporter, 3400);
+  }
+  function cancelPlacement(){
+    if(!pendingPlacement) return;
+    var def = BUILDING_BY_KEY[pendingPlacement];
+    /* refund exactly what was paid, mirroring whichever funding path started this placement */
+    if(!def.moneyOnly && !def.rentable){ var cost = buildingCost(def); for(var k in cost) warehouse[k] += cost[k]; renderWarehouse(); }
+    pendingPlacement = null; renderCityMap(); renderWarehouse();
+  }
+  function placeBuildingAt(cityIdx, col, row, key){
+    var def = BUILDING_BY_KEY[key];
+    var plot = {key:key, col:col, row:row};
+    if(def.rentable) plot.rentUntil = Date.now() + def.rentMs;
+    var slot = cities[cityIdx].plots.indexOf(null);
+    if(slot < 0) return; // shouldn't happen -- buildBuilding/buildWithMoney/rentBuilding already gate on cityIsFull
+    cities[cityIdx].plots[slot] = plot;
+    pendingPlacement = null;
+    toast(T().toast.built(T().buildings[key].name), 2600); haptic('medium');
     renderWarehouse();
-    toast(T().toast[wasActive?'rentRenewed':'rented'](T().buildings[key].name), 3000); sfx('build');
-    maybeRoundup();
+  }
+  function renewRentAtPlot(cityIdx, plotIdx){
+    var plot = cities[cityIdx].plots[plotIdx]; if(!plot) return;
+    var def = BUILDING_BY_KEY[plot.key]; if(!def || !def.rentable) return;
+    plot.rentUntil = Math.max(Date.now(), plot.rentUntil||0) + def.rentMs;
+    toast(T().toast.rentRenewed(def.icon+' '+T().buildings[plot.key].name), 2600); sfx('build');
+    setTimeout(thankSupporter, 2800);
+    renderWarehouse();
+  }
+  function denyPlacement(reason){
+    var t = T();
+    if(reason==='occupied') toast(t.toast.plotTaken);
+    else if(reason==='tooClose') toast(t.toast.tooClose);
+    else toast(t.toast.notBuildable);
+    sfx('deny');
+  }
+  /* ---- tapping a field tile in the city view: three modes, depending on what's already "in
+     hand" — placing a just-bought building, dropping a lifted one, or picking one up. col/row is
+     whatever grass tile the player actually tapped (free placement — see canBuildAt above), not
+     an index into a fixed layout any more. ---- */
+  function onPlotTap(cityIdx, col, row){
+    var t = T(); var city = cities[cityIdx]; if(!city) return;
+    if(pendingPlacement){
+      var reason = placementDenyReason(cityIdx, col, row, -1);
+      if(reason){ denyPlacement(reason); return; }
+      placeBuildingAt(cityIdx, col, row, pendingPlacement);
+      return;
+    }
+    if(liftedPlot){
+      var liftedRec = cities[liftedPlot.cityIdx] && cities[liftedPlot.cityIdx].plots[liftedPlot.plotIdx];
+      if(!liftedRec){ liftedPlot=null; renderCityMap(); return; }
+      if(liftedPlot.cityIdx===cityIdx && liftedRec.col===col && liftedRec.row===row){ liftedPlot=null; renderCityMap(); return; }
+      var excludeIdx = liftedPlot.cityIdx===cityIdx ? liftedPlot.plotIdx : -1;
+      var reason2 = placementDenyReason(cityIdx, col, row, excludeIdx);
+      if(reason2){ denyPlacement(reason2); return; }
+      liftedRec.col = col; liftedRec.row = row;
+      liftedPlot = null;
+      toast(t.toast.moved, 2000); sfx('click');
+      renderWarehouse();
+      return;
+    }
+    var plotIdx = findPlotAt(city, col, row);
+    if(plotIdx < 0) return;
+    var plot = city.plots[plotIdx];
+    var def = BUILDING_BY_KEY[plot.key];
+    if(def.rentable && !(plot.rentUntil > Date.now())){ renewRentAtPlot(cityIdx, plotIdx); return; }
+    liftedPlot = {cityIdx:cityIdx, plotIdx:plotIdx};
+    toast(t.toast.lifted, 2400);
+    renderCityMap();
+  }
+  function buyNewCity(){
+    var cost = newCityCost();
+    if(!cityIsFull(activeCityIdx)){ toast(T().toast.cityNotFull); sfx('deny'); return; }
+    if(dobro < cost){ toast(T().toast.notEnoughForGarden); sfx('deny'); return; }
+    dobro -= cost; cities.push(makeCity()); activeCityIdx = cities.length-1;
+    toast(T().toast.newCity(activeCityIdx+1), 2800); sfx('unlock');
+    renderStats(); renderWarehouse();
   }
 
   var adLoading=false;
@@ -1978,6 +2554,7 @@
     adLoading = true; adBtn._loading = true; adBtn.textContent = t.adBtnLoading;
     setTimeout(function(){
       hearts += 10; adLoading=false; adBtn._loading=false; adBtn.textContent = T().adBtn;
+      adWatched();
       renderStats(); toast(T().toast.adReward, 3100); sfx('ad');
     }, 1100);
   }
@@ -2103,309 +2680,237 @@
      enough for weak devices by capping concurrent sprites and freezing everything the instant
      the full view is closed. Rebuilding the DOM only when the set of built buildings actually
      changes (not on every 1s tick) keeps this affordable. ---- */
-  var lastCityMapSig = null, cityMiniPedsSpawned = false;
+  var lastCityMapSig = null;
   var CITY_NS = 'http://www.w3.org/2000/svg';
   function cityMapSignature(){
-    return BUILDINGS.map(function(b){
-      var c = buildingCount(b.key); if(!c) return '';
-      var active = b.rentable ? !!(townRent[b.key] && townRent[b.key] > Date.now()) : true;
-      return b.key+':'+c+':'+(active?1:0);
-    }).join('|');
+    return activeCityIdx+':'+pendingPlacement+':'+(liftedPlot?liftedPlot.cityIdx+'-'+liftedPlot.plotIdx:'')+':'+
+      cities.map(function(c){ return c.plots.map(function(p){ return p ? p.key+(p.rentUntil?(p.rentUntil>Date.now()?'1':'0'):''):'.'; }).join(''); }).join('|');
   }
   function svgEl(tag, attrs){
     var el = document.createElementNS(CITY_NS, tag);
     for(var k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs,k)) el.setAttribute(k, attrs[k]); }
     return el;
   }
-  function drawCityGround(group, W, groundY){
-    group.innerHTML = '';
-    group.appendChild(svgEl('rect', {x:0, y:groundY, width:W, height:10, class:'city-sidewalk'}));
-    /* reserved lower lane — empty today, ready for car sprites in a future update */
-    group.appendChild(svgEl('rect', {x:0, y:groundY+10, width:W, height:16, class:'city-road-lane'}));
-    group.appendChild(svgEl('line', {x1:0, y1:groundY+18, x2:W, y2:groundY+18, class:'city-road-dash'}));
+  /* ---- grid geometry: every city is the same fixed CITY_COLS×CITY_ROWS grid of plots, a
+     water edge along the top (purely decorative — a nod to the reference waterfront) and a
+     road along the bottom where the ambient pedestrians/cars/pets actually walk. ---- */
+  var CITY_TILE = 46, CITY_GAP = 7, CITY_PAD = 15, CITY_WATER_H = 26, CITY_ROAD_H = 22;
+  var CITY_PITCH = CITY_TILE + CITY_GAP;
+  function cityGeom(){
+    var gridW = CITY_COLS*CITY_PITCH - CITY_GAP;
+    var gridH = CITY_ROWS*CITY_PITCH - CITY_GAP;
+    var gridTop = CITY_PAD + CITY_WATER_H;
+    var roadY = gridTop + gridH + CITY_PAD*0.6;
+    return {
+      W: gridW + CITY_PAD*2, H: roadY + CITY_ROAD_H + CITY_PAD,
+      gridLeft: CITY_PAD, gridTop: gridTop, gridW: gridW, gridH: gridH, roadY: roadY
+    };
   }
-  function buildingBlockNode(t, def, cx, groundY, scale, active, count){
-    var col = CITY_FAM_COLOR[def.fam] || CITY_FAM_COLOR.housing;
-    var Wf = 24*scale, Hf = (20+Math.min(16, def.people*1.5))*scale, Ws = 8*scale, dy = 6*scale;
-    var x0 = cx-Wf/2, x1 = cx+Wf/2, y0 = groundY-Hf, y1 = groundY;
-    var g = svgEl('g', {class:'city-bldg'+(active?'':' inactive')});
-    function poly(pts, fill){ g.appendChild(svgEl('polygon', {points:pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' '), fill:fill})); }
-    poly([[x1,y0],[x1+Ws,y0-dy],[x1+Ws,y1-dy],[x1,y1]], col.c); // side face — depth cue
-    poly([[x0,y0],[x0+Ws,y0-dy],[x1+Ws,y0-dy],[x1,y0]], col.a); // roof cap
-    g.appendChild(svgEl('rect', {x:x0, y:y0, width:Wf, height:Hf, fill:col.b, class:'city-bldg-front'}));
-    if(scale > 0.4){
-      var wCols = Wf>20 ? 2 : 1, wRows = Math.max(1, Math.floor(Hf/(9*scale))-1);
-      var wSize = 2.6*scale, padX = Wf/(wCols+1), padY = Hf/(wRows+1);
-      for(var r=0;r<wRows;r++){ for(var c=0;c<wCols;c++){
-        g.appendChild(svgEl('rect', {x:(x0+padX*(c+1)-wSize/2).toFixed(1), y:(y0+padY*(r+1)-wSize/2).toFixed(1), width:wSize.toFixed(1), height:wSize.toFixed(1), rx:0.5, class:'city-bldg-window'}));
-      } }
+  function plotCenter(geom, idx){
+    var col = idx % CITY_COLS, row = Math.floor(idx/CITY_COLS);
+    return { x: geom.gridLeft + col*CITY_PITCH + CITY_TILE/2, y: geom.gridTop + row*CITY_PITCH + CITY_TILE/2 };
+  }
+  function drawCityScene(t, roadGroup, buildGroup, geom, cityIdx, interactive){
+    roadGroup.innerHTML = ''; buildGroup.innerHTML = '';
+    /* waterfront band along the top, with a couple of wave lines and a little boat — same flat,
+       colorful vector language as the rest of the game, not a literal photo backdrop */
+    roadGroup.appendChild(svgEl('rect', {x:0, y:0, width:geom.W, height:CITY_PAD+CITY_WATER_H-4, class:'city-water'}));
+    for(var wv=0; wv<2; wv++){
+      roadGroup.appendChild(svgEl('path', {d:'M 4 '+(10+wv*8)+' q 10 -5 20 0 t 20 0 t 20 0 t 20 0 t 20 0 t 20 0', class:'city-wave'}));
     }
-    var glyph = svgEl('text', {x:cx, y:(y1-Hf*0.28).toFixed(1), class:'city-bldg-glyph', 'font-size':(11*scale).toFixed(1)});
-    glyph.textContent = def.icon; g.appendChild(glyph);
-    var bt = t.buildings[def.key];
-    var titleEl = svgEl('title', {}); titleEl.textContent = bt.name + (active?'':t.cityMapInactive);
-    g.appendChild(titleEl);
-    if(count > 1){
-      var badge = svgEl('text', {x:(x1+Ws*0.5).toFixed(1), y:(y0-dy-1).toFixed(1), class:'city-badge', 'text-anchor':'middle'});
-      badge.textContent = '×'+count; g.appendChild(badge);
+    var boatX = 24 + (geom.W-48)*0.72;
+    var boat = svgEl('g', {transform:'translate('+boatX.toFixed(1)+',14)'});
+    boat.appendChild(svgEl('path', {d:'M -10 4 Q 0 12 10 4 L 7 8 L -7 8 Z', fill:'#fbfaf1'}));
+    boat.appendChild(svgEl('line', {x1:0, y1:4, x2:0, y2:-7, stroke:'var(--ink-dim)', 'stroke-width':1}));
+    boat.appendChild(svgEl('path', {d:'M 0 -6 L 6 3 L 0 3 Z', fill:'var(--coral)'}));
+    roadGroup.appendChild(boat);
+    /* road + sidewalk along the bottom, exactly like the old single-lane version */
+    roadGroup.appendChild(svgEl('rect', {x:0, y:geom.roadY, width:geom.W, height:6, class:'city-sidewalk'}));
+    roadGroup.appendChild(svgEl('rect', {x:0, y:geom.roadY+6, width:geom.W, height:CITY_ROAD_H-6, class:'city-road-lane'}));
+    roadGroup.appendChild(svgEl('line', {x1:0, y1:geom.roadY+6+(CITY_ROAD_H-6)/2, x2:geom.W, y2:geom.roadY+6+(CITY_ROAD_H-6)/2, class:'city-road-dash'}));
+    /* a small park nub tucked at the road's left end — a fountain and a couple of trees, static */
+    var park = svgEl('g', {transform:'translate(10,'+(geom.roadY+CITY_ROAD_H+7).toFixed(1)+')'});
+    park.appendChild(svgEl('circle', {cx:0, cy:0, r:6, fill:'var(--blue-soft)', stroke:'var(--blue)', 'stroke-width':1}));
+    park.appendChild(svgEl('circle', {cx:0, cy:0, r:1.6, fill:'var(--blue)'}));
+    [[-11,2],[11,3]].forEach(function(p){
+      park.appendChild(svgEl('circle', {cx:p[0], cy:p[1], r:4.4, fill:'var(--leaf)'}));
+    });
+    roadGroup.appendChild(park);
+    var city = cities[cityIdx];
+    for(var i=0;i<CITY_PLOTS;i++){
+      buildGroup.appendChild(plotNode(t, cityIdx, i, plotCenter(geom, i), interactive));
+    }
+  }
+  function plotNode(t, cityIdx, plotIdx, c, interactive){
+    var plot = cities[cityIdx].plots[plotIdx];
+    var isLifted = !!(liftedPlot && liftedPlot.cityIdx===cityIdx && liftedPlot.plotIdx===plotIdx);
+    var isDropTarget = interactive && !!pendingPlacement && !plot;
+    var g = svgEl('g', {class:'city-plot'+(interactive?' tappable':'')+(isLifted?' lifted':'')+(isDropTarget?' drop-target':'')});
+    var half = CITY_TILE/2;
+    if(!plot){
+      g.appendChild(svgEl('rect', {x:c.x-half, y:c.y-half, width:CITY_TILE, height:CITY_TILE, rx:5, class:'plot-empty'}));
+      g.appendChild(svgEl('circle', {cx:c.x-9, cy:c.y+7, r:2.6, class:'plot-rock'}));
+      g.appendChild(svgEl('circle', {cx:c.x+6, cy:c.y+10, r:1.8, class:'plot-rock'}));
+      g.appendChild(svgEl('rect', {x:c.x-4, y:c.y-13, width:8, height:9, class:'plot-crate'}));
+      g.appendChild(svgEl('line', {x1:c.x+9, y1:c.y-15, x2:c.x+15, y2:c.y-15, stroke:'var(--coral)', 'stroke-width':1.4}));
+      g.appendChild(svgEl('line', {x1:c.x+9, y1:c.y-15, x2:c.x+9, y2:c.y-9, stroke:'var(--coral)', 'stroke-width':1.4}));
+    } else {
+      var def = BUILDING_BY_KEY[plot.key];
+      var col = CITY_FAM_COLOR[def.fam] || CITY_FAM_COLOR.housing;
+      var active = def.rentable ? !!(plot.rentUntil && plot.rentUntil > Date.now()) : true;
+      var Wf = CITY_TILE*0.6, Hf = CITY_TILE*0.66, Ws = CITY_TILE*0.18, dy = CITY_TILE*0.12;
+      var x0 = c.x-Wf/2, x1 = c.x+Wf/2, y0 = c.y+half*0.55-Hf, y1 = c.y+half*0.55;
+      g.classList.add('city-bldg');
+      if(!active) g.classList.add('inactive');
+      function poly(pts, fill){ g.appendChild(svgEl('polygon', {points:pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' '), fill:fill})); }
+      poly([[x1,y0],[x1+Ws,y0-dy],[x1+Ws,y1-dy],[x1,y1]], col.c);
+      poly([[x0,y0],[x0+Ws,y0-dy],[x1+Ws,y0-dy],[x1,y0]], col.a);
+      g.appendChild(svgEl('rect', {x:x0, y:y0, width:Wf, height:Hf, fill:col.b, class:'city-bldg-front'}));
+      var wSize = 3.4, wCols = 2, padX = Wf/(wCols+1);
+      for(var wc=0; wc<wCols; wc++){
+        g.appendChild(svgEl('rect', {x:(x0+padX*(wc+1)-wSize/2).toFixed(1), y:(y0+Hf*0.32).toFixed(1), width:wSize, height:wSize, rx:0.6, class:'city-bldg-window'}));
+      }
+      var glyph = svgEl('text', {x:c.x, y:(y0-2).toFixed(1), class:'city-bldg-glyph', 'font-size':13});
+      glyph.textContent = def.icon; g.appendChild(glyph);
+      var titleEl = svgEl('title', {});
+      titleEl.textContent = t.buildings[def.key].name + (active?'':t.cityMapInactive);
+      g.appendChild(titleEl);
+      if(def.rentable && !active){
+        g.appendChild(svgEl('text', {x:c.x, y:(y1+9).toFixed(1), class:'city-plot-renew', 'text-anchor':'middle'})).textContent = t.cityRenewHint;
+      }
+    }
+    if(interactive){
+      /* NOT a click listener: cityFullWrap below captures the pointer on every pointerdown
+         (needed for drag-to-pan), and once a pointer is captured, Chrome retargets the
+         resulting synthetic "click" event to the CAPTURING element instead of whatever is
+         visually under the finger — so a plain click listener here would silently never fire.
+         Taps are detected and dispatched from cityFullWrap's own pointerup handler instead
+         (see below), which reads this data attribute via elementFromPoint(). */
+      g.setAttribute('data-plot-idx', plotIdx);
     }
     return g;
-  }
-  function ensureCityMiniPeds(){
-    if(cityMiniPedsSpawned) return;
-    cityPedGroupMini.innerHTML = '';
-    /* same fix as the full-view sprites: the walking CSS animation sets its own transform, so
-       it lives on an inner <g> while the outer <g>'s attribute-based transform just places the
-       walker on the sidewalk — otherwise the animation would silently discard that position. */
-    [0,1].forEach(function(i){
-      var outer = svgEl('g', {transform:'translate(14,116)'});
-      var inner = svgEl('g', {class:'city-mini-ped'+i});
-      inner.appendChild(svgEl('rect', {x:-1.3, y:-3, width:2.6, height:4.6, rx:1, fill:i===0?'var(--leaf)':'var(--blue)'}));
-      inner.appendChild(svgEl('circle', {cx:0, cy:-4.4, r:1.5, fill:'var(--gold-soft)'}));
-      outer.appendChild(inner);
-      cityPedGroupMini.appendChild(outer);
-    });
-    cityMiniPedsSpawned = true;
-  }
-  var cityContentW = 320, cityLifeBounds = {min:14, max:306, y:118};
-  function renderCityFullScene(t){
-    if(!cityRoadGroupFull) return;
-    var placed = BUILDINGS.filter(function(b){ return buildingCount(b.key) > 0; });
-    var groundY = 118;
-    cityLifeBounds.y = groundY;
-    if(!placed.length){
-      cityRoadGroupFull.innerHTML=''; cityBuildGroupFull.innerHTML='';
-      cityContentW = 320; cityLifeBounds.min = 14; cityLifeBounds.max = 306;
-      return;
-    }
-    var PITCH = 62, PAD = 40;
-    var W = Math.max(320, PAD*2 + (placed.length-1)*PITCH);
-    cityContentW = W;
-    drawCityGround(cityRoadGroupFull, W, groundY);
-    cityBuildGroupFull.innerHTML = '';
-    placed.forEach(function(def, idx){
-      var cx = PAD + idx*PITCH;
-      var active = def.rentable ? !!(townRent[def.key] && townRent[def.key] > Date.now()) : true;
-      cityBuildGroupFull.appendChild(buildingBlockNode(t, def, cx, groundY, 1, active, buildingCount(def.key)));
-    });
-    cityLifeBounds.min = 14; cityLifeBounds.max = W-14;
   }
   function renderCityMap(){
-    if(!cityMapSvg) return;
-    var t = T();
-    ensureCityMiniPeds();
     var sig = cityMapSignature();
-    if(sig === lastCityMapSig) return;
-    lastCityMapSig = sig;
-    var placed = BUILDINGS.filter(function(b){ return buildingCount(b.key) > 0; });
-    if(!placed.length){
-      cityMapHint.textContent = t.cityMapEmpty;
-      cityMapHint.style.display = '';
-      cityMapSvg.style.display = 'none';
-      cityExpandBtn.style.display = 'none';
-      renderCityFullScene(t);
-      return;
+    if(sig !== lastCityMapSig){
+      lastCityMapSig = sig;
+      _notifyCityChanged();
     }
-    cityMapHint.style.display = 'none';
-    cityMapSvg.style.display = '';
-    cityExpandBtn.style.display = '';
-    var W = 320, groundY = 122;
-    drawCityGround(cityRoadGroupMini, W, groundY);
-    cityBuildGroupMini.innerHTML = '';
-    var n = placed.length, usable = W-24, slot = usable/n;
-    var scale = Math.max(0.32, Math.min(0.6, slot/44));
-    placed.forEach(function(def, idx){
-      var cx = 12 + slot*(idx+0.5);
-      var active = def.rentable ? !!(townRent[def.key] && townRent[def.key] > Date.now()) : true;
-      cityBuildGroupMini.appendChild(buildingBlockNode(t, def, cx, groundY, scale, active, buildingCount(def.key)));
-    });
-    renderCityFullScene(t);
+    renderCityStrip();
+    renderPlacementBanner();
   }
-
-  /* ---- city ambient life (full view only): a couple of always-present strollers, plus rare
-     cats/dogs (sometimes on a leash) that cross once and vanish. Runs on requestAnimationFrame
-     only while the full-screen city view is open; a hard cap on concurrent sprites and full
-     teardown on close keep this from ever being a battery/perf concern. ---- */
-  var CITY_LIFE_MAX_AMBIENT = 2, CITY_LIFE_MAX_EGG = 1;
-  var cityLife = { running:false, raf:null, last:0, sprites:[], eggTimer:0, nextEggAt:7, reduce:false };
-  function citySpriteNode(kind){
-    var g = svgEl('g', {class:'city-sprite'+(cityLife.reduce?'':' bob')});
-    if(kind==='person'){
-      g.appendChild(svgEl('rect', {x:-2.6, y:-9.8, width:5.2, height:8.8, rx:1.8, fill:Math.random()<0.5?'var(--leaf)':'var(--blue)', class:'city-sprite-body'}));
-      g.appendChild(svgEl('circle', {cx:0, cy:-12, r:2.7, fill:'var(--gold-soft)'}));
+  /* ---- vertical column of cities, each shown as a little house-icon card with its own
+     (optionally player-given) name -- tapping a card selects it AND jumps straight into the
+     fullscreen city view (per the user's request: one tap, not select-then-separately-expand).
+     The pencil button lets the name itself be edited inline, without leaving this list. Buying a
+     brand-new empty city (once the current one is completely full) stays the last row, same as
+     before -- there's no cap on how many cities exist. ---- */
+  var lastCityStripSig = null;
+  function cityStripSignature(){
+    // rebuilding this list's DOM (innerHTML='' + recreate every row) runs every second whenever
+    // the map tab is open (renderWarehouse -> renderCityMap -> renderCityStrip, from the game's
+    // 1s tick) even though almost nothing here changes that often -- rebuilding unconditionally
+    // briefly detaches/replaces the row/pencil-button elements every single tick, which is a
+    // needless (if usually harmless) risk for whatever the player's finger/cursor happens to be
+    // over at that exact moment (e.g. mid-rename-click). Skipping the rebuild when nothing this
+    // list actually shows has changed removes that risk almost entirely and is pure upside.
+    return LANG+':'+activeCityIdx+':'+cities.map(function(c,idx){
+      return (c.name||'')+'='+(CITY_PLOTS-cityEmptyCount(idx));
+    }).join('|');
+  }
+  function renderCityStrip(){
+    if(!cityStrip) return;
+    var sig = cityStripSignature();
+    if(sig === lastCityStripSig) return;
+    lastCityStripSig = sig;
+    cityStrip.innerHTML = '';
+    var t = T();
+    cities.forEach(function(c, idx){
+      var full = cityIsFull(idx), filled = CITY_PLOTS - cityEmptyCount(idx);
+      var row = document.createElement('div');
+      row.className = 'city-row'+(idx===activeCityIdx?' active':'');
+      row.innerHTML =
+        '<div class="cr-icon">🏘️</div>'+
+        '<div class="cr-info">'+
+          '<span class="cr-name">'+cityDisplayName(idx)+'</span>'+
+          '<span class="cr-fill">'+filled+'/'+CITY_PLOTS+(full?' ✓':'')+'</span>'+
+        '</div>'+
+        '<button class="cr-rename-btn" title="'+t.cityRenameTitle+'">✎</button>';
+      row.addEventListener('click', function(){
+        activeCityIdx = idx; liftedPlot=null; pendingPlacement=null; lastCityMapSig=null;
+        renderWarehouse(); openCityFull();
+      });
+      var renameBtn = row.querySelector('.cr-rename-btn');
+      renameBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var nameEl = row.querySelector('.cr-name');
+        var input = document.createElement('input');
+        input.className = 'cr-name-input'; input.maxLength = 18;
+        input.value = (c.name || '');
+        input.placeholder = t.cityCardName(idx+1);
+        nameEl.replaceWith(input);
+        input.focus(); input.select();
+        var commit = function(){ renameCity(idx, input.value); };
+        input.addEventListener('keydown', function(ev){
+          if(ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+          else if(ev.key === 'Escape'){ ev.preventDefault(); renderCityStrip(); }
+        });
+        input.addEventListener('click', function(ev){ ev.stopPropagation(); });
+        input.addEventListener('blur', commit, { once:true });
+      });
+      cityStrip.appendChild(row);
+    });
+    var newRow = document.createElement('div');
+    var canBuy = cityIsFull(activeCityIdx);
+    newRow.className = 'city-row city-row-new'+(canBuy?'':' locked');
+    newRow.innerHTML = '<div class="cr-icon">➕</div><div class="cr-info"><span class="cr-name">'+t.cityNewBtn+'</span><span class="cr-fill">🌾 '+fmt(newCityCost())+'</span></div>';
+    newRow.addEventListener('click', function(){ if(canBuy) buyNewCity(); else toast(t.toast.cityNotFull); });
+    cityStrip.appendChild(newRow);
+  }
+  function renderPlacementBanner(){
+    if(!cityPlaceBanner) return;
+    var t = T();
+    /* the banner stays permanently in the flex layout (visibility toggles, not display) so
+       #cityFullWrap never changes size when it appears/disappears -- the canvas city renderer
+       fits its pan/zoom view to that wrap's box once per open, and a mid-session size change
+       (e.g. from the old display:none/flex toggle) would silently desync screen<->world
+       coordinates for the canvas hit-testing until the next re-fit. */
+    if(pendingPlacement){
+      cityPlaceBanner.style.visibility = 'visible'; cityPlaceBanner.style.pointerEvents = '';
+      cityPlaceBannerText.textContent = t.placeBannerText(t.buildings[pendingPlacement].name);
+      cityPlaceCancelBtn.style.display = '';
+      cityPlaceCancelBtn.onclick = cancelPlacement;
+    } else if(liftedPlot){
+      cityPlaceBanner.style.visibility = 'visible'; cityPlaceBanner.style.pointerEvents = '';
+      cityPlaceBannerText.textContent = t.liftedBannerText;
+      cityPlaceCancelBtn.style.display = '';
+      cityPlaceCancelBtn.onclick = function(){ liftedPlot=null; renderCityMap(); };
     } else {
-      var isCat = kind==='cat', clr = isCat?'#9098a0':'#8a6a4a';
-      g.appendChild(svgEl('ellipse', {cx:0, cy:-2.6, rx:isCat?4.2:4.8, ry:isCat?2.1:2.6, fill:clr, class:'city-sprite-body'}));
-      g.appendChild(svgEl('polygon', {points: isCat?'3.2,-5 4.6,-6.9 5.4,-4.8':'3.8,-5.1 4.8,-6.6 5.9,-5', fill:clr}));
-      g.appendChild(svgEl('circle', {cx:isCat?4.2:5.1, cy:-3.5, r:isCat?1.8:2.1, fill:clr}));
-      var tail = svgEl('path', {d: isCat?'M -3.8 -2.9 Q -6.4 -5.4 -4.8 -7.4':'M -4.5 -2.2 Q -6.7 -1.6 -6.4 0.3', fill:'none', stroke:clr, 'stroke-width':1.3, 'stroke-linecap':'round'});
-      g.appendChild(tail);
+      cityPlaceBanner.style.visibility = 'hidden'; cityPlaceBanner.style.pointerEvents = 'none';
     }
-    return g;
-  }
-  function spawnCitySprite(kind, x, dir, speed, temp){
-    /* the CSS "bob" animation sets its own transform on the visual group, which would silently
-       override an attribute-based transform on the SAME element — so position is driven on a
-       plain outer <g> and the bobbing visual sits nested one level in, where the two never
-       fight over the transform property. */
-    var visual = citySpriteNode(kind);
-    var wrap = svgEl('g', {});
-    wrap.appendChild(visual);
-    cityPedGroupFull.appendChild(wrap);
-    return {kind:kind, el:wrap, x:x, dir:dir, speed:speed, temp:!!temp};
-  }
-  function ensureAmbientWalkers(){
-    var count = cityLife.sprites.filter(function(s){ return s.kind==='person' && !s.temp; }).length;
-    while(count < CITY_LIFE_MAX_AMBIENT){
-      var x = cityLifeBounds.min + Math.random()*(cityLifeBounds.max-cityLifeBounds.min);
-      cityLife.sprites.push(spawnCitySprite('person', x, Math.random()<0.5?1:-1, 6+Math.random()*4));
-      count++;
-    }
-  }
-  function maybeSpawnEasterEgg(dt){
-    cityLife.eggTimer += dt;
-    if(cityLife.eggTimer < cityLife.nextEggAt) return;
-    cityLife.eggTimer = 0; cityLife.nextEggAt = 10+Math.random()*14;
-    if(cityLife.sprites.filter(function(s){ return s.temp; }).length >= CITY_LIFE_MAX_EGG) return;
-    var dir = Math.random()<0.5?1:-1;
-    var startX = dir>0 ? cityLifeBounds.min-6 : cityLifeBounds.max+6;
-    var roll = Math.random();
-    if(roll < 0.45){
-      cityLife.sprites.push(spawnCitySprite(Math.random()<0.5?'cat':'dog', startX, dir, 14+Math.random()*6, true));
-    } else if(roll < 0.72){
-      var owner = spawnCitySprite('person', startX, dir, 9, true);
-      var pet = spawnCitySprite(Math.random()<0.5?'dog':'cat', startX - dir*4, dir, 9, true);
-      var leash = svgEl('line', {stroke:'var(--ink-dim)', 'stroke-width':0.6});
-      cityPedGroupFull.appendChild(leash);
-      owner.pair = pet; owner.leash = leash;
-      cityLife.sprites.push(owner);
-    }
-  }
-  function cityLifeFrame(ts){
-    if(!cityLife.running) return;
-    if(!cityLife.last) cityLife.last = ts;
-    var dt = Math.min(0.12, (ts-cityLife.last)/1000);
-    cityLife.last = ts;
-    if(!cityLife.reduce){
-      for(var i=cityLife.sprites.length-1;i>=0;i--){
-        var s = cityLife.sprites[i];
-        s.x += s.dir*s.speed*dt;
-        if(s.temp){
-          var off = s.dir>0 ? s.x > cityLifeBounds.max+8 : s.x < cityLifeBounds.min-8;
-          if(off){
-            s.el.remove(); if(s.leash) s.leash.remove(); if(s.pair) s.pair.el.remove();
-            cityLife.sprites.splice(i,1); continue;
-          }
-        } else if(s.x > cityLifeBounds.max || s.x < cityLifeBounds.min){
-          s.dir *= -1; s.x = Math.max(cityLifeBounds.min, Math.min(cityLifeBounds.max, s.x));
-        }
-        s.el.setAttribute('transform', 'translate('+s.x.toFixed(1)+','+cityLifeBounds.y.toFixed(1)+')');
-        if(s.pair){
-          s.pair.x = s.x - s.dir*6.5;
-          s.pair.el.setAttribute('transform', 'translate('+s.pair.x.toFixed(1)+','+(cityLifeBounds.y+1).toFixed(1)+')');
-          if(s.leash){
-            s.leash.setAttribute('x1', s.x.toFixed(1)); s.leash.setAttribute('y1', (cityLifeBounds.y-6).toFixed(1));
-            s.leash.setAttribute('x2', s.pair.x.toFixed(1)); s.leash.setAttribute('y2', (cityLifeBounds.y-3).toFixed(1));
-          }
-        }
-      }
-      ensureAmbientWalkers();
-      maybeSpawnEasterEgg(dt);
-    }
-    cityLife.raf = requestAnimationFrame(cityLifeFrame);
-  }
-  function startCityLife(){
-    if(cityLife.running) return;
-    cityLife.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    cityLife.running = true; cityLife.last = 0;
-    ensureAmbientWalkers();
-    cityLife.raf = requestAnimationFrame(cityLifeFrame);
-  }
-  function stopCityLife(){
-    cityLife.running = false;
-    if(cityLife.raf) cancelAnimationFrame(cityLife.raf);
-    cityLife.raf = null;
-    cityLife.sprites.forEach(function(s){ if(s.el) s.el.remove(); if(s.leash) s.leash.remove(); if(s.pair && s.pair.el) s.pair.el.remove(); });
-    cityLife.sprites = []; cityLife.eggTimer = 0;
   }
 
-  /* ---- city full-view pan & zoom: a plain translate+scale on one <g>, driven by pointer
-     events (works for touch pinch/drag and mouse drag/wheel alike) so the city can keep
-     growing sideways without ever running out of room on screen. ---- */
-  var cityView = {scale:1, tx:0, ty:0};
-  var cityPointers = {}, cityPinchStartDist = null, cityPinchStartScale = 1;
-  var CITY_MIN_SCALE = 0.55, CITY_MAX_SCALE = 2.4;
-  function applyCityView(){
-    cityViewportFull.setAttribute('transform', 'translate('+cityView.tx.toFixed(2)+','+cityView.ty.toFixed(2)+') scale('+cityView.scale.toFixed(3)+')');
-  }
-  function cityWrapK(){ var r = cityFullWrap.getBoundingClientRect(); return r.width>0 ? r.width/320 : 1; }
-  function clampCityView(){
-    var margin = 60;
-    cityView.tx = Math.max(-(cityContentW*cityView.scale)+margin, Math.min(320-margin, cityView.tx));
-    cityView.ty = Math.max(-60, Math.min(60, cityView.ty));
-  }
-  function cityZoomTo(screenX, screenY, newScaleRaw){
-    var r = cityFullWrap.getBoundingClientRect(), k = cityWrapK();
-    var svgX = (screenX-r.left)/k, svgY = (screenY-r.top)/k;
-    var contentX = (svgX-cityView.tx)/cityView.scale, contentY = (svgY-cityView.ty)/cityView.scale;
-    var newScale = Math.max(CITY_MIN_SCALE, Math.min(CITY_MAX_SCALE, newScaleRaw));
-    cityView.tx = svgX - newScale*contentX; cityView.ty = svgY - newScale*contentY; cityView.scale = newScale;
-    clampCityView(); applyCityView();
-  }
-  function resetCityView(){ cityView.scale=1; cityView.tx=0; cityView.ty=0; applyCityView(); }
-  function cityPointerDist(){
-    var ids = Object.keys(cityPointers); if(ids.length<2) return null;
-    var a = cityPointers[ids[0]], b = cityPointers[ids[1]];
-    return Math.hypot(a.x-b.x, a.y-b.y);
-  }
-  if(cityFullWrap){
-    cityFullWrap.addEventListener('pointerdown', function(e){
-      try{ cityFullWrap.setPointerCapture(e.pointerId); }catch(err){}
-      cityPointers[e.pointerId] = {x:e.clientX, y:e.clientY};
-      if(Object.keys(cityPointers).length === 2){ cityPinchStartDist = cityPointerDist(); cityPinchStartScale = cityView.scale; }
-    });
-    cityFullWrap.addEventListener('pointermove', function(e){
-      if(!cityPointers[e.pointerId]) return;
-      var prev = cityPointers[e.pointerId];
-      var ids = Object.keys(cityPointers);
-      if(ids.length >= 2){
-        cityPointers[e.pointerId] = {x:e.clientX, y:e.clientY};
-        var dist = cityPointerDist();
-        if(dist && cityPinchStartDist){
-          var a = cityPointers[ids[0]], b = cityPointers[ids[1]];
-          cityZoomTo((a.x+b.x)/2, (a.y+b.y)/2, cityPinchStartScale*(dist/cityPinchStartDist));
-        }
-      } else {
-        var dxPx = e.clientX-prev.x, dyPx = e.clientY-prev.y;
-        cityPointers[e.pointerId] = {x:e.clientX, y:e.clientY};
-        var k = cityWrapK();
-        cityView.tx += dxPx/k; cityView.ty += dyPx/k;
-        clampCityView(); applyCityView();
-      }
-    });
-    var cityPointerEnd = function(e){
-      delete cityPointers[e.pointerId];
-      if(Object.keys(cityPointers).length < 2) cityPinchStartDist = null;
-    };
-    cityFullWrap.addEventListener('pointerup', cityPointerEnd);
-    cityFullWrap.addEventListener('pointercancel', cityPointerEnd);
-    cityFullWrap.addEventListener('pointerleave', function(e){ if(cityPointers[e.pointerId]) cityPointerEnd(e); });
-    cityFullWrap.addEventListener('wheel', function(e){
-      e.preventDefault();
-      cityZoomTo(e.clientX, e.clientY, cityView.scale*(e.deltaY<0?1.12:0.89));
-    }, {passive:false});
-  }
+  /* ---- city ambient life + full-view pan/zoom used to live here as hand-rolled SVG code;
+     both are now implemented in js/render/npc.js and js/render/city-input.js against the
+     <canvas id="cityFullCanvas"> element, driven through window.GameAPI. ---- */
 
   function renderWarehouse(){
     var t = T();
-    whTitle.textContent = t.whTitle;
+    warehouseFullTitle.textContent = t.whTitle;
+    warehouseFullCloseLbl.textContent = t.cityFullBackBtn;
     var total = warehouseTotal();
-    whBar.style.width = Math.min(100, Math.round(total/warehouseCap*100)) + '%';
+    var pct = Math.min(100, Math.round(total/warehouseCap*100));
+    whBar.style.width = pct + '%';
     whCapText.textContent = t.whCapText(total, warehouseCap);
+    whHereLbl.textContent = t.whHereLbl(total, warehouseCap);
+    whHereBar.style.width = pct + '%';
     whGrid.innerHTML = '';
     ['water','food','wood','plank','stone','iron','nails','sand','glass'].forEach(function(k){
       var chip = document.createElement('div'); chip.className = 'wh-chip';
-      chip.innerHTML = '<span class="wi">'+MATERIAL_ICON[k]+'</span>' + fmt(warehouse[k]);
+      var fillPct = Math.min(100, Math.round((warehouse[k]||0)/warehouseCap*100));
+      chip.innerHTML = '<span class="wi">'+MATERIAL_ICON[k]+'</span>'+
+        '<span class="wamt">'+fmt(warehouse[k])+'</span>'+
+        '<span class="wfill-track"><span class="wfill" style="width:'+fillPct+'%"></span></span>';
       whGrid.appendChild(chip);
     });
     whWaterBtn.textContent = waterGenLoading ? t.whWaterBtnLoading : t.whWaterBtn;
@@ -2438,53 +2943,91 @@
     townPeopleLine.textContent = t.townPeopleLine(totalResidents());
     if(!cityFed && totalResidents()>0){ townFoodLine.textContent = t.townFoodWarn; townFoodLine.style.display=''; }
     else { townFoodLine.style.display='none'; }
-    cityMapTitleEl.textContent = t.cityMapTitle;
-    cityExpandBtn.title = t.cityExpandTitle;
-    cityFullTitle.textContent = t.cityMapTitle;
+    cityHereLbl.textContent = t.cityHereLbl;
+    cityFullTitle.textContent = cityDisplayName(activeCityIdx);
     cityFullHint.textContent = t.cityFullHint;
+    cityBuildFabLbl.textContent = t.cityBuildFabLbl;
+    buildFullTitle.textContent = t.buildFullTitle;
+    buildFullCloseLbl.textContent = t.cityFullBackBtn;
+    buildFullHint.textContent = t.buildFullHint;
     renderCityMap();
-    buildList.innerHTML = '';
+    if(buildFullModal && buildFullModal.classList.contains('show')) renderBuildGrid();
+  }
+  /* ---- building picker: its own fullscreen window (see #buildFullModal above), showing every
+     buildable charity building as a square tile -- a small canvas with the real in-game building
+     art drawn onto it via CityAssets (never an emoji), the building's name below, laid out as a
+     scrollable/swipeable grid. Tapping a tile starts the exact same placement flow
+     (buildBuilding/buildWithMoney/rentBuilding) the old list/strip always used, then closes the
+     picker so the player lands straight back on the map to tap down the plot.
+
+     renderWarehouse() re-renders every 1s tick while the map screen is open, and this grid stays
+     open across ticks -- rebuilding its DOM unconditionally on every one of those (like the old
+     per-tick cityStrip rebuild before its own dirty-check fix) would occasionally yank a tile out
+     from under a real in-flight tap. A signature-gated rebuild (same pattern as
+     cityStripSignature) avoids that: only afford/count/lock actually changing rebuilds the grid. ---- */
+  var lastBuildGridSig = null;
+  function buildGridSignature(){
+    var cityFull = cityIsFull(activeCityIdx), holding = !!pendingPlacement;
+    return LANG+':'+cityFull+':'+holding+':'+BUILDINGS.map(function(def){
+      var afford = def.moneyOnly ? (dobro >= moneyCostFor(def)) : def.rentable ? (dobro >= def.rentCost) : canAfford(buildingCost(def));
+      return def.key+'='+buildingCount(def.key)+(afford?'1':'0');
+    }).join(',');
+  }
+  function renderBuildGrid(){
+    var gridEl = $('buildGrid'); if(!gridEl) return;
+    var sig = buildGridSignature();
+    if(sig === lastBuildGridSig) return;
+    lastBuildGridSig = sig;
+    gridEl.innerHTML = '';
+    var t = T();
+    var cityFull = cityIsFull(activeCityIdx), holding = !!pendingPlacement;
+    var Assets = window.CityAssets;
+    if(Assets && !Assets.isBaked()) Assets.bakeAll();
     BUILDINGS.forEach(function(def){
       var bt = t.buildings[def.key];
       var count = buildingCount(def.key);
-      var row = document.createElement('div'); row.className = 'build-item';
-      var nameHTML = def.icon+' '+bt.name+(count?' ×'+count:'');
-      if(def.moneyOnly){
-        var price = moneyCostFor(def);
-        row.innerHTML = '<div class="brow"><div class="bname">'+nameHTML+'</div>'+
-          '<button>'+t.buildBtn+' · '+price+' zł</button></div>'+
-          '<div class="bcost">'+bt.desc+'<br>'+t.buildMoneyTag+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
-        row.querySelector('button').onclick = function(k){ return function(){ buildWithMoney(k); }; }(def.key);
-      } else if(def.rentable){
-        var active = townRent[def.key] && townRent[def.key] > Date.now();
-        var statusHTML = active ? t.buildRentTag(fmtLeft(townRent[def.key]-Date.now())) : t.buildRentExpired;
-        row.innerHTML = '<div class="brow"><div class="bname">'+nameHTML+'</div>'+
-          '<button>'+(active?t.buildRenewBtn:t.buildRentBtn)+' · '+def.rentCost+' zł</button></div>'+
-          '<div class="bcost">'+bt.desc+'<br>'+statusHTML+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
-        row.querySelector('button').onclick = function(k){ return function(){ rentBuilding(k); }; }(def.key);
-      } else {
-        var cost = buildingCost(def);
-        var costParts = [];
-        for(var k in cost) costParts.push(MATERIAL_ICON[k]+' '+cost[k]);
-        row.innerHTML = '<div class="brow"><div class="bname">'+nameHTML+'</div>'+
-          '<button '+(canAfford(cost)?'':'disabled')+'>'+t.buildBtn+'</button></div>'+
-          '<div class="bcost">'+bt.desc+'<br>'+t.buildCost+': '+costParts.join('  ·  ')+' &nbsp;→&nbsp; +'+def.people+' '+t.peopleUnit+'</div>';
-        row.querySelector('button').onclick = function(k){ return function(){ buildBuilding(k); }; }(def.key);
+      var afford = def.moneyOnly ? (dobro >= moneyCostFor(def)) : def.rentable ? (dobro >= def.rentCost) : canAfford(buildingCost(def));
+      var blocked = cityFull || holding || !afford;
+      var priceLabel = def.moneyOnly ? (moneyCostFor(def)+' zł') : def.rentable ? (def.rentCost+' zł') : '';
+      var tile = document.createElement('button');
+      tile.className = 'bg-tile'; tile.disabled = blocked; tile.title = bt.name;
+      tile.innerHTML = '<span class="bg-thumb-wrap"><canvas class="bg-thumb" width="150" height="150"></canvas>'+
+        (count?'<span class="bg-count">×'+count+'</span>':'')+'</span>'+
+        '<span class="bg-name">'+bt.name+'</span>'+
+        (priceLabel?'<span class="bg-price">'+priceLabel+'</span>':'');
+      gridEl.appendChild(tile);
+      if(Assets){
+        var cv = tile.querySelector('canvas'), cctx = cv.getContext('2d');
+        var slot = Assets.slotForBuilding(def, 0);
+        var fp = Assets.footprint(slot) || {w:70,h:70};
+        var k = Math.min((cv.width*0.72)/fp.w, (cv.height*0.62)/fp.h);
+        Assets.blit(cctx, slot, cv.width/2, cv.height*0.86, k);
       }
-      buildList.appendChild(row);
+      tile.addEventListener('click', function(k){ return function(){
+        if(def.moneyOnly) buildWithMoney(k);
+        else if(def.rentable) rentBuilding(k);
+        else buildBuilding(k);
+        closeBuildFull();
+      }; }(def.key));
     });
   }
+  function openBuildFull(){ buildFullModal.classList.add('show'); renderBuildGrid(); sfx('click'); }
+  function closeBuildFull(){ buildFullModal.classList.remove('show'); }
+  cityBuildFab.addEventListener('click', openBuildFull);
+  buildFullClose.addEventListener('click', function(){ closeBuildFull(); sfx('click'); });
+  buildFullModal.addEventListener('click', function(e){ if(e.target === buildFullModal) closeBuildFull(); });
   whWaterBtn.addEventListener('click', watchWaterGenAd);
   whExpandBtn.addEventListener('click', expandWarehouse);
+  function openWarehouseFull(){ warehouseFullModal.classList.add('show'); renderWarehouse(); sfx('click'); }
+  function closeWarehouseFull(){ warehouseFullModal.classList.remove('show'); }
+  whHereBanner.addEventListener('click', openWarehouseFull);
+  warehouseFullClose.addEventListener('click', function(){ closeWarehouseFull(); sfx('click'); });
+  warehouseFullModal.addEventListener('click', function(e){ if(e.target === warehouseFullModal) closeWarehouseFull(); });
 
   /* ---- shop ---- */
   function buyHard(cost){ if(hearts<cost){ toast(T().toast.notEnoughHeart); sfx('deny'); return false; } hearts-=cost; return true; }
-  function maybeRoundup(){
-    var t = T();
-    roundupText.textContent = t.roundupText(extraDonated);
-    roundupModal.classList.add('show');
-    roundupYes.onclick = function(){ extraDonated += 2; roundupModal.classList.remove('show'); toast(T().toast.roundupThanks); renderShop(); };
-    roundupNo.onclick = function(){ roundupModal.classList.remove('show'); };
+  function thankSupporter(){
+    toast(T().toast.roundupThanks);
   }
 
   function renderShop(){
@@ -2499,7 +3042,7 @@
         if(shopWaterAdLoading) return;
         shopWaterAdLoading = true; renderShop();
         setTimeout(function(){
-          shopWaterAdLoading = false; inventory.water++; renderAll();
+          shopWaterAdLoading = false; inventory.water++; adWatched(); renderAll();
           toast(t.toast.addedToBackpack(s.water.name)); sfx('ad');
         }, 900);
       };
@@ -2508,7 +3051,7 @@
         if(growBoostAdLoading) return;
         growBoostAdLoading = true; renderShop();
         setTimeout(function(){
-          growBoostAdLoading = false; inventory.growboost++; renderAll();
+          growBoostAdLoading = false; inventory.growboost++; adWatched(); renderAll();
           toast(t.toast.addedToBackpack(s.growboost.name)); sfx('ad');
         }, 900);
       };
@@ -2555,19 +3098,30 @@
     };
 
     cat(s.catSupport);
+    var donateEl = item('<div class="row1"><div class="name">'+s.donateAny.name+'</div></div><div class="desc">'+s.donateAny.desc+'</div>'+
+      '<div class="donate-row"><input type="number" min="1" step="1" inputmode="numeric" class="donate-input" placeholder="'+s.donatePlaceholder+'" id="donateAmountInput"><button id="donateAnyBtn">'+s.donateBtn+'</button></div>'+
+      '<div class="charity">'+s.charityMoney+'</div>');
+    donateEl.classList.add('donate-item');
+    donateEl.querySelector('#donateAnyBtn').onclick = function(){
+      var input = donateEl.querySelector('#donateAmountInput');
+      var amount = Math.floor(Number(input.value));
+      if(!amount || amount <= 0){ toast(T().toast.donateInvalid); sfx('deny'); return; }
+      input.value = '';
+      toast(T().toast.donateThanks(amount), 3200); sfx('buy'); haptic('medium');
+    };
     var honeyPrice = [9,15,19,25,29][Math.min(honeyStacks,4)];
     var honeyEl = item('<div class="row1"><div class="name">'+s.honey.name+(honeyStacks>0?' (+'+honeyStacks*5+'%)':'')+'</div><button id="buyHoney" '+(honeyStacks>=5?'disabled':'')+'>'+(honeyStacks>=5?s.max:honeyPrice+' zł')+'</button></div><div class="desc">'+s.honey.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
-    if(honeyStacks<5) honeyEl.querySelector('button').onclick = function(){ honeyStacks++; renderAll(); toast(t.toast.honeyApplied); sfx('buy'); maybeRoundup(); };
+    if(honeyStacks<5) honeyEl.querySelector('button').onclick = function(){ honeyStacks++; renderAll(); toast(t.toast.honeyApplied); sfx('buy'); setTimeout(thankSupporter, 2900); };
 
     var heartsPackEl = item('<div class="row1"><div class="name">'+s.heartsPack.name+'</div><button id="buyHeartsPack">19 zł</button></div><div class="desc">'+s.heartsPack.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
-    heartsPackEl.querySelector('button').onclick = function(){ hearts+=50; renderAll(); toast(t.toast.heartsBought); sfx('buy'); maybeRoundup(); };
+    heartsPackEl.querySelector('button').onclick = function(){ hearts+=50; renderAll(); toast(t.toast.heartsBought); sfx('buy'); setTimeout(thankSupporter, 2900); };
 
     cat(s.catCosmetic);
     [['sunset','skinSunset',9],['midnight','skinMidnight',12]].forEach(function(row){
       var key=row[0], defKey=row[1], price=row[2];
       var owned = skins[key]; var def = s[defKey];
       var el = item('<div class="row1"><div class="name">'+def.name+'</div><button '+(owned?'disabled':'')+'>'+(owned?s.owned:price+' zł')+'</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityCosmetic+'</div>');
-      if(!owned) el.querySelector('button').onclick = function(){ skins[key]=true; renderAll(); toast(t.toast.skinApplied(def.name)); sfx('buy'); maybeRoundup(); };
+      if(!owned) el.querySelector('button').onclick = function(){ skins[key]=true; renderAll(); toast(t.toast.skinApplied(def.name)); sfx('buy'); setTimeout(thankSupporter, 2900); };
     });
   }
 
@@ -2587,7 +3141,7 @@
       rankList.appendChild(row);
     }
     var yourVal = rankTab==='time' ? YOUR_ADS : YOUR_PLN;
-    rankYou.innerHTML = r.you(YOUR_RANK, YOUR_TOTAL, fmt(yourVal), unit);
+    rankYou.innerHTML = r.you(YOUR_RANK, YOUR_TOTAL, fmt(yourVal), unit, playerNick);
   }
 
   /* ---- voting ---- */
@@ -2654,19 +3208,25 @@
     setTimeout(function(){ (cityMapOpen||townTitle).scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
   });
   mapCloseBtn.addEventListener('click', function(){ switchScreen('garden'); sfx('click'); });
-  cityExpandBtn.addEventListener('click', function(){
-    renderCityFullScene(T());
-    resetCityView();
+  function openCityFull(){
     cityFullModal.classList.add('show');
-    startCityLife();
-    sfx('click');
+    if(window.CityRenderer) window.CityRenderer.mount();
+    startCityAmbience();
+  }
+  cityMapOpen.addEventListener('click', function(){
+    activeCityIdx = activeCityIdx || 0; liftedPlot=null; pendingPlacement=null; lastCityMapSig=null;
+    openCityFull(); sfx('click');
   });
-  function closeCityFull(){ cityFullModal.classList.remove('show'); stopCityLife(); }
+  function closeCityFull(){
+    cityFullModal.classList.remove('show'); if(window.CityRenderer) window.CityRenderer.unmount();
+    stopCityAmbience();
+    closeBuildFull();
+  }
   cityFullClose.addEventListener('click', function(){ closeCityFull(); sfx('click'); });
   cityFullModal.addEventListener('click', function(e){ if(e.target === cityFullModal) closeCityFull(); });
-  cityZoomIn.addEventListener('click', function(){ var r=cityFullWrap.getBoundingClientRect(); cityZoomTo(r.left+r.width/2, r.top+r.height/2, cityView.scale*1.25); });
-  cityZoomOut.addEventListener('click', function(){ var r=cityFullWrap.getBoundingClientRect(); cityZoomTo(r.left+r.width/2, r.top+r.height/2, cityView.scale*0.8); });
-  cityZoomReset.addEventListener('click', function(){ resetCityView(); sfx('click'); });
+  cityZoomIn.addEventListener('click', function(){ if(window.CityRenderer) window.CityRenderer.zoomBy(1.25); sfx('click'); });
+  cityZoomOut.addEventListener('click', function(){ if(window.CityRenderer) window.CityRenderer.zoomBy(0.8); sfx('click'); });
+  cityZoomReset.addEventListener('click', function(){ if(window.CityRenderer) window.CityRenderer.resetView(); sfx('click'); });
   rankTabTime.addEventListener('click', function(){ rankTab='time'; renderRank(); sfx('click'); });
   rankTabMoney.addEventListener('click', function(){ rankTab='money'; renderRank(); sfx('click'); });
 
@@ -2702,6 +3262,11 @@
     }catch(e){}
   }
   function sfx(name){
+    // safety net: if music is supposed to be on but isn't actually running (e.g. its very first
+    // play() attempt was rejected by the browser), every button tap in the game calls sfx() --
+    // reuse that as a free retry point with a fresh, real user gesture behind it, independent of
+    // whether sound effects themselves are toggled on.
+    if(musicOn && !musicRunning) startMusic();
     if(!sfxOn) return;
     switch(name){
       case 'click': tone(520,0,0.05,'sine',0.05); break;
@@ -2721,97 +3286,139 @@
       case 'build': tone(392,0,0.1,'sawtooth',0.06); tone(523,0.09,0.1,'sawtooth',0.06); tone(659,0.18,0.1,'sawtooth',0.06); tone(880,0.28,0.2,'sawtooth',0.07); break;
     }
   }
-  /* ---- background music: a slow, quiet 4-chord pad loop (Web Audio, no external file) —
-     meant to sit under the game unobtrusively and give it a recognizable "sound", not to
-     demand attention. Independently mutable from sound effects and from the master switch. ---- */
-  var MUSIC_CHORDS = [
-    [261.63, 329.63, 392.00, 493.88], /* Cmaj7 */
-    [220.00, 261.63, 329.63, 392.00], /* Am7   */
-    [174.61, 220.00, 261.63, 349.23], /* Fmaj7 */
-    [196.00, 246.94, 293.66, 392.00]  /* G6    */
-  ];
-  var musicTimer = null, musicChordIdx = 0, musicRunning = false;
-  var MUSIC_BAR_S = 4.8;
-  function musicNote(freq, start, dur, peak){
+  /* ---- background music + ambience: real recorded audio (purchased pack), routed through Web
+     Audio (createMediaElementSource -> GainNode) instead of plain <audio>.volume so every fade
+     here uses the same linearRampToValueAtTime style as sfx() above, and so the city-ambience
+     crossfade below can smoothly re-balance multiple beds at once. Replaces the earlier fully
+     synthesized placeholder (oscillator chord loop + filtered-noise sea hum) now that real music
+     and field-recorded ambience exist -- makeNoiseBuffer() stays defined (still used nowhere now
+     but harmless) only if something else references it; sfx() above is untouched. */
+  var AUDIO_BASE = 'assets/audio/';
+  var _mediaBeds = {}; // url -> {el, gain} -- each <audio> element can only be wrapped once
+  function mediaBed(file, loop){
+    var bed = _mediaBeds[file];
+    if(bed) return bed;
+    var ctx = getAudioCtx(); if(!ctx) return null;
+    try{
+      var el = new Audio(AUDIO_BASE + file);
+      el.loop = loop !== false;
+      el.preload = 'auto';
+      var src = ctx.createMediaElementSource(el);
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      src.connect(gain); gain.connect(ctx.destination);
+      bed = { el: el, gain: gain };
+      _mediaBeds[file] = bed;
+      return bed;
+    }catch(e){ return null; }
+  }
+  function rampBed(bed, target, seconds){
+    if(!bed) return;
+    var ctx = audioCtx; if(!ctx) return;
+    try{ bed.gain.gain.linearRampToValueAtTime(Math.max(0.0001, target), ctx.currentTime+(seconds==null?0.6:seconds)); }catch(e){}
+  }
+  function playOneShot(file, peak){
+    if(!sfxOn) return;
     var ctx = getAudioCtx(); if(!ctx) return;
     try{
-      var osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime+start);
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime+start);
-      gain.gain.linearRampToValueAtTime(peak, ctx.currentTime+start+1.1);
-      gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime+start+dur);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(ctx.currentTime+start); osc.stop(ctx.currentTime+start+dur+0.05);
+      var el = new Audio(AUDIO_BASE + file);
+      var src = ctx.createMediaElementSource(el);
+      var g = ctx.createGain(); g.gain.value = peak==null?0.5:peak;
+      src.connect(g); g.connect(ctx.destination);
+      el.play().catch(function(){});
     }catch(e){}
   }
-  function scheduleMusicBar(){
-    if(!musicRunning) return;
-    if(musicOn){
-      var chord = MUSIC_CHORDS[musicChordIdx % MUSIC_CHORDS.length];
-      musicChordIdx++;
-      chord.forEach(function(freq, idx){ musicNote(freq, idx*0.18, MUSIC_BAR_S-0.5, 0.02 - idx*0.003); });
-    }
-    musicTimer = setTimeout(scheduleMusicBar, MUSIC_BAR_S*1000);
-  }
-  /* a very quiet, looping sea-wave bed under the chords — filtered noise standing in for waves
-     (no audio files here, everything is synthesized), kept well under the melody's own volume
-     so it adds atmosphere without ever competing with the tune. Rain/wind layers were tried
-     and dropped per feedback — just the one calm sound now. */
-  var natureBed = null;
-  function makeNoiseBuffer(ctx, seconds){
-    var bufferSize = Math.floor(ctx.sampleRate*seconds);
-    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    var data = buffer.getChannelData(0);
-    for(var i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
-    return buffer;
-  }
-  function startNoiseBed(){
-    var ctx = getAudioCtx(); if(!ctx || natureBed) return;
-    try{
-      var bed = { nodes: [] };
-      var master = ctx.createGain();
-      master.gain.setValueAtTime(0.0001, ctx.currentTime);
-      master.connect(ctx.destination);
-      bed.master = master;
 
-      // sea: slow lowpass noise swell, gain breathes in and out like waves washing the shore
-      var seaSrc = ctx.createBufferSource();
-      seaSrc.buffer = makeNoiseBuffer(ctx, 4); seaSrc.loop = true;
-      var seaFilter = ctx.createBiquadFilter();
-      seaFilter.type = 'lowpass'; seaFilter.frequency.value = 480; seaFilter.Q.value = 0.3;
-      var seaGain = ctx.createGain(); seaGain.gain.value = 0.018;
-      var seaLfo = ctx.createOscillator(); seaLfo.frequency.value = 0.09;
-      var seaLfoGain = ctx.createGain(); seaLfoGain.gain.value = 0.009;
-      seaLfo.connect(seaLfoGain); seaLfoGain.connect(seaGain.gain);
-      seaSrc.connect(seaFilter); seaFilter.connect(seaGain); seaGain.connect(master);
-      seaSrc.start(); seaLfo.start();
-      bed.nodes.push(seaSrc, seaLfo);
-
-      master.gain.linearRampToValueAtTime(1, ctx.currentTime+3);
-      natureBed = bed;
-    }catch(e){}
-  }
-  function stopNoiseBed(){
-    var bed = natureBed, ctx = audioCtx;
-    if(!bed){ return; }
-    try{ if(ctx) bed.master.gain.linearRampToValueAtTime(0.0001, ctx.currentTime+0.6); }catch(e){}
-    setTimeout(function(){
-      bed.nodes.forEach(function(n){ try{ n.stop(); }catch(e){} try{ n.disconnect(); }catch(e){} });
-      try{ bed.master.disconnect(); }catch(e){}
-    }, 700);
-    natureBed = null;
-  }
+  var musicRunning = false;
   function startMusic(){
     if(musicRunning) return;
     musicRunning = true;
-    scheduleMusicBar();
+    var bed = mediaBed('music_theme.mp3', true);
+    if(bed){
+      // play() can be rejected by the browser's autoplay policy even from inside a real tap
+      // handler (seen in some embedded/sandboxed viewers) -- if that happens, musicRunning must
+      // go back to false, otherwise this silently swallowed rejection would permanently disable
+      // music for the rest of the session (every later call would just no-op on the flag check).
+      // Resetting it lets any later tap (sfx() below now opportunistically retries on every one)
+      // try again with a fresh, real user gesture behind it.
+      var p = bed.el.play();
+      if(p && p.catch) p.catch(function(){ musicRunning = false; });
+      rampBed(bed, musicOn ? 0.32 : 0.0001, 1.4);
+    } else {
+      musicRunning = false;
+    }
     startNoiseBed();
   }
   function stopMusic(){
     musicRunning = false;
-    if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+    var bed = _mediaBeds['music_theme.mp3'];
+    if(bed){ rampBed(bed, 0.0001, 0.6); setTimeout(function(){ try{ bed.el.pause(); }catch(e){} }, 700); }
     stopNoiseBed();
+  }
+  // a very quiet, always-on sea-wave hint under the music everywhere in the game (garden, shop,
+  // etc), independent of whether the city view (with its own louder, position-based sea/city
+  // crossfade below) is open. Real recording now, same fade-in/out shape as the old synthesized
+  // version it replaces.
+  var natureBed = null;
+  function startNoiseBed(){
+    if(natureBed) return;
+    var bed = mediaBed('amb_sea.mp3', true);
+    if(!bed) return;
+    bed.el.play().catch(function(){});
+    rampBed(bed, 0.1, 3);
+    natureBed = bed;
+  }
+  function stopNoiseBed(){
+    if(!natureBed) return;
+    rampBed(natureBed, 0.0001, 0.6);
+    var bed = natureBed;
+    setTimeout(function(){ try{ bed.el.pause(); }catch(e){} }, 700);
+    natureBed = null;
+  }
+
+  /* ---- city ambience: layered on TOP of the music (which keeps playing untouched) only while
+     the full city view is open. Two real-recording beds crossfade by how close the player has
+     panned the map to the waterfront (CityRenderer.getWaterProximity(), 1 = at/over the water,
+     0 = deep in the city): sea waves + seagulls near the water, birds + a soft distant-traffic
+     hum inland -- plus occasional real car horn/stop one-shots scattered while the land side is
+     dominant, for street life. Its own gain nodes, so opening/closing the city never touches
+     musicRunning/natureBed above. ---- */
+  var cityAmbienceRunning = false, cityAmbienceTimer = null;
+  function cityProximity(){
+    try{ return (window.CityRenderer && window.CityRenderer.isMounted()) ? window.CityRenderer.getWaterProximity() : 0; }
+    catch(e){ return 0; }
+  }
+  function scheduleCityAmbience(){
+    if(!cityAmbienceRunning) return;
+    var p = cityProximity(); // 1 = at the water, 0 = deep in the city
+    var on = sfxOn ? 1 : 0;
+    rampBed(_mediaBeds['amb_sea.mp3'], on * (0.05 + 0.30*p), 0.7);       // on top of the quiet natureBed hint
+    rampBed(_mediaBeds['amb_seagulls.mp3'], on * 0.28*p, 0.7);
+    rampBed(_mediaBeds['amb_birds.mp3'], on * 0.22*(1-p), 0.7);
+    rampBed(_mediaBeds['amb_traffic.mp3'], on * 0.16*(1-p), 0.7);
+    if(sfxOn && Math.random() < 0.16*(1-p)) playOneShot(Math.random()<0.5?'sfx_car_horn.mp3':'sfx_car_stop.mp3', 0.35);
+    cityAmbienceTimer = setTimeout(scheduleCityAmbience, 900);
+  }
+  function startCityAmbience(){
+    if(cityAmbienceRunning) return;
+    cityAmbienceRunning = true;
+    ['amb_sea.mp3','amb_seagulls.mp3','amb_birds.mp3','amb_traffic.mp3'].forEach(function(f){
+      var bed = mediaBed(f, true);
+      if(bed) bed.el.play().catch(function(){});
+    });
+    scheduleCityAmbience();
+  }
+  function stopCityAmbience(){
+    if(!cityAmbienceRunning) return;
+    cityAmbienceRunning = false;
+    if(cityAmbienceTimer){ clearTimeout(cityAmbienceTimer); cityAmbienceTimer = null; }
+    ['amb_seagulls.mp3','amb_birds.mp3','amb_traffic.mp3'].forEach(function(f){ rampBed(_mediaBeds[f], 0.0001, 0.5); });
+    rampBed(_mediaBeds['amb_sea.mp3'], 0.0001, 0.5); // drops back to natureBed's own quiet level, not silence
+    setTimeout(function(){
+      ['amb_seagulls.mp3','amb_birds.mp3','amb_traffic.mp3'].forEach(function(f){
+        var b = _mediaBeds[f]; if(b){ try{ b.el.pause(); }catch(e){} }
+      });
+    }, 600);
   }
 
   /* ---- sound + vibration settings: each toggles independently and is remembered between
@@ -2854,6 +3461,13 @@
     bootStage = 'loading';
     bootStudio.classList.remove('on');
     bootGame.classList.add('on');
+    // the tap that triggers this transition is the first real user gesture in the whole app, so
+    // it's the correct (and only reliable, autoplay-policy-wise) place to unlock the AudioContext
+    // and start the game music -- per the user's explicit requirement, music must begin here, at
+    // the studio-logo -> loading-page transition, not later at finishBoot().
+    var ctx0 = getAudioCtx();
+    if(ctx0 && ctx0.state==='suspended'){ ctx0.resume().catch(function(){}); }
+    if(musicOn) startMusic();
     sfx('boot');
     showBootTip();
     bootTipTimer = setInterval(showBootTip, 1100);
@@ -2886,7 +3500,11 @@
     if(ctx && ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
     if(musicOn) startMusic();
     boot.classList.add('hide');
-    setTimeout(function(){ boot.style.display='none'; maybeShowTutorial(); grantRealOfflineEarnings(); renderStats(); }, 420);
+    setTimeout(function(){
+      boot.style.display='none';
+      if(playerNick){ enterGarden(); }
+      else { nickScreen.classList.add('show'); nickInput.focus(); }
+    }, 420);
   }
   boot.addEventListener('click', function(){
     if(bootStage==='studio'){ clearTimeout(bootAutoTimer); enterLoadingStage(); }
@@ -2894,6 +3512,71 @@
     else if(bootStage==='ready'){ finishBoot(); }
   });
   bootAutoTimer = setTimeout(function(){ if(bootStage==='studio') enterLoadingStage(); }, 2700);
+
+  /* ---- nickname gate: runs once between the boot splash and the actual garden. A hand-typed
+     nickname always works offline; Google sign-in is the optional shortcut that also supplies
+     one, once Firebase is actually configured (see nickGoogleUnavailable/nickGoogleError for
+     what the player sees before/if that fails). ---- */
+  function enterGarden(){
+    nickScreen.classList.remove('show');
+    saveGame();
+    maybeShowTutorial(); grantRealOfflineEarnings(); renderStats();
+  }
+  function setNickAndEnter(name, provider){
+    playerNick = String(name).trim().slice(0, 24);
+    authProvider = provider || 'guest';
+    toast(T().nickWelcome(playerNick), 2600);
+    enterGarden();
+  }
+  nickSaveBtn.addEventListener('click', function(){
+    var name = nickInput.value.trim();
+    if(!name){ nickError.textContent = T().nickErrorEmpty; return; }
+    nickError.textContent = '';
+    sfx('click');
+    setNickAndEnter(name, 'guest');
+  });
+  nickInput.addEventListener('keydown', function(e){ if(e.key==='Enter') nickSaveBtn.click(); });
+  nickInput.addEventListener('input', function(){ if(nickError.textContent) nickError.textContent=''; });
+  nickGoogleBtn.addEventListener('click', function(){
+    if(nickGoogleBtn._loading) return;
+    sfx('click');
+    /* Prefers Capacitor's native FirebaseAuthentication plugin (see @capacitor-firebase/
+       authentication in package.json — already synced into the Android project). This only
+       actually succeeds once the app owner finishes the Firebase Console setup described in
+       the handover doc (Google provider enabled, google-services.json in place) — until then,
+       or in this browser preview where the plugin doesn't exist at all, it fails cleanly and
+       falls back to manual nickname entry rather than leaving the button stuck. */
+    nickGoogleBtn._loading = true;
+    nickError.textContent = '';
+    nickGoogleLbl.textContent = T().nickGoogleLoading;
+    nickGoogleBtn.disabled = true;
+    try{
+      var C = window.Capacitor;
+      var FA = C && C.Plugins && C.Plugins.FirebaseAuthentication;
+      if(!FA){
+        nickGoogleBtn._loading = false; nickGoogleBtn.disabled = false;
+        nickGoogleLbl.textContent = T().nickGoogleBtn;
+        nickError.textContent = T().nickGoogleUnavailable;
+        return;
+      }
+      FA.signInWithGoogle().then(function(result){
+        nickGoogleBtn._loading = false; nickGoogleBtn.disabled = false;
+        nickGoogleLbl.textContent = T().nickGoogleBtn;
+        var u = result && (result.user || result);
+        var name = (u && (u.displayName || u.email)) || '';
+        if(name){ setNickAndEnter(name, 'google'); }
+        else { nickError.textContent = T().nickGoogleError; }
+      }).catch(function(){
+        nickGoogleBtn._loading = false; nickGoogleBtn.disabled = false;
+        nickGoogleLbl.textContent = T().nickGoogleBtn;
+        nickError.textContent = T().nickGoogleError;
+      });
+    }catch(e){
+      nickGoogleBtn._loading = false; nickGoogleBtn.disabled = false;
+      nickGoogleLbl.textContent = T().nickGoogleBtn;
+      nickError.textContent = T().nickGoogleUnavailable;
+    }
+  });
 
   /* ---- first-run tutorial hint ---- */
   function maybeShowTutorial(){
@@ -2909,6 +3592,12 @@
   if(headerLogoEl) attachTilt(headerLogoEl, 14);
   infoClose.addEventListener('click', function(){ infoModal.classList.remove('show'); });
 
+  /* ---- profile / stats modal ---- */
+  profileBtn.addEventListener('click', function(){ renderProfile(); profileModal.classList.add('show'); sfx('click'); });
+  profileClose.addEventListener('click', function(){ profileModal.classList.remove('show'); });
+  profileCloseBtn.addEventListener('click', function(){ profileModal.classList.remove('show'); });
+  profileModal.addEventListener('click', function(e){ if(e.target === profileModal) profileModal.classList.remove('show'); });
+
   function renderAll(){
     applyStatic(); renderStats();
     if(screen==='garden') renderGrid();
@@ -2916,6 +3605,7 @@
     if(screen==='shop') renderShop();
     if(screen==='rank') renderRank();
     if(screen==='vote') renderVote();
+    if(profileModal.classList.contains('show')) renderProfile();
   }
 
   renderAll();
@@ -2942,7 +3632,75 @@
     else { cancelComebackNotifications(); }
   });
   window.addEventListener('pagehide', function(){ saveGame(); scheduleComebackNotifications(); });
+
+  /* ---- GameAPI: the one-way bridge the separate Canvas rendering layer (js/render/*.js) uses
+     to read city state and to request the only mutations it's allowed to trigger. Every method
+     below is either a pure read accessor over data that already exists above, or a one-line
+     forwarding wrapper around a function that already exists (onPlotTap/haptic/sfx) -- nothing
+     here changes any existing behavior. The renderer must never reach past this object into
+     IIFE internals. ---- */
+  var _gameApiSubscribers = [];
+  var _stateVersion = 0;
+  function _notifyCityChanged(){ _stateVersion++; _gameApiSubscribers.forEach(function(fn){ try{ fn(); }catch(err){} }); }
+  /* v2: direct drag-drop move, a thin sibling of onPlotTap's existing lift-then-drop-elsewhere
+     branch (same null-check-then-swap), just callable with both endpoints at once instead of
+     requiring two sequential taps. */
+  function movePlot(fromCityIdx, fromPlotIdx, toCityIdx, toPlotIdx){
+    var fromCity = cities[fromCityIdx], toCity = cities[toCityIdx];
+    if(!fromCity || !toCity) return false;
+    var fromP = fromCity.plots[fromPlotIdx];
+    if(!fromP || toCity.plots[toPlotIdx]) return false;
+    toCity.plots[toPlotIdx] = fromP;
+    fromCity.plots[fromPlotIdx] = null;
+    renderWarehouse();
+    return true;
+  }
+  window.GameAPI = {
+    getBuildingCatalog: function(){ return BUILDINGS; },
+    getBuildingDef: function(key){ return BUILDING_BY_KEY[key] || null; },
+    getBuildingDisplay: function(key){ var t = T(); return t.buildings[key] || {name:key, desc:''}; },
+    /* cols/rows/plotCount: the free-placement field's own dims + capacity (see FIELD_* above).
+       waterRows/promenadeRows tell the renderer exactly where the buildable field starts, so its
+       layout math can never drift from this file's own idea of what's a legal building tile
+       (canBuildAt is the actual gate; this is just the numbers the renderer draws from). */
+    getCityGridDims: function(){
+      return {cols:FIELD_COLS, rows:FIELD_ROWS, waterRows:FIELD_WATER_ROWS, promenadeRows:FIELD_PROMENADE_ROWS, minGap:FIELD_MIN_GAP, plotCount:CITY_PLOTS};
+    },
+    getCities: function(){ return cities; },
+    getActiveCityIdx: function(){ return activeCityIdx; },
+    getPendingPlacement: function(){ return pendingPlacement; },
+    getLiftedPlot: function(){ return liftedPlot; },
+    isRentActive: function(plot){
+      if(!plot) return false;
+      var def = BUILDING_BY_KEY[plot.key];
+      return def && def.rentable ? !!(plot.rentUntil && plot.rentUntil > Date.now()) : true;
+    },
+    /* used by the renderer's placement-mode green/red tile tint -- the exact same rule onPlotTap
+       enforces when a tap actually lands (excludes the lifted building's own current tile, if
+       any, from the "too close" check against itself). */
+    canBuildAt: function(cityIdx, col, row){
+      var excludeIdx = (liftedPlot && liftedPlot.cityIdx===cityIdx) ? liftedPlot.plotIdx : -1;
+      return canBuildAt(cityIdx, col, row, excludeIdx);
+    },
+    tapPlot: function(cityIdx, col, row){ onPlotTap(cityIdx, col, row); },
+    movePlot: movePlot,
+    subscribe: function(fn){
+      _gameApiSubscribers.push(fn);
+      return function(){ var i = _gameApiSubscribers.indexOf(fn); if(i>=0) _gameApiSubscribers.splice(i,1); };
+    },
+    getStateVersion: function(){ return _stateVersion; },
+    onHaptic: function(style){ haptic(style); },
+    playSfx: function(name){ sfx(name); }
+  };
+  document.dispatchEvent(new CustomEvent('dobrySadReady', {detail:{hadSave: hadSave}}));
 })();
 </script>
+<script src="js/render/city-geometry.js"></script>
+<script src="js/render/assets.js"></script>
+<script src="js/render/npc.js"></script>
+<script src="js/render/water-life.js"></script>
+<script src="js/render/city-renderer.js"></script>
+<script src="js/render/city-input.js"></script>
+<script src="js/render/main.js"></script>
 </body>
 </html>
