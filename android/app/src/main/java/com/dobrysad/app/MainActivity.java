@@ -2,6 +2,7 @@ package com.dobrysad.app;
 
 import android.os.Bundle;
 import android.webkit.ValueCallback;
+import android.webkit.WebSettings;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -38,10 +39,27 @@ public class MainActivity extends BridgeActivity {
        hideSystemBars() did. setTheme() must run before super.onCreate() -- that's the documented
        place for it, same as the AndroidX SplashScreen API's own installSplashScreen(this) call
        would use. */
+    /* index.html's native-app detection used to rely only on window.Capacitor showing up in the
+       WebView -- that injection is asynchronous, so on a real device it can lose the race
+       against the page's own first inline script (a retry loop patched around this before, but
+       still gave up after ~2s and could leave a session permanently stuck). Appending a fixed
+       marker to the WebView's own User-Agent string here removes the race entirely:
+       navigator.userAgent is available to the page synchronously, the instant it starts parsing
+       -- there is nothing left to lose a timing race against. */
+    private void markWebViewAsNativeApp() {
+        if (bridge == null || bridge.getWebView() == null) return;
+        WebSettings settings = bridge.getWebView().getSettings();
+        String ua = settings.getUserAgentString();
+        if (ua != null && ua.indexOf("DobrySadNativeApp") < 0) {
+            settings.setUserAgentString(ua + " DobrySadNativeApp");
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
+        markWebViewAsNativeApp();
         hideSystemBars();
     }
 

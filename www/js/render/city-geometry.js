@@ -59,6 +59,11 @@
     var waterRow0 = 0, waterRow1 = waterRows-1;
     var promRow0 = waterRows, promRow1 = waterRows+promenadeRows-1;
     var fieldRow0 = waterRows+promenadeRows, fieldRow1 = maxRow;
+    // Same ellipse index.html's isFieldBuildableTile() uses to decide where building is legal --
+    // reusing it here too (rather than only gating placement) is what actually makes the map READ
+    // as a round island: tiles outside it now render as open water instead of grass, so the coast
+    // truly curves instead of just carrying an invisible "can't build here" rule over a rectangle.
+    var ellipse = dims.buildableEllipse || null;
 
     // bounding box of the projected district, in local iso-projection units (before origin shift)
     var corners = [
@@ -78,6 +83,7 @@
       minCol: minCol, maxCol: maxCol, minRow: minRow, maxRow: maxRow,
       waterRow0: waterRow0, waterRow1: waterRow1, promRow0: promRow0, promRow1: promRow1,
       fieldRow0: fieldRow0, fieldRow1: fieldRow1,
+      ellipse: ellipse,
       originX: originX, originY: originY,
       contentW: (hx-lx), contentH: (hy-ly) + BUILD_HEADROOM
     };
@@ -115,6 +121,15 @@
     if(col < layout.minCol || col > layout.maxCol || row < layout.minRow || row > layout.maxRow) return null;
     if(row <= layout.waterRow1) return 'water';
     if(row <= layout.promRow1) return 'promenade';
+    // beyond the buildable ellipse, field tiles give way to open water -- this is the actual
+    // coastline; isFieldBuildableTile() in index.html runs the identical test for build legality,
+    // so the two can never visually disagree (no invisible "shore" past which building silently
+    // fails for no visible reason).
+    if(layout.ellipse){
+      var e = layout.ellipse;
+      var dx = (col-e.cx)/e.rx, dy = (row-e.cy)/e.ry;
+      if(dx*dx + dy*dy > 1) return 'water';
+    }
     return 'field';
   }
 

@@ -471,7 +471,6 @@
   .shop-item .row1{display:flex; justify-content:space-between; align-items:center; gap:8px;}
   .shop-item .name{font-weight:700; font-size:12.5px; display:flex; gap:6px; align-items:center;}
   .shop-item .desc{font-size:10.5px; color:var(--ink-dim); margin-top:2px; line-height:1.4;}
-  .shop-item .charity{font-size:9.5px; color:var(--leaf-deep); font-weight:700; margin-top:3px;}
   .shop-item button{border:none; background:var(--gold); color:var(--gold-ink); font-weight:800; border-radius:8px; padding:6px 9px; font-size:11px; cursor:pointer; white-space:nowrap;}
   .shop-item button[disabled]{opacity:.4;}
   .tier-row{display:flex; gap:6px; margin-top:7px;}
@@ -1338,9 +1337,6 @@
         materialsPack: {name:'📦 Paczka materiałów', desc:'Zestaw surowców budowlanych do magazynu.'},
         skinSunset: {name:'🎨 Zachodzące słońce', desc:'Zmienia akcent kolorystyczny grządki.'},
         skinMidnight:{name:'🎨 Północny ogród', desc:'Zmienia akcent kolorystyczny grządki.'},
-        charityHeart: '≈30% czystego przychodu z Serduszek trafia do fundacji partnerskiej',
-        charityMoney: '30% tego zakupu trafia do fundacji',
-        charityCosmetic: '40% tego zakupu trafia do fundacji',
         donateAny: {name:'💛 Podaruj dowolną kwotę', desc:'Wpisz sumę, którą chcesz przekazać na dobre cele — bez żadnych warunków.'},
         donatePlaceholder: 'Kwota w zł', donateBtn: 'Przekaż',
         max:'Maksimum', owned:'Kupione'
@@ -1568,9 +1564,6 @@
         materialsPack: {name:'📦 Materials pack', desc:'A bundle of building materials for the warehouse.'},
         skinSunset: {name:'🎨 Sunset sky', desc:'Changes the color accent of your plot.'},
         skinMidnight:{name:'🎨 Midnight garden', desc:'Changes the color accent of your plot.'},
-        charityHeart: '≈30% of net Hearts revenue goes to the partner foundation',
-        charityMoney: '30% of this purchase goes to the foundation',
-        charityCosmetic: '40% of this purchase goes to the foundation',
         donateAny: {name:'💛 Donate any amount', desc:'Type in the amount you\'d like to give to a good cause — no strings attached.'},
         donatePlaceholder: 'Amount in PLN', donateBtn: 'Donate',
         max:'Max', owned:'Owned'
@@ -1802,9 +1795,6 @@
         materialsPack: {name:'📦 Пакет матэрыялаў', desc:'Набор будаўнічых рэсурсаў на склад.'},
         skinSunset: {name:'🎨 Заход сонца', desc:'Змяняе каляровы акцэнт градкі.'},
         skinMidnight:{name:'🎨 Паўночны сад', desc:'Змяняе каляровы акцэнт градкі.'},
-        charityHeart: '≈30% чыстага прыбытку ад Сэрцайкаў ідзе ў фонд-партнёр',
-        charityMoney: '30% гэтай пакупкі ідзе ў фонд',
-        charityCosmetic: '40% гэтай пакупкі ідзе ў фонд',
         donateAny: {name:'💛 Ахвяраваць любую суму', desc:'Увядзіце суму, якую хочаце перадаць на добрыя мэты — без якіх-небудзь умоў.'},
         donatePlaceholder: 'Сума ў зл', donateBtn: 'Перадаць',
         max:'Максімум', owned:'Куплена'
@@ -3535,7 +3525,7 @@
 
     cat(s.catHeart);
     var fertDef = s.fertilizer;
-    var fertEl = item('<div class="row1"><div class="name">'+fertDef.name+'</div><button>12 💛</button></div><div class="desc">'+fertDef.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    var fertEl = item('<div class="row1"><div class="name">'+fertDef.name+'</div><button>12 💛</button></div><div class="desc">'+fertDef.desc+'</div>');
     fertEl.querySelector('button').onclick = function(){ if(buyHard(12)){ inventory.fertilizer++; renderAll(); toast(t.toast.addedToBackpack(fertDef.name)); sfx('buy'); } };
 
     var glDef = s.growlamp;
@@ -3544,14 +3534,14 @@
         '<button data-key="growlamp10" data-cost="8">10 min<br>8 💛</button>'+
         '<button data-key="growlamp30" data-cost="18">30 min<br>18 💛</button>'+
         '<button data-key="growlampDay" data-cost="60">24 h<br>60 💛</button>'+
-      '</div><div class="charity">'+s.charityHeart+'</div>');
+      '</div>');
     Array.prototype.forEach.call(glEl.querySelectorAll('.tier-row button'), function(btn){
       btn.onclick = function(){
         var key = btn.getAttribute('data-key'), cost = parseInt(btn.getAttribute('data-cost'),10);
         if(buyHard(cost)){ inventory[key]++; renderAll(); toast(t.toast.addedToBackpack(glDef.name)); sfx('buy'); }
       };
     });
-    var bioEl = item('<div class="row1"><div class="name">'+s.bio.name+'</div><button id="buyBio">8 💛</button></div><div class="desc">'+s.bio.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    var bioEl = item('<div class="row1"><div class="name">'+s.bio.name+'</div><button id="buyBio">8 💛</button></div><div class="desc">'+s.bio.desc+'</div>');
     bioEl.querySelector('button').onclick = function(){
       var g = ensureGarden(active); var candidates=[];
       for(var i=0;i<g.board.length;i++){ var info=levelInfo(g.board[i]); if(info && info.lvl<MAX_LEVEL) candidates.push(i); }
@@ -3563,7 +3553,7 @@
       g.readyAt[idx] = Date.now() + MATURE_MS;
       renderAll(); toast(t.toast.instantGrowth); sfx('buy');
     };
-    var rareEl = item('<div class="row1"><div class="name">'+s.rareSeed.name+'</div><button id="buyRare">20 💛</button></div><div class="desc">'+s.rareSeed.desc+'</div><div class="charity">'+s.charityHeart+'</div>');
+    var rareEl = item('<div class="row1"><div class="name">'+s.rareSeed.name+'</div><button id="buyRare">20 💛</button></div><div class="desc">'+s.rareSeed.desc+'</div>');
     rareEl.querySelector('button').onclick = function(){
       if(secretGuaranteed){ toast(t.toast.alreadyGuaranteed); sfx('deny'); return; }
       if(!buyHard(20)) return;
@@ -3573,7 +3563,7 @@
     cat(s.catSupport);
     var donateEl = item('<div class="row1"><div class="name">'+s.donateAny.name+'</div></div><div class="desc">'+s.donateAny.desc+'</div>'+
       '<div class="donate-row"><input type="number" min="1" step="1" inputmode="numeric" class="donate-input" placeholder="'+s.donatePlaceholder+'" id="donateAmountInput"><button id="donateAnyBtn">'+s.donateBtn+'</button></div>'+
-      '<div class="charity">'+s.charityMoney+'</div>');
+      '');
     donateEl.classList.add('donate-item');
     donateEl.querySelector('#donateAnyBtn').onclick = function(){
       var input = donateEl.querySelector('#donateAmountInput');
@@ -3583,16 +3573,16 @@
       toast(T().toast.donateThanks(amount), 3200); sfx('buy'); haptic('medium');
     };
     var honeyPrice = [9,15,19,25,29][Math.min(honeyStacks,4)];
-    var honeyEl = item('<div class="row1"><div class="name">'+s.honey.name+(honeyStacks>0?' (+'+honeyStacks*5+'%)':'')+'</div><button id="buyHoney" '+(honeyStacks>=5?'disabled':'')+'>'+(honeyStacks>=5?s.max:honeyPrice+' zł')+'</button></div><div class="desc">'+s.honey.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    var honeyEl = item('<div class="row1"><div class="name">'+s.honey.name+(honeyStacks>0?' (+'+honeyStacks*5+'%)':'')+'</div><button id="buyHoney" '+(honeyStacks>=5?'disabled':'')+'>'+(honeyStacks>=5?s.max:honeyPrice+' zł')+'</button></div><div class="desc">'+s.honey.desc+'</div>');
     if(honeyStacks<5) honeyEl.querySelector('button').onclick = function(){ honeyStacks++; renderAll(); toast(t.toast.honeyApplied); sfx('buy'); setTimeout(thankSupporter, 2900); };
 
-    var heartsPackEl = item('<div class="row1"><div class="name">'+s.heartsPack.name+'</div><button id="buyHeartsPack">19 zł</button></div><div class="desc">'+s.heartsPack.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    var heartsPackEl = item('<div class="row1"><div class="name">'+s.heartsPack.name+'</div><button id="buyHeartsPack">19 zł</button></div><div class="desc">'+s.heartsPack.desc+'</div>');
     heartsPackEl.querySelector('button').onclick = function(){ hearts+=50; renderAll(); toast(t.toast.heartsBought); sfx('buy'); setTimeout(thankSupporter, 2900); };
 
     /* boost the WHOLE active garden to its next level at once, one real-money tap -- distinct
        from the single-plant heart-powered activators above (bio/fertilizer/growlamp), which only
        ever touch one chosen cell. */
-    var boostAllEl = item('<div class="row1"><div class="name">'+s.boostAllGarden.name+'</div><button id="buyBoostAllGarden">2,99 zł</button></div><div class="desc">'+s.boostAllGarden.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    var boostAllEl = item('<div class="row1"><div class="name">'+s.boostAllGarden.name+'</div><button id="buyBoostAllGarden">2,99 zł</button></div><div class="desc">'+s.boostAllGarden.desc+'</div>');
     boostAllEl.querySelector('button').onclick = function(){
       var g = ensureGarden(active); var any=false;
       for(var i=0;i<g.board.length;i++){
@@ -3610,14 +3600,14 @@
       '<div class="tier-row">'+
         '<button id="buyAutoMergeOne">'+s.automergeOneBtn+'<br>4,99 zł</button>'+
         '<button id="buyAutoMergeAll">'+s.automergeAllBtn+'<br>9,99 zł</button>'+
-      '</div><div class="charity">'+s.charityMoney+'</div>');
+      '</div>');
     amEl.querySelector('#buyAutoMergeOne').onclick = function(){ addBoost('automerge', 30*60*1000); renderAll(); toast(t.toast.boosterOn(amDef.name)); sfx('buy'); setTimeout(thankSupporter, 2900); };
     amEl.querySelector('#buyAutoMergeAll').onclick = function(){ addBoost('automergeAll', 30*60*1000); renderAll(); toast(t.toast.boosterOn(amDef.name)); sfx('buy'); setTimeout(thankSupporter, 2900); };
 
     /* seed packs -- real money, instant, no ad wait (see plantSeed()'s boughtSeeds check) */
     [[10,'seedPack10','9,99 zł'],[30,'seedPack30','14,99 zł'],[50,'seedPack50','19,99 zł']].forEach(function(row){
       var n = row[0], def = s[row[1]], price = row[2];
-      var el = item('<div class="row1"><div class="name">'+def.name+'</div><button>'+price+'</button></div><div class="desc">'+def.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+      var el = item('<div class="row1"><div class="name">'+def.name+'</div><button>'+price+'</button></div><div class="desc">'+def.desc+'</div>');
       el.querySelector('button').onclick = function(){
         boughtSeeds += n; renderAll(); toast(t.toast.addedToBackpack(def.name)); sfx('buy'); saveGame(); setTimeout(thankSupporter, 2900);
       };
@@ -3628,7 +3618,7 @@
        deliberately excluded from this bundle: it stays the one material obtainable only by
        watching an ad (see whWaterBtn), never bought with money. */
     var matDef = s.materialsPack;
-    var matEl = item('<div class="row1"><div class="name">'+matDef.name+'</div><button id="buyMaterialsPack">14,99 zł</button></div><div class="desc">'+matDef.desc+'</div><div class="charity">'+s.charityMoney+'</div>');
+    var matEl = item('<div class="row1"><div class="name">'+matDef.name+'</div><button id="buyMaterialsPack">14,99 zł</button></div><div class="desc">'+matDef.desc+'</div>');
     matEl.querySelector('button').onclick = function(){
       var room = warehouseCap - warehouseTotal();
       if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
