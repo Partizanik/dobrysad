@@ -101,6 +101,31 @@
     diamondPath(ctx, cx, cy, tw*0.88, th*0.88); ctx.stroke();
   }
   function drawPlotGroundTile(ctx, cx, cy, tw, th, seed){
+    // ~1 in 6 tiles (deterministic per-tile via the same seed city-renderer.js already derives
+    // from col/row, so it doesn't flicker between different textures frame to frame) gets a real
+    // painted ground photo instead of the flat gradient -- picked from GROUND_VARIANT_FILES,
+    // clipped to the tile's own diamond so the photo's non-tileable edges (grass blades, a raised
+    // dirt lip on two sides -- these were generated as a small diorama chunk of ground, not a
+    // seamless texture) never show past this one tile's boundary and can't visibly clash with a
+    // flat-gradient neighbour. Falls through to the plain gradient below until the chosen image
+    // has actually finished loading.
+    var rnd = mulberry32((seed||1) >>> 0);
+    var useVariant = rnd() < (1/6);
+    if(useVariant){
+      var file = GROUND_VARIANT_FILES[Math.floor(rnd()*GROUND_VARIANT_FILES.length) % GROUND_VARIANT_FILES.length];
+      var img = loadImg(file, GROUND_BASE);
+      if(img.complete && img.naturalWidth){
+        ctx.save();
+        diamondPath(ctx, cx, cy, tw*0.98, th*0.98); ctx.clip();
+        var iw = tw*1.35, ih = iw * (img.naturalHeight/img.naturalWidth); // slight overscan so the
+        // clip never reveals a bare edge if the photo's own aspect doesn't exactly match tw:th
+        ctx.drawImage(img, cx-iw/2, cy-ih/2, iw, ih);
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(60,90,35,0.25)'; ctx.lineWidth = Math.max(1, tw*0.012);
+        diamondPath(ctx, cx, cy, tw*0.96, th*0.96); ctx.stroke();
+        return;
+      }
+    }
     var g = ctx.createRadialGradient(cx, cy, tw*0.06, cx, cy, tw*0.52);
     g.addColorStop(0, PALETTE.grassLight); g.addColorStop(1, PALETTE.grass);
     ctx.fillStyle = g; diamondPath(ctx, cx, cy, tw*0.96, th*0.96); ctx.fill();
@@ -558,6 +583,68 @@
       size: REAL_ART_SIZES[name],
       draw: function(ctx,w,h){ drawRealBuilding(ctx,w,h,file,accent); } };
   }
+
+  /* ---- generic raster sprite registration (Nano Banana generations: trees, people, landmarks,
+     boats, carts) -- same lazy-load/re-bake-on-arrival pattern as realBuildingSlot above, just not
+     hardcoded to the 'building' category/IMG_BASE/REAL_ART_SIZES the way that one is. Sizes below
+     are a first-pass estimate (aspect ratio from the actual cropped art, times a target on-screen
+     height chosen to sit sensibly against the existing building/tile scale) -- not yet checked
+     against a live render on a real device the way the building pack's 0.155 scale factor was, so
+     treat these as a starting point worth eyeballing in-game and adjusting if anything reads too
+     big/small next to a building or a walking NPC. */
+  function drawRealImage(ctx, w, h, file, base){
+    var img = loadImg(file, base);
+    if(img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, w, h);
+  }
+  function realImageSlot(name, file, base, category, anchor, size){
+    _realSlotFile[name] = base + file;
+    ASSET_MANIFEST[name] = { category: category, anchor: anchor || 'bottom-center', size: size,
+      draw: function(ctx,w,h){ drawRealImage(ctx,w,h,file,base); } };
+  }
+
+  var TREES_BASE = 'assets/trees/', PEOPLE_BASE = 'assets/people/', LANDMARKS_BASE = 'assets/landmarks/',
+      BOATS_BASE = 'assets/boats/', VEHICLES_BASE = 'assets/vehicles/', GROUND_BASE = 'assets/ground/';
+
+  // height chosen per species (aspect ratio comes from the source crop) -- poplar/spruce/birch are
+  // tall and slender, the apple bloom and old bare tree read wider, the willow's little pond base
+  // wants to sit lower/wider than a plain trunk-and-canopy tree.
+  realImageSlot('tree_apple_01', 'tree_apple.png', TREES_BASE, 'decoration', 'bottom-center', {w:69, h:64});
+  realImageSlot('tree_birch_01', 'tree_birch.png', TREES_BASE, 'decoration', 'bottom-center', {w:55, h:78});
+  realImageSlot('tree_linden_01', 'tree_linden.png', TREES_BASE, 'decoration', 'bottom-center', {w:50, h:62});
+  realImageSlot('tree_poplar_01', 'tree_poplar.png', TREES_BASE, 'decoration', 'bottom-center', {w:43, h:82});
+  realImageSlot('tree_willow_01', 'tree_willow.png', TREES_BASE, 'decoration', 'bottom-center', {w:55, h:58});
+  realImageSlot('tree_spruce_01', 'tree_spruce.png', TREES_BASE, 'decoration', 'bottom-center', {w:36, h:76});
+  realImageSlot('tree_shrub_01', 'tree_shrub.png', TREES_BASE, 'decoration', 'bottom-center', {w:39, h:40});
+  realImageSlot('tree_old_bare_01', 'tree_old_bare.png', TREES_BASE, 'decoration', 'bottom-center', {w:67, h:68});
+
+  // people -- sized taller than the old flat npc_01..05 placeholders (15x26) since these carry real
+  // painted detail worth actually seeing; group compositions (pram, vendor cart, fisherman's dock
+  // platform) get a bit more width/height than a single standing figure.
+  realImageSlot('npc_woman_fancy_01', 'npc_woman_fancy.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:21, h:46});
+  realImageSlot('npc_woman_peasant_01', 'npc_woman_peasant.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:16, h:44});
+  realImageSlot('npc_man_suit_01', 'npc_man_suit.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:25, h:46});
+  realImageSlot('npc_man_worker_01', 'npc_man_worker.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:35, h:46});
+  realImageSlot('npc_elder_man_01', 'npc_elder_man.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:29, h:48});
+  realImageSlot('npc_elder_woman_01', 'npc_elder_woman.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:31, h:46});
+  realImageSlot('npc_mother_pram_01', 'npc_mother_pram1.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:45, h:50});
+  realImageSlot('npc_mother_pram_02', 'npc_mother_pram2.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:45, h:50});
+  realImageSlot('npc_vendor_01', 'npc_vendor.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:56, h:54});
+  realImageSlot('npc_newsboy_01', 'npc_newsboy.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:27, h:42});
+  realImageSlot('npc_fisherman_01', 'npc_fisherman.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:42, h:50});
+
+  // one-off landmarks -- sized closer to the real-art building scale (REAL_ART_SIZES above runs
+  // roughly 65-90 wide, 40-80 tall) since these ARE building-scale structures, not street props.
+  realImageSlot('landmark_fountain_01', 'landmark_fountain.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:56, h:46});
+  realImageSlot('landmark_crane_01', 'landmark_crane.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:71, h:100});
+  realImageSlot('landmark_greengate_01', 'landmark_greengate.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:97, h:78});
+
+  realImageSlot('boat_rowboat_01', 'boat_rowboat.png', BOATS_BASE, 'vessel', 'center', {w:52, h:40});
+  realImageSlot('cart_horse_01', 'cart_horse.png', VEHICLES_BASE, 'vehicle', 'center', {w:44, h:38});
+
+  /* ground-texture variants for drawPlotGroundTile()'s occasional-real-photo tiles (see below) --
+     these aren't ASSET_MANIFEST/blit() sprites (ground is drawn raw per-tile every frame, not
+     baked-and-cached like an anchored sprite), just plain lazy-loaded images referenced directly. */
+  var GROUND_VARIANT_FILES = ['ground_meadow.png', 'ground_grass_rocks.png'];
 
   /* ---- purchased "Top down sea level creator set": the shoreline foam-wave animation (18 real
      frames) is the one piece of that pack that drops in directly -- the water/sand/island pieces

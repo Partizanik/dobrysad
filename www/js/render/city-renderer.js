@@ -37,6 +37,14 @@
 
   var roads = {}, roadsSig = null; // dynamic road-tile membership map, rebuilt only when it changes
 
+  // real tree species (see assets.js) cycled along the promenade treeline -- was just
+  // tree_01/tree_02 (2 procedural shapes) alternating; this is the direct "map looks too empty"
+  // fix once real art existed to fill it with.
+  var TREE_ROW_SLOTS = [
+    'tree_birch_01', 'tree_apple_01', 'tree_poplar_01', 'tree_linden_01',
+    'tree_spruce_01', 'tree_willow_01', 'tree_shrub_01', 'tree_old_bare_01'
+  ];
+
   function deps(){
     GEO = global.CityGeometry; Assets = global.CityAssets; Npc = global.NpcLife; Water = global.WaterLife;
     return !!(GEO && Assets && Npc && Water && global.GameAPI);
@@ -150,17 +158,48 @@
     }
     // trees along the promenade edge, lampposts along the field's outer edge -- bounded to the
     // currently-visible column range instead of the whole (potentially huge) field width.
+    // Cycles through the full real-art species list (was just 2 procedural shapes) so the
+    // shoreline actually reads as a varied treeline instead of one pattern repeating end to end --
+    // this is the direct fix for "the map looks too empty", now that there's real tree art to fill
+    // it with.
     var tRow = L.promRow1 + 0.62;
     var c0 = Math.max(L.minCol+1, range.c0), c1 = Math.min(L.maxCol-1, range.c1);
     for(var tc = Math.ceil(c0/2)*2; tc <= c1; tc += 2){
       var tp = GEO.isoToContent(L, tc, tRow);
-      Assets.blit(c, (tc%4===0) ? 'tree_02' : 'tree_01', tp.x, tp.y);
+      Assets.blit(c, TREE_ROW_SLOTS[Math.floor(tc/2) % TREE_ROW_SLOTS.length], tp.x, tp.y);
     }
     // lampposts along the main street (the promenade-front seed row every road connects back to)
     for(var lc = Math.ceil(c0/4)*4+2; lc <= c1; lc += 4){
       var lp = GEO.isoToContent(L, lc, L.fieldRow0);
       Assets.blit(c, 'lamp_01', lp.x, lp.y);
     }
+    drawLandmarks(c, L, GEO, Assets, range);
+  }
+
+  /* ---- fixed one-off landmarks (Neptune's Fountain, the Gdańsk Crane, the Green Gate) -- these
+     are city furniture, not player-placed buildings, so they live here as fixed (col,row) spots
+     tied to the field's own geometry (the buildable ellipse's centre, and two points along the
+     promenade) rather than in GameAPI/saved state. Simple to move later into the planned
+     ad-unlocked "decorate the city" tab as player-placed items once that exists -- for now this is
+     what makes them actually visible in the game the moment the art landed. Viewport-culled the
+     same way trees/lampposts above are. */
+  function landmarkSpots(L){
+    var e = L.ellipse;
+    var spots = [];
+    if(e){
+      spots.push({ slot:'landmark_fountain_01', col: Math.round(e.cx), row: Math.round(e.cy) });
+    }
+    var promRow = L.promRow1 - 0.1;
+    spots.push({ slot:'landmark_crane_01', col: L.minCol + 4, row: promRow });
+    spots.push({ slot:'landmark_greengate_01', col: L.maxCol - 4, row: promRow });
+    return spots;
+  }
+  function drawLandmarks(c, L, GEO, Assets, range){
+    landmarkSpots(L).forEach(function(s){
+      if(s.col < range.c0-3 || s.col > range.c1+3 || s.row < range.r0-3 || s.row > range.r1+3) return;
+      var p = GEO.isoToContent(L, s.col, s.row);
+      Assets.blit(c, s.slot, p.x, p.y);
+    });
   }
 
   function drawDynamic(c, L, GameAPI, dt, range){

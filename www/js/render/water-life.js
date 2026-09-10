@@ -10,7 +10,7 @@
 (function(global){
   'use strict';
 
-  var MAX_FERRY = 1, MAX_TANKER = 1, MAX_SURFER = 3, MAX_GULL = 4;
+  var MAX_FERRY = 1, MAX_TANKER = 1, MAX_ROWBOAT = 1, MAX_SURFER = 3, MAX_GULL = 4;
   var boats = [], surfers = [], gulls = [];
   var running = false, layout = null;
   var reduceMotion = false;
@@ -45,6 +45,13 @@
     while(boats.filter(function(b){ return b.kind === 'tanker'; }).length < MAX_TANKER){
       boats.push({ kind:'tanker', slot:'boat_tanker_01', row: lanes[1], col: rand(layout.minCol, layout.maxCol),
         dir: Math.random()<0.5?1:-1, speed: rand(0.18, 0.28) });
+    }
+    // the rowboat/fisherman hugs the shore, well in front of (closer to land than) the ferry lane --
+    // a small oar-powered boat drifting out among the ferry/tanker traffic would read as out of
+    // place/scale, and rowing pace is naturally slower than either.
+    while(boats.filter(function(b){ return b.kind === 'rowboat'; }).length < MAX_ROWBOAT){
+      boats.push({ kind:'rowboat', slot:'boat_rowboat_01', row: layout.waterRow1 - rand(0.7, 0.95), col: rand(layout.minCol, layout.maxCol),
+        dir: Math.random()<0.5?1:-1, speed: rand(0.1, 0.16) });
     }
   }
   function ensureSurfers(){

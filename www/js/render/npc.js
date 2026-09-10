@@ -12,8 +12,19 @@
   'use strict';
 
   var MAX_WALKERS = 6, MAX_CARS = 2, MAX_EGG = 1;
-  var NPC_SLOTS = ['npc_01', 'npc_02', 'npc_03', 'npc_04', 'npc_05'];
-  var CAR_SLOTS = ['car_01', 'car_02', 'car_03'];
+  // real painted people (see assets.js's realImageSlot calls) replacing the old flat-colour
+  // npc_01..05 placeholders -- this was the original "people don't match the building art style"
+  // complaint, now fixed with actual period-costumed figures instead of solid-colour blobs.
+  var NPC_SLOTS = [
+    'npc_woman_fancy_01', 'npc_woman_peasant_01', 'npc_man_suit_01', 'npc_man_worker_01',
+    'npc_elder_man_01', 'npc_elder_woman_01', 'npc_mother_pram_01', 'npc_mother_pram_02',
+    'npc_vendor_01', 'npc_newsboy_01', 'npc_fisherman_01'
+  ];
+  // the horse-drawn cart replaces the flat-colour car_XX slots on the street for the same reason --
+  // no era-appropriate car art exists yet (the one Model-T-style generation that came back didn't
+  // match the painterly style, see nanobanana_prompts.md), so a single real cart is better than a
+  // mix of one real cart and two mismatched flat cars.
+  var CAR_SLOTS = ['cart_horse_01'];
 
   var sprites = [];
   var running = false;
