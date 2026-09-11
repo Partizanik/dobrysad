@@ -359,17 +359,26 @@
   .city-zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 3px 8px -3px var(--shadow);}
   .city-full-hint{font-size:10.5px; color:var(--ink-dim); text-align:center; padding:4px 10px; flex-shrink:0;}
 
-  /* floating "Build" button docked over the fullscreen city view -- opens the building picker,
-     its own separate fullscreen window (#buildFullModal below), instead of a strip of icons
-     crowding the map itself. */
-  .city-build-fab{position:absolute; left:10px; bottom:10px; z-index:2; display:flex; align-items:center; gap:6px; border:none; border-radius:999px; background:var(--gold); color:var(--gold-ink); font-weight:800; font-size:13px; padding:11px 16px 11px 13px; cursor:pointer; box-shadow:0 4px 10px -3px var(--shadow);}
+  /* floating "Build" + "Decorate" buttons docked over the fullscreen city view, side by side in
+     one row -- opens the building/decor pickers, their own separate fullscreen windows
+     (#buildFullModal / #decorFullModal below), instead of a strip of icons crowding the map
+     itself. Both share equal visual weight on purpose: Decorate used to be an unlabeled 44px icon
+     circle, identical in style to the Manage (remove) button next to it, so players never
+     realized it was a real, free, standalone way to interact with the city -- giving it its own
+     colored label pill (leaf-green, distinct from Build's gold) plus a small "free" corner badge
+     fixes that at a glance, no tooltip/hover needed (this is a touch UI; title="" never showed on
+     mobile anyway). */
+  .city-fab-row{position:absolute; left:10px; bottom:10px; z-index:2; display:flex; align-items:center; gap:8px;}
+  .city-build-fab{position:static; display:flex; align-items:center; gap:6px; border:none; border-radius:999px; background:var(--gold); color:var(--gold-ink); font-weight:800; font-size:13px; padding:11px 16px 11px 13px; cursor:pointer; box-shadow:0 4px 10px -3px var(--shadow);}
   .cbf-icon{width:18px; height:18px; flex-shrink:0;}
-  /* two smaller round FABs alongside the main "Build" one -- Decorate (plant trees/bushes) and
-     Manage (remove any placed building or decoration). Icon-only + a corner so they read as
-     secondary actions without crowding the primary Build button on a narrow phone screen. */
+  .city-decor-fab{position:relative; display:flex; align-items:center; gap:6px; border:none; border-radius:999px; background:var(--leaf); color:#fff; font-weight:800; font-size:13px; padding:11px 16px 11px 13px; cursor:pointer; box-shadow:0 4px 10px -3px var(--shadow);}
+  .cdf-icon{width:18px; height:18px; flex-shrink:0;}
+  .cdf-free-badge{position:absolute; top:-7px; right:-6px; font-size:12px; line-height:1; background:#fff; border-radius:999px; padding:3px 4px; box-shadow:0 2px 5px -1px rgba(0,0,0,.35);}
+  /* the one remaining round FAB -- Manage (remove any placed building or decoration). Stays
+     icon-only in its own bottom-right corner: it's a secondary cleanup action, not something a
+     new player needs to discover on their first visit the way Build/Decorate are. */
   .city-fab-secondary{position:absolute; bottom:10px; z-index:2; width:44px; height:44px; border-radius:999px; border:none; background:var(--surface); color:var(--ink); box-shadow:0 4px 10px -3px var(--shadow); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
   .city-fab-secondary svg{width:20px; height:20px;}
-  .city-decor-fab{right:62px;}
   .city-manage-fab{right:10px;}
 
   /* building picker: its own fullscreen window (reuses .city-fullscreen), a grid of square image
@@ -1117,13 +1126,17 @@
             </div>
           </div>
           <div class="city-full-hint" id="cityFullHint"></div>
-          <button class="city-build-fab" id="cityBuildFab">
-            <svg class="cbf-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
-            <span id="cityBuildFabLbl"></span>
-          </button>
-          <button class="city-fab-secondary city-decor-fab" id="cityDecorFab" title="">
-            <svg viewBox="0 0 24 24"><path d="M12 2c3 3 5 6 5 9a5 5 0 0 1-10 0c0-3 2-6 5-9z" fill="currentColor"/><path d="M12 15v7M9 22h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          </button>
+          <div class="city-fab-row">
+            <button class="city-build-fab" id="cityBuildFab">
+              <svg class="cbf-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+              <span id="cityBuildFabLbl"></span>
+            </button>
+            <button class="city-decor-fab" id="cityDecorFab">
+              <svg class="cdf-icon" viewBox="0 0 24 24"><path d="M12 2c3 3 5 6 5 9a5 5 0 0 1-10 0c0-3 2-6 5-9z" fill="currentColor"/><path d="M12 15v7M9 22h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span id="cityDecorFabLbl"></span>
+              <span class="cdf-free-badge" aria-hidden="true">🆓</span>
+            </button>
+          </div>
           <button class="city-fab-secondary city-manage-fab" id="cityManageFab" title="">
             <svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -1323,7 +1336,12 @@
         bush: {name:'Krzew'},
         flower_vendor: {name:'Kwiaciarz z wózkiem'},
         newsboy: {name:'Gazeciarz'},
-        fisherman: {name:'Rybak'}
+        fisherman: {name:'Rybak'},
+        tree_bare: {name:'Drzewo bez liści'},
+        lamppost: {name:'Latarnia'},
+        fountain: {name:'Fontanna'},
+        crane: {name:'Dźwig portowy'},
+        greengate: {name:'Zielona Brama'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Otwórz', confirmNo:'Anuluj',
@@ -1577,7 +1595,12 @@
         bush: {name:'Bush'},
         flower_vendor: {name:'Flower vendor cart'},
         newsboy: {name:'Newsboy'},
-        fisherman: {name:'Fisherman'}
+        fisherman: {name:'Fisherman'},
+        tree_bare: {name:'Bare tree'},
+        lamppost: {name:'Lamppost'},
+        fountain: {name:'Fountain'},
+        crane: {name:'Port crane'},
+        greengate: {name:'Green Gate'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Unlock', confirmNo:'Cancel',
@@ -1835,7 +1858,12 @@
         bush: {name:'Куст'},
         flower_vendor: {name:'Кветачніца з вазком'},
         newsboy: {name:'Газетчык'},
-        fisherman: {name:'Рыбак'}
+        fisherman: {name:'Рыбак'},
+        tree_bare: {name:'Голае дрэва'},
+        lamppost: {name:'Ліхтар'},
+        fountain: {name:'Фантан'},
+        crane: {name:'Партовы кран'},
+        greengate: {name:'Зялёная Брама'}
       },
       comboLabel: function(n){ return '🔥 Комба ×' + n; },
       confirmYes:'Адкрыць', confirmNo:'Скасаваць',
@@ -2218,12 +2246,22 @@
     {key:'tree_willow', icon:'🌳', slot:'tree_willow_01'},
     {key:'tree_spruce', icon:'🌲', slot:'tree_spruce_01'},
     {key:'bush', icon:'🌿', slot:'tree_shrub_01'},
+    {key:'tree_bare', icon:'🍂', slot:'tree_old_bare_01'},
     /* item 10: these three used to be walking street NPCs (npc.js's NPC_SLOTS) -- their art
        already shows them standing still with their cart/stall/dock, so they're now placed by the
        player as static decor instead, same slots, same UX as any other decor item below. */
     {key:'flower_vendor', icon:'💐', slot:'npc_vendor_01'},
     {key:'newsboy', icon:'📰', slot:'npc_newsboy_01'},
-    {key:'fisherman', icon:'🎣', slot:'npc_fisherman_01'}
+    {key:'fisherman', icon:'🎣', slot:'npc_fisherman_01'},
+    /* the promenade treeline, street lampposts, and the 3 fixed landmarks (fountain, port crane,
+       Green Gate) used to be hard-coded to draw on every city unconditionally -- see the removed
+       loops in city-renderer.js's drawVisibleGround. Explicit ask: nothing but sea and land by
+       default, the player decorates the city themselves -- so these move here, same slots, same
+       free/no-cost placement as every other decor item. */
+    {key:'lamppost', icon:'💡', slot:'lamp_01'},
+    {key:'fountain', icon:'⛲', slot:'landmark_fountain_01'},
+    {key:'crane', icon:'🏗️', slot:'landmark_crane_01'},
+    {key:'greengate', icon:'🏛️', slot:'landmark_greengate_01'}
   ];
   var DECOR_BY_KEY = {}; DECOR.forEach(function(d){ DECOR_BY_KEY[d.key] = d; });
   // name:null means "no custom name yet" -- display falls back to the localized "Miasto N"/"City N"
@@ -2579,7 +2617,7 @@
   var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine');
   var cityBuildFab=$('cityBuildFab'), cityBuildFabLbl=$('cityBuildFabLbl');
   var buildFullModal=$('buildFullModal'), buildFullTitle=$('buildFullTitle'), buildFullClose=$('buildFullClose'), buildFullCloseLbl=$('buildFullCloseLbl'), buildFullHint=$('buildFullHint');
-  var cityDecorFab=$('cityDecorFab'), cityManageFab=$('cityManageFab');
+  var cityDecorFab=$('cityDecorFab'), cityDecorFabLbl=$('cityDecorFabLbl'), cityManageFab=$('cityManageFab');
   var decorFullModal=$('decorFullModal'), decorFullTitle=$('decorFullTitle'), decorFullClose=$('decorFullClose'), decorFullCloseLbl=$('decorFullCloseLbl'), decorFullHint=$('decorFullHint');
   var manageFullModal=$('manageFullModal'), manageFullTitle=$('manageFullTitle'), manageFullClose=$('manageFullClose'), manageFullCloseLbl=$('manageFullCloseLbl'), manageFullHint=$('manageFullHint');
   var manageSectionBuildingsLbl=$('manageSectionBuildingsLbl'), manageSectionDecorLbl=$('manageSectionDecorLbl'), manageBuildingList=$('manageBuildingList'), manageDecorList=$('manageDecorList'), manageEmptyHint=$('manageEmptyHint');
@@ -3810,7 +3848,7 @@
     buildFullTitle.textContent = t.buildFullTitle;
     buildFullCloseLbl.textContent = t.cityFullBackBtn;
     buildFullHint.textContent = t.buildFullHint;
-    if(cityDecorFab) cityDecorFab.title = t.decorFabLbl;
+    if(cityDecorFabLbl) cityDecorFabLbl.textContent = t.decorFabLbl;
     if(cityManageFab) cityManageFab.title = t.manageFabLbl;
     if(decorFullTitle){
       decorFullTitle.textContent = t.decorFullTitle;
