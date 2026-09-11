@@ -83,8 +83,13 @@
     if(sig === roadsSig) return;
     roadsSig = sig;
     var buildings = city.plots.filter(Boolean).map(function(p){ return { col: p.col, row: p.row }; });
-    roads = GEO.computeRoadTiles(layout, buildings);
-    Npc.setRoads(roads, sig, buildings.length);
+    var result = GEO.computeRoadTiles(layout, buildings);
+    roads = result.roads;
+    // doorsteps: one road tile per building, used by NpcLife to give walkers real destinations
+    // ("go to building X") instead of only ever picking a random neighbor forever -- see item 9's
+    // aftermath fix + doorstep computation in city-geometry.js's computeRoadTiles.
+    var doorsteps = Object.keys(result.doorsteps).map(function(k){ return result.doorsteps[k]; });
+    Npc.setRoads(roads, sig, buildings.length, doorsteps);
   }
 
   /* which (col,row) tiles are actually on screen right now, plus a small margin so tiles don't

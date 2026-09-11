@@ -198,9 +198,16 @@
      every frame -- this is plain graph-growing over at most ~30 buildings (the per-city cap),
      so no pathfinding sophistication is needed even though the field itself can be huge. Returns
      a plain {"col,row": true} membership map. ---------------------------------------------------- */
+  // item 9 made a building a 2x2 footprint -- the stored (col,row) is only its FRONT corner (see
+  // BUILDING_FOOTPRINT_CELLS in index.html). This file has no access to GameAPI, so the same 4
+  // offsets are duplicated here in miniature -- it's pure grid geometry, not game state, and this
+  // is the one other place that genuinely needs to know a building's full footprint (stripping the
+  // road graph, finding a doorstep).
+  var FOOTPRINT_OFFSETS = [{dc:0,dr:0}, {dc:-1,dr:0}, {dc:0,dr:-1}, {dc:-1,dr:-1}];
+
   function computeRoadTiles(layout, buildings){
     var roads = {};
-    if(!buildings || !buildings.length) return roads;
+    if(!buildings || !buildings.length) return { roads: roads, doorsteps: {} };
     function mark(c,r){ roads[c+','+r] = true; }
     function carveH(c0,c1,r){ var lo=Math.min(c0,c1), hi=Math.max(c0,c1); for(var c=lo;c<=hi;c++) mark(c,r); }
     function carveV(r0,r1,c){ var lo=Math.min(r0,r1), hi=Math.max(r0,r1); for(var r=lo;r<=hi;r++) mark(c,r); }
@@ -224,15 +231,38 @@
       carveV(b.row, best.row, best.col);
     });
 
-    // Every carve above happens to include the building's OWN tile as one of its endpoints (the
-    // driveway's destination, or the spine passing straight through it when a building sits on
-    // the seed row) -- which made that tile a graph node NpcLife would walk people/cars onto,
-    // i.e. straight through the middle of the building sprite. Buildings were never meant to be
-    // walkable; strip them back out as a final pass so the network reaches right up to a
-    // building's doorstep and stops there, instead of going through it. The rest of each carved
-    // line stays intact and connected to the spine, so this never disconnects anything.
-    buildings.forEach(function(b){ delete roads[b.col+','+b.row]; });
-    return roads;
+    // Every carve above happens to include the building's OWN front-corner tile as one of its
+    // endpoints (the driveway's destination, or the spine passing straight through it when a
+    // building sits on the seed row) -- which made that tile a graph node NpcLife would walk
+    // people/cars onto, i.e. straight through the building sprite. Buildings were never meant to
+    // be walkable; strip the building's full 2x2 footprint (not just its front corner -- a bug
+    // this fixes: since item 9 shipped, only the front corner was ever stripped, so a driveway or
+    // the street spine crossing one of a building's other 3 tiles left that tile walkable right
+    // through the middle/back of the sprite) as a final pass so the network reaches right up to a
+    // building's doorstep and stops there. The rest of each carved line stays intact and connected
+    // to the spine, so this never disconnects anything.
+    //
+    // While we're in here with the full footprint in hand, also record each building's doorstep --
+    // any road tile left standing that's 4-directionally adjacent to one of its 4 footprint cells
+    // (the one step of its driveway that wasn't just stripped). NpcLife uses this to give walkers
+    // an actual destination ("go to building X") instead of only ever picking a random neighbor at
+    // every intersection forever.
+    var doorsteps = {};
+    buildings.forEach(function(b){
+      var cells = FOOTPRINT_OFFSETS.map(function(o){ return {col:b.col+o.dc, row:b.row+o.dr}; });
+      cells.forEach(function(cell){ delete roads[cell.col+','+cell.row]; });
+      var doorstep = null;
+      for(var i=0; i<cells.length && !doorstep; i++){
+        var cell = cells[i];
+        var nbrs = [[1,0],[-1,0],[0,1],[0,-1]];
+        for(var j=0; j<nbrs.length; j++){
+          var nc = cell.col+nbrs[j][0], nr = cell.row+nbrs[j][1];
+          if(roads[nc+','+nr]){ doorstep = {col:nc, row:nr}; break; }
+        }
+      }
+      if(doorstep) doorsteps[b.col+','+b.row] = doorstep;
+    });
+    return { roads: roads, doorsteps: doorsteps };
   }
 
   /* Clamp tx/ty to keep the content from panning off into empty space, with a small overscroll
