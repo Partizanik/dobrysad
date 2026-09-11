@@ -625,6 +625,17 @@
   realImageSlot('boat_rowboat_01', 'boat_rowboat.png', BOATS_BASE, 'vessel', 'center', {w:52, h:40});
   realImageSlot('cart_horse_01', 'cart_horse.png', VEHICLES_BASE, 'vehicle', 'center', {w:44, h:38});
 
+  // ambient-transport variety: more horse-cart/vintage-car looks for the road, more rowboat looks
+  // plus one larger, rarer houseboat for the water -- sizes keep the same per-category footprint as
+  // the _01 slots above (proportioned to each cleaned image's own aspect ratio), except the houseboat
+  // which is deliberately ~1.5x bigger since it's a much larger vessel than a rowboat.
+  realImageSlot('cart_horse_02', 'cart_horse_02.png', VEHICLES_BASE, 'vehicle', 'center', {w:46, h:41});
+  realImageSlot('car_vintage_01', 'car_vintage_01.png', VEHICLES_BASE, 'vehicle', 'center', {w:46, h:38});
+  realImageSlot('boat_rowboat_02', 'boat_rowboat_02.png', BOATS_BASE, 'vessel', 'center', {w:52, h:40});
+  realImageSlot('boat_rowboat_03', 'boat_rowboat_03.png', BOATS_BASE, 'vessel', 'center', {w:52, h:36});
+  realImageSlot('boat_rowboat_04', 'boat_rowboat_04.png', BOATS_BASE, 'vessel', 'center', {w:52, h:36});
+  realImageSlot('boat_houseboat_01', 'boat_houseboat_01.png', BOATS_BASE, 'vessel', 'center', {w:78, h:64});
+
   /* ground-texture variants for drawPlotGroundTile()'s occasional-real-photo tiles (see below) --
      these aren't ASSET_MANIFEST/blit() sprites (ground is drawn raw per-tile every frame, not
      baked-and-cached like an anchored sprite), just plain lazy-loaded images referenced directly. */

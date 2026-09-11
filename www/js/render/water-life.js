@@ -12,7 +12,15 @@
 (function(global){
   'use strict';
 
-  var MAX_ROWBOAT = 1, MAX_GULL = 4;
+  var MAX_ROWBOAT = 1, MAX_HOUSEBOAT = 1, MAX_GULL = 4;
+  // several rowboat/fisherman looks now share the shore-hugging slot at random, same cleaned-sprite
+  // pipeline/style as boat_rowboat_01 (see tools/dewhite_sprites.py + tools/clean_sprites.py).
+  var ROWBOAT_SLOTS = ['boat_rowboat_01', 'boat_rowboat_02', 'boat_rowboat_03', 'boat_rowboat_04'];
+  // the houseboat is a much bigger, slower vessel -- it doesn't hug the shore like the rowboat, it
+  // sits further out in open water, and it's deliberately rare (only some cities get one at all,
+  // decided once per layout so it doesn't flicker in/out on every ensureBoats() call).
+  var HOUSEBOAT_CHANCE = 0.4;
+  var houseboatDecided = false, houseboatAllowed = false;
   var boats = [], gulls = [];
   var running = false, layout = null;
   var reduceMotion = false;
@@ -29,6 +37,7 @@
     if(layout === l) return;
     layout = l;
     boats = []; gulls = [];
+    houseboatDecided = false; // re-roll the rarity gate for the new city/layout
   }
 
   function ensureBoats(){
@@ -36,8 +45,21 @@
     // the rowboat/fisherman hugs the shore, close to land -- a small oar-powered boat, rowing at
     // a naturally slow, human pace.
     while(boats.filter(function(b){ return b.kind === 'rowboat'; }).length < MAX_ROWBOAT){
-      boats.push({ kind:'rowboat', slot:'boat_rowboat_01', row: layout.waterRow1 - rand(0.7, 0.95), col: rand(layout.minCol, layout.maxCol),
+      var slot = ROWBOAT_SLOTS[Math.floor(Math.random()*ROWBOAT_SLOTS.length)];
+      boats.push({ kind:'rowboat', slot: slot, row: layout.waterRow1 - rand(0.7, 0.95), col: rand(layout.minCol, layout.maxCol),
         dir: Math.random()<0.5?1:-1, speed: rand(0.1, 0.16) });
+    }
+    if(!houseboatDecided){
+      houseboatDecided = true;
+      houseboatAllowed = Math.random() < HOUSEBOAT_CHANCE;
+    }
+    if(houseboatAllowed){
+      // further out than the rowboat (bigger vessel, doesn't hug the shore the same way) and much
+      // slower -- a lumbering houseboat, not something oar-powered.
+      while(boats.filter(function(b){ return b.kind === 'houseboat'; }).length < MAX_HOUSEBOAT){
+        boats.push({ kind:'houseboat', slot:'boat_houseboat_01', row: layout.waterRow1 - rand(1.3, 1.7), col: rand(layout.minCol, layout.maxCol),
+          dir: Math.random()<0.5?1:-1, speed: rand(0.045, 0.075) });
+      }
     }
   }
   function ensureGulls(){

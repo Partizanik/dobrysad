@@ -35,15 +35,20 @@ BACKUP = ROOT + '_backup_orig'
 # нейтральную подложку (брусчатка и т.п.) убирает remove_shadow по цвету, без
 # риска для самих ног. Здания и landmarks не трогаем вообще -- фундамент/база
 # это часть архитектуры, а не мусорный слой.
-PAD_CATEGORIES = {'trees', 'boats'}
+PAD_CATEGORIES = {'trees', 'boats', 'vehicles'}
 # категории, где вообще применяется удаление тени. Здания/landmarks исключены:
 # их каменные/дощатые стены сами по себе серые и текстурные -- под тот же
 # цветовой критерий, что и тень, может по ошибке попасть кусок фундамента
 # (проверено на woodwork_01 -- вырезало часть каменной кладки). Пользователь
 # просил чистку именно для people/техники/деревьев/лодок/собак/столбов, зданий
 # в списке нет -- поэтому buildings/landmarks просто пропускаются целиком.
-SHADOW_CATEGORIES = {'people', 'trees', 'boats'}
-ALL_CATEGORIES = {'people', 'trees', 'boats', 'buildings', 'landmarks'}
+# vehicles (телега/машина) добавлена вместе с фоновым транспортом -- тот же
+# исходник "объект на брусчатке с мягкой тенью на белом фоне", что у деревьев
+# и лодок, значит нужна та же обработка (раньше категория была пропущена: в
+# ассетах лежала только одна уже вручную вычищенная телега, автоматический
+# конвейер её никогда не касался).
+SHADOW_CATEGORIES = {'people', 'trees', 'boats', 'vehicles'}
+ALL_CATEGORIES = {'people', 'trees', 'boats', 'buildings', 'landmarks', 'vehicles'}
 
 DUST_ALPHA = 10          # alpha ниже этого -- считаем пылью/шумом, обнуляем
 SHADOW_OPAQUE_FRAC = 0.02   # если в компоненте почти нет полностью непрозрачных пикселей -- это тень
@@ -200,6 +205,17 @@ def process_file(path, category, dry_run=False):
 
 def main():
     dry_run = '--dry-run' in sys.argv
+    explicit_files = [a for a in sys.argv[1:] if a != '--dry-run']
+    if explicit_files:
+        # точечный режим: чистим только перечисленные файлы. process_file() не идемпотентна --
+        # crop_to_content()'s 1px запас плюс tidy_edges() могут на ПОВТОРНОМ прогоне срезать ещё
+        # ~1px сглаженного края с каждой стороны (уже видели на cart_horse.png: 504x440 -> 502x438
+        # после случайного повторного полного прогона), так что уже готовые файлы лучше не трогать
+        # без необходимости -- отсюда и этот режим, вместо обязательного "проход по всем категориям".
+        for path in explicit_files:
+            category = os.path.basename(os.path.dirname(os.path.abspath(path)))
+            process_file(path, category, dry_run=dry_run)
+        return
     if not dry_run and not os.path.isdir(BACKUP):
         shutil.copytree(ROOT, BACKUP)
         print(f"Backup оригиналов сохранён в {BACKUP}")

@@ -55,11 +55,11 @@
     'npc_woman_fancy_01', 'npc_woman_peasant_01', 'npc_man_suit_01', 'npc_man_worker_01',
     'npc_elder_man_01', 'npc_elder_woman_01', 'npc_mother_pram_01', 'npc_mother_pram_02'
   ];
-  // the horse-drawn cart replaces the flat-colour car_XX slots on the street for the same reason --
-  // no era-appropriate car art exists yet (the one Model-T-style generation that came back didn't
-  // match the painterly style, see nanobanana_prompts.md), so a single real cart is better than a
-  // mix of one real cart and two mismatched flat cars.
-  var CAR_SLOTS = ['cart_horse_01'];
+  // the horse-drawn cart replaced the flat-colour car_XX slots on the street for the same reason --
+  // era-appropriate real art beats mismatched flat placeholders. Ambient-transport variety: a second
+  // cart look plus a period-correct vintage car (same cleaned-sprite pipeline/style as everything
+  // else here, see tools/dewhite_sprites.py + tools/clean_sprites.py) now share the road at random.
+  var CAR_SLOTS = ['cart_horse_01', 'cart_horse_02', 'car_vintage_01'];
 
   // how long a walker who stepped into a building stays out of sight before it re-emerges and
   // picks its next trip
