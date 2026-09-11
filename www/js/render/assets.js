@@ -636,6 +636,126 @@
   realImageSlot('boat_rowboat_04', 'boat_rowboat_04.png', BOATS_BASE, 'vessel', 'center', {w:52, h:36});
   realImageSlot('boat_houseboat_01', 'boat_houseboat_01.png', BOATS_BASE, 'vessel', 'center', {w:78, h:64});
 
+  /* ---- second art batch ("Magnific"): animals, birds, benches, street poles, decor props, more
+     trees/landmarks/people/vendor stalls -- 73 files total, same cleaned-sprite pipeline as the
+     ambient-transport batch above (tools/dewhite_sprites.py + tools/clean_sprites.py). Slot names
+     match each file's own basename verbatim (no category prefix) so they never collide with the
+     first ("nanobanana") batch's prefixed names (tree_*, npc_*, landmark_*) above -- e.g. this
+     batch's plain 'birch_01' sits next to the older 'tree_birch_01' as a visually distinct second
+     option, not a replacement. Sizes are a first-pass estimate exactly like the comment above
+     REAL_ART_SIZES describes: aspect ratio read straight off each cleaned PNG, times a target
+     on-screen height chosen per archetype against the existing scale (a tree next to tree_*, a
+     person next to npc_*, a landmark next to landmark_*, a cart next to npc_vendor_01) -- worth
+     eyeballing in-game and nudging if anything reads too big/small. ---- */
+  var ANIMALS_BASE = 'assets/animals/', BIRDS_BASE = 'assets/birds/', BENCHES_BASE = 'assets/benches/',
+      POLES_BASE = 'assets/poles/', DECOR_BASE = 'assets/decor/', VENDORS_BASE = 'assets/vendors/';
+
+  // animals: real painted cat/dog art replacing the flat procedural drawDogCat silhouettes that
+  // used to live at these same 'cat_01'/'dog_01' slot names (npc.js's easter-egg spawn() picks
+  // randomly from a small pool of each now instead of always the one hardcoded slot).
+  realImageSlot('cat_01', 'cat_01.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:12.5, h:16});
+  realImageSlot('cat_02', 'cat_02.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:17.4, h:16});
+  realImageSlot('dog_brown_01', 'dog_brown_01.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:23.6, h:20});
+  realImageSlot('dog_brown_02', 'dog_brown_02.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:20.7, h:20});
+  realImageSlot('dog_brown_03', 'dog_brown_03.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:25.7, h:20});
+  realImageSlot('puppy_golden_01', 'puppy_golden_01.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:13.3, h:13});
+  // 'dog_01' also gets pointed at real art (was the old procedural drawDogCat) so any code that
+  // still says 'dog_01' by name (there isn't any left after this batch, but harmless either way)
+  // keeps resolving to something real rather than the removed placeholder.
+  realImageSlot('dog_01', 'dog_brown_01.png', ANIMALS_BASE, 'animal', 'bottom-center', {w:23.6, h:20});
+
+  // birds: replaces the procedural drawSeagull wing-flap doodle at 'seagull_01' with real painted
+  // art, plus two small sparrows for a land-bird pool water-life.js flies over the whole city (not
+  // just the shoreline) alongside the gulls.
+  realImageSlot('seagull_01', 'seagull_flying_01.png', BIRDS_BASE, 'sky', 'center', {w:16.7, h:14});
+  realImageSlot('sparrow_flying_01', 'sparrow_flying_01.png', BIRDS_BASE, 'sky', 'center', {w:8.2, h:10});
+  realImageSlot('sparrow_flying_02', 'sparrow_flying_02.png', BIRDS_BASE, 'sky', 'center', {w:8.3, h:10});
+
+  // benches + street poles: park/street furniture for the decor catalog.
+  realImageSlot('ornate_metal_bench_01', 'ornate_metal_bench_01.png', BENCHES_BASE, 'decoration', 'bottom-center', {w:21.3, h:20});
+  realImageSlot('wood_bench_01', 'wood_bench_01.png', BENCHES_BASE, 'decoration', 'bottom-center', {w:20.5, h:20});
+  realImageSlot('lamppost_01', 'lamppost_01.png', POLES_BASE, 'decoration', 'bottom-center', {w:20.6, h:46});
+  realImageSlot('lamppost_02', 'lamppost_02.png', POLES_BASE, 'decoration', 'bottom-center', {w:22.9, h:46});
+  realImageSlot('lamppost_03', 'lamppost_03.png', POLES_BASE, 'decoration', 'bottom-center', {w:14.4, h:46});
+  realImageSlot('signpost_01', 'signpost_01.png', POLES_BASE, 'decoration', 'bottom-center', {w:27.0, h:38});
+  realImageSlot('signpost_02', 'signpost_02.png', POLES_BASE, 'decoration', 'bottom-center', {w:28.5, h:38});
+  realImageSlot('street_clock_01', 'street_clock_01.png', POLES_BASE, 'decoration', 'bottom-center', {w:25.4, h:48});
+  realImageSlot('street_clock_02', 'street_clock_02.png', POLES_BASE, 'decoration', 'bottom-center', {w:27.0, h:48});
+  realImageSlot('trash_bin_01', 'trash_bin_01.png', POLES_BASE, 'decoration', 'bottom-center', {w:12.4, h:18});
+  realImageSlot('trash_bin_02', 'trash_bin_02.png', POLES_BASE, 'decoration', 'bottom-center', {w:12.2, h:18});
+
+  // decor props: flowerbeds/potted greenery for the decor catalog, plus one whimsical hot-air
+  // balloon (drawn at its full painted height -- it's meant to read as a big skyline eye-catcher).
+  realImageSlot('flowerbed_oval_01', 'flowerbed_oval_01.png', DECOR_BASE, 'decoration', 'bottom-center', {w:29.3, h:22});
+  realImageSlot('flowerbed_oval_02', 'flowerbed_oval_02.png', DECOR_BASE, 'decoration', 'bottom-center', {w:32.1, h:22});
+  realImageSlot('flowerbed_oval_03', 'flowerbed_oval_03.png', DECOR_BASE, 'decoration', 'bottom-center', {w:30.5, h:22});
+  realImageSlot('hot_air_balloon_01', 'hot_air_balloon_01.png', DECOR_BASE, 'decoration', 'bottom-center', {w:39.9, h:70});
+  realImageSlot('potted_bush_01', 'potted_bush_01.png', DECOR_BASE, 'decoration', 'bottom-center', {w:19.6, h:22});
+  realImageSlot('topiary_bush_round_01', 'topiary_bush_round_01.png', DECOR_BASE, 'decoration', 'bottom-center', {w:36.2, h:30});
+
+  // landmarks: sized against the existing landmark_fountain_01 (56x46) / landmark_crane_01 (71x100)
+  // / landmark_greengate_01 (97x78) scale -- these are one-off placed structures, not street props.
+  realImageSlot('dock_crane_01', 'dock_crane_01.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:73.2, h:96});
+  realImageSlot('fountain_poseidon_01', 'fountain_poseidon_01.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:72.4, h:60});
+  realImageSlot('fountain_small_01', 'fountain_small_01.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:33.7, h:46});
+  realImageSlot('fountain_small_02', 'fountain_small_02.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:36.1, h:46});
+  realImageSlot('gdansk_building_01', 'gdansk_building_01.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:92.7, h:75});
+  realImageSlot('well_01', 'well_01.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:41.8, h:40});
+  realImageSlot('well_02', 'well_02.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:37.4, h:40});
+  realImageSlot('willow_pond_scene_01', 'willow_pond_scene_01.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:65.2, h:70});
+  realImageSlot('willow_pond_scene_02', 'willow_pond_scene_02.png', LANDMARKS_BASE, 'landmark', 'bottom-center', {w:71.0, h:70});
+
+  // people -- sized against this same batch's npc_* conventions above (elder/suit/worker ~46-50
+  // tall, pram/vendor groups a bit taller). fisherman_01/02 are NOT added to NPC_SLOTS in npc.js --
+  // like the original npc_fisherman_01, their art already shows them standing still on their own
+  // cobblestone/dock patch, so they're placed as static decor instead (see index.html's DECOR).
+  realImageSlot('elderly_man_01', 'elderly_man_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:27.2, h:48});
+  realImageSlot('elderly_man_02', 'elderly_man_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:21.9, h:48});
+  realImageSlot('elderly_woman_01', 'elderly_woman_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:30.7, h:46});
+  realImageSlot('elderly_woman_02', 'elderly_woman_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:25.0, h:46});
+  realImageSlot('fisherman_01', 'fisherman_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:42.1, h:50});
+  realImageSlot('fisherman_02', 'fisherman_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:47.4, h:50});
+  realImageSlot('man_bowler_hat_with_buildings_01', 'man_bowler_hat_with_buildings_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:13.0, h:46});
+  realImageSlot('man_brown_suit_01', 'man_brown_suit_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:21.6, h:46});
+  realImageSlot('man_brown_suit_02', 'man_brown_suit_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:15.5, h:46});
+  realImageSlot('man_vest_01', 'man_vest_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:20.8, h:44});
+  realImageSlot('man_vest_02', 'man_vest_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:14.9, h:44});
+  realImageSlot('man_vest_03', 'man_vest_03.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:33.2, h:44});
+  realImageSlot('mother_pram_01', 'mother_pram_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:41.4, h:50});
+  realImageSlot('mother_pram_02', 'mother_pram_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:44.7, h:50});
+  realImageSlot('mother_pram_03', 'mother_pram_03.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:44.4, h:50});
+  realImageSlot('newspaper_boy_01', 'newspaper_boy_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:27.6, h:42});
+  realImageSlot('newspaper_boy_02', 'newspaper_boy_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:28.5, h:42});
+  realImageSlot('woman_apron_01', 'woman_apron_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:15.5, h:44});
+  realImageSlot('woman_bonnet_basket_01', 'woman_bonnet_basket_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:20.3, h:44});
+  realImageSlot('woman_bonnet_basket_02', 'woman_bonnet_basket_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:39.9, h:44});
+  realImageSlot('woman_peasant_01', 'woman_peasant_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:22.5, h:44});
+  realImageSlot('woman_peasant_02', 'woman_peasant_02.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:20.0, h:44});
+  realImageSlot('women_headscarf_trio_01', 'women_headscarf_trio_01.png', PEOPLE_BASE, 'npc', 'bottom-center', {w:73.0, h:44});
+
+  // trees -- sized against this batch's tree_* conventions above (poplar/spruce tall+slender 76-82,
+  // apple/linden rounder 62-69). A second, visually distinct option for several species already
+  // represented in the first batch (birch, bare) sits alongside the older tree_birch_01/tree_old_bare_01
+  // under its own plain (unprefixed) slot name -- see the batch-level comment above.
+  realImageSlot('bare_01', 'bare_01.png', TREES_BASE, 'decoration', 'bottom-center', {w:73.0, h:60});
+  realImageSlot('bare_02', 'bare_02.png', TREES_BASE, 'decoration', 'bottom-center', {w:69.6, h:58});
+  realImageSlot('birch_01', 'birch_01.png', TREES_BASE, 'decoration', 'bottom-center', {w:54.7, h:70});
+  realImageSlot('birch_02', 'birch_02.png', TREES_BASE, 'decoration', 'bottom-center', {w:37.2, h:78});
+  realImageSlot('blossom_01', 'blossom_01.png', TREES_BASE, 'decoration', 'bottom-center', {w:53.5, h:64});
+  realImageSlot('blossom_02', 'blossom_02.png', TREES_BASE, 'decoration', 'bottom-center', {w:69.7, h:58});
+  realImageSlot('cypress_01', 'cypress_01.png', TREES_BASE, 'decoration', 'bottom-center', {w:50.8, h:76});
+  realImageSlot('cypress_02', 'cypress_02.png', TREES_BASE, 'decoration', 'bottom-center', {w:43.0, h:76});
+  realImageSlot('fir_01', 'fir_01.png', TREES_BASE, 'decoration', 'bottom-center', {w:43.6, h:74});
+  realImageSlot('fir_02', 'fir_02.png', TREES_BASE, 'decoration', 'bottom-center', {w:42.6, h:74});
+  realImageSlot('oak_01', 'oak_01.png', TREES_BASE, 'decoration', 'bottom-center', {w:66.7, h:58});
+
+  // vendor carts/stalls -- sized against npc_vendor_01 (56x54); placed as static decor only, never
+  // added to NPC_SLOTS, same reasoning as the original flower-vendor/fisherman/newsboy (item 10).
+  realImageSlot('flower_vendor_cart_01', 'flower_vendor_cart_01.png', VENDORS_BASE, 'npc', 'bottom-center', {w:63.3, h:54});
+  realImageSlot('flower_vendor_stall_01', 'flower_vendor_stall_01.png', VENDORS_BASE, 'npc', 'bottom-center', {w:58.3, h:56});
+  realImageSlot('fruit_vendor_cart_01', 'fruit_vendor_cart_01.png', VENDORS_BASE, 'npc', 'bottom-center', {w:60.0, h:54});
+  realImageSlot('fruit_vendor_cart_02', 'fruit_vendor_cart_02.png', VENDORS_BASE, 'npc', 'bottom-center', {w:52.5, h:54});
+
   /* ground-texture variants for drawPlotGroundTile()'s occasional-real-photo tiles (see below) --
      these aren't ASSET_MANIFEST/blit() sprites (ground is drawn raw per-tile every frame, not
      baked-and-cached like an anchored sprite), just plain lazy-loaded images referenced directly. */

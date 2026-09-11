@@ -12,10 +12,16 @@
 (function(global){
   'use strict';
 
-  var MAX_ROWBOAT = 1, MAX_HOUSEBOAT = 1, MAX_GULL = 4;
+  var MAX_ROWBOAT = 1, MAX_HOUSEBOAT = 1, MAX_GULL = 4, MAX_SPARROW = 3;
   // several rowboat/fisherman looks now share the shore-hugging slot at random, same cleaned-sprite
   // pipeline/style as boat_rowboat_01 (see tools/dewhite_sprites.py + tools/clean_sprites.py).
   var ROWBOAT_SLOTS = ['boat_rowboat_01', 'boat_rowboat_02', 'boat_rowboat_03', 'boat_rowboat_04'];
+  // sky birds: gulls patrol the shoreline/water band like before (real painted art now, replacing
+  // the procedural wing-flap doodle -- see assets.js's 'seagull_01' realImageSlot); sparrows are a
+  // second, smaller species from the same cleaned-sprite batch that flit over the WHOLE city (full
+  // row span, not just the water band) since they're land/park birds, not sea birds.
+  var GULL_SLOTS = ['seagull_01'];
+  var SPARROW_SLOTS = ['sparrow_flying_01', 'sparrow_flying_02'];
   // the houseboat is a much bigger, slower vessel -- it doesn't hug the shore like the rowboat, it
   // sits further out in open water, and it's deliberately rare (only some cities get one at all,
   // decided once per layout so it doesn't flicker in/out on every ensureBoats() call).
@@ -32,6 +38,7 @@
   var foamElapsed = 0;
 
   function rand(a, b){ return a + Math.random()*(b-a); }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
   function setLayout(l){
     if(layout === l) return;
@@ -64,13 +71,24 @@
   }
   function ensureGulls(){
     if(!layout) return;
-    while(gulls.length < MAX_GULL){
+    while(gulls.filter(function(g){ return g.kind !== 'sparrow'; }).length < MAX_GULL){
       gulls.push({
-        slot: Math.random()<0.5?'seagull_01':'seagull_02',
+        kind: 'gull', slot: pick(GULL_SLOTS),
         row: rand(layout.waterRow0 != null ? layout.waterRow0 : 0, layout.waterRow1),
         col: rand(layout.minCol-3, layout.maxCol+3),
         dir: Math.random()<0.5?1:-1, speed: rand(0.5, 0.85),
         bobPhase: Math.random()*Math.PI*2, altitude: rand(30, 58)
+      });
+    }
+    // sparrows flit over the whole field (minRow..maxRow), lower and faster than the gulls out
+    // over the water -- distinct enough silhouette/altitude that the two species read separately.
+    while(gulls.filter(function(g){ return g.kind === 'sparrow'; }).length < MAX_SPARROW){
+      gulls.push({
+        kind: 'sparrow', slot: pick(SPARROW_SLOTS),
+        row: rand(layout.minRow != null ? layout.minRow : 0, layout.maxRow),
+        col: rand(layout.minCol-3, layout.maxCol+3),
+        dir: Math.random()<0.5?1:-1, speed: rand(0.75, 1.15),
+        bobPhase: Math.random()*Math.PI*2, altitude: rand(14, 28)
       });
     }
   }

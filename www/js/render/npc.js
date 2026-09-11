@@ -51,15 +51,30 @@
   // verbatim -- Assets.blit doesn't care whether a slot's category says 'npc' or 'decor'), same as
   // a bench or a lamppost: dropped once, stays put. Removing them here is the whole fix; no assets
   // were deleted, just no longer picked by spawn()/ensureWalkers().
+  // second art batch ("Magnific", see assets.js) adds 21 more walking looks -- fisherman_01/02 from
+  // that same batch are deliberately NOT here (their art shows them planted next to their own
+  // cobblestone/dock patch, same reasoning as the original npc_fisherman_01 -- see index.html's
+  // DECOR instead).
   var NPC_SLOTS = [
     'npc_woman_fancy_01', 'npc_woman_peasant_01', 'npc_man_suit_01', 'npc_man_worker_01',
-    'npc_elder_man_01', 'npc_elder_woman_01', 'npc_mother_pram_01', 'npc_mother_pram_02'
+    'npc_elder_man_01', 'npc_elder_woman_01', 'npc_mother_pram_01', 'npc_mother_pram_02',
+    'elderly_man_01', 'elderly_man_02', 'elderly_woman_01', 'elderly_woman_02',
+    'man_bowler_hat_with_buildings_01', 'man_brown_suit_01', 'man_brown_suit_02',
+    'man_vest_01', 'man_vest_02', 'man_vest_03',
+    'mother_pram_01', 'mother_pram_02', 'mother_pram_03',
+    'newspaper_boy_01', 'newspaper_boy_02', 'woman_apron_01',
+    'woman_bonnet_basket_01', 'woman_bonnet_basket_02',
+    'woman_peasant_01', 'woman_peasant_02', 'women_headscarf_trio_01'
   ];
   // the horse-drawn cart replaced the flat-colour car_XX slots on the street for the same reason --
   // era-appropriate real art beats mismatched flat placeholders. Ambient-transport variety: a second
   // cart look plus a period-correct vintage car (same cleaned-sprite pipeline/style as everything
   // else here, see tools/dewhite_sprites.py + tools/clean_sprites.py) now share the road at random.
   var CAR_SLOTS = ['cart_horse_01', 'cart_horse_02', 'car_vintage_01'];
+  // easter-egg dog/cat: a small pool of real painted looks per species (assets.js's cat_01/cat_02
+  // and dog_brown_01/02/03 + puppy_golden_01) instead of the single hardcoded slot each used to be.
+  var CAT_SLOTS = ['cat_01', 'cat_02'];
+  var DOG_SLOTS = ['dog_brown_01', 'dog_brown_02', 'dog_brown_03', 'puppy_golden_01'];
 
   // how long a walker who stepped into a building stays out of sight before it re-emerges and
   // picks its next trip
@@ -183,7 +198,7 @@
   function spawn(kind, temp){
     var start = randomNode();
     if(!start) return null;
-    var slot = kind === 'car' ? pick(CAR_SLOTS) : kind === 'person' ? pick(NPC_SLOTS) : (kind === 'cat' ? 'cat_01' : 'dog_01');
+    var slot = kind === 'car' ? pick(CAR_SLOTS) : kind === 'person' ? pick(NPC_SLOTS) : (kind === 'cat' ? pick(CAT_SLOTS) : pick(DOG_SLOTS));
     var s = {
       kind: kind, slot: slot, temp: !!temp,
       col: start.col, row: start.row, tcol: start.col, trow: start.row, t: 1,

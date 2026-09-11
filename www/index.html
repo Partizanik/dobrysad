@@ -543,6 +543,11 @@
   .rank-tabs{display:flex; gap:6px; margin-bottom:8px;}
   .rank-tab{flex:1; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-dim); font-weight:700; font-size:11px; border-radius:10px; padding:7px; cursor:pointer;}
   .rank-tab.active{background:var(--leaf); color:#fff; border-color:var(--leaf);}
+  /* decor picker category tabs -- the catalog got too long (57 items) for one flat scroll, so a
+     horizontally-scrollable pill row filters it by category, same visual language as .rank-tab. */
+  .decor-tabs{display:flex; gap:6px; overflow-x:auto; padding:0 10px 8px; -webkit-overflow-scrolling:touch;}
+  .decor-tab{flex:0 0 auto; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-dim); font-weight:700; font-size:12px; border-radius:999px; padding:7px 13px; cursor:pointer; white-space:nowrap;}
+  .decor-tab.active{background:var(--leaf); color:#fff; border-color:var(--leaf);}
   .rank-row{display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:11px; margin-bottom:5px; background:var(--surface-2); border:1px solid var(--line);}
   .rank-row.me{background:var(--gold-soft); border-color:var(--gold);}
   .rank-medal{width:22px; text-align:center; font-size:14px; flex-shrink:0;}
@@ -1181,6 +1186,7 @@
             <button class="city-full-back" id="decorFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="decorFullCloseLbl"></span></button>
           </div>
           <div class="build-full-hint" id="decorFullHint"></div>
+          <div class="decor-tabs" id="decorTabs"></div>
           <div class="build-grid-wrap">
             <div class="build-grid" id="decorGrid"></div>
           </div>
@@ -1375,7 +1381,53 @@
         lamppost: {name:'Latarnia'},
         fountain: {name:'Fontanna'},
         crane: {name:'Dźwig portowy'},
-        greengate: {name:'Zielona Brama'}
+        greengate: {name:'Zielona Brama'},
+        tree_bare_2: {name:'Uschnięte drzewo (odm. 2)'},
+        tree_bare_3: {name:'Uschnięte drzewo (odm. 3)'},
+        tree_birch_2: {name:'Brzoza (odm. 2)'},
+        tree_birch_3: {name:'Brzoza (odm. 3)'},
+        tree_blossom: {name:'Kwitnąca wiśnia'},
+        tree_blossom_2: {name:'Kwitnąca wiśnia (odm. 2)'},
+        tree_cypress: {name:'Cyprys'},
+        tree_cypress_2: {name:'Cyprys (odm. 2)'},
+        tree_fir: {name:'Jodła'},
+        tree_fir_2: {name:'Jodła (odm. 2)'},
+        tree_oak: {name:'Dąb'},
+        bench_metal: {name:'Ozdobna ławka metalowa'},
+        bench_wood: {name:'Drewniana ławka'},
+        lamppost_2: {name:'Latarnia (odm. 2)'},
+        lamppost_3: {name:'Latarnia (odm. 3)'},
+        signpost: {name:'Drogowskaz'},
+        signpost_2: {name:'Drogowskaz (odm. 2)'},
+        street_clock: {name:'Zegar uliczny'},
+        street_clock_2: {name:'Zegar uliczny (odm. 2)'},
+        trash_bin: {name:'Kosz na śmieci'},
+        trash_bin_2: {name:'Kosz na śmieci (odm. 2)'},
+        flowerbed: {name:'Klomb kwiatowy'},
+        flowerbed_2: {name:'Klomb kwiatowy (odm. 2)'},
+        flowerbed_3: {name:'Klomb kwiatowy (odm. 3)'},
+        hot_air_balloon: {name:'Balon na ogrzane powietrze'},
+        potted_bush: {name:'Krzew w donicy'},
+        topiary_bush: {name:'Krzew formowany'},
+        crane_2: {name:'Dźwig portowy (odm. 2)'},
+        fountain_poseidon: {name:'Fontanna Posejdona'},
+        fountain_small: {name:'Mała fontanna'},
+        fountain_small_2: {name:'Mała fontanna (odm. 2)'},
+        historic_building: {name:'Zabytkowa kamienica'},
+        well: {name:'Studnia'},
+        well_2: {name:'Studnia (odm. 2)'},
+        willow_pond: {name:'Wierzba nad stawem'},
+        willow_pond_2: {name:'Wierzba nad stawem (odm. 2)'},
+        flower_vendor_2: {name:'Kwiaciarz z wózkiem (odm. 2)'},
+        flower_stall: {name:'Stoisko kwiatowe'},
+        fruit_vendor: {name:'Wózek z owocami'},
+        fruit_vendor_2: {name:'Wózek z owocami (odm. 2)'},
+        fisherman_2: {name:'Rybak (odm. 2)'},
+        fisherman_3: {name:'Rybak (odm. 3)'}
+      },
+      decorCats: {
+        all: {name:'Wszystko'}, trees: {name:'Drzewa'}, furniture: {name:'Latarnie i ławki'},
+        props: {name:'Dekoracje'}, landmarks: {name:'Zabytki'}, people: {name:'Postacie'}
       },
       ground: {
         cobble: {name:'Bruk'},
@@ -1645,7 +1697,53 @@
         lamppost: {name:'Lamppost'},
         fountain: {name:'Fountain'},
         crane: {name:'Port crane'},
-        greengate: {name:'Green Gate'}
+        greengate: {name:'Green Gate'},
+        tree_bare_2: {name:'Bare tree (var. 2)'},
+        tree_bare_3: {name:'Bare tree (var. 3)'},
+        tree_birch_2: {name:'Birch (var. 2)'},
+        tree_birch_3: {name:'Birch (var. 3)'},
+        tree_blossom: {name:'Blossoming cherry'},
+        tree_blossom_2: {name:'Blossoming cherry (var. 2)'},
+        tree_cypress: {name:'Cypress'},
+        tree_cypress_2: {name:'Cypress (var. 2)'},
+        tree_fir: {name:'Fir tree'},
+        tree_fir_2: {name:'Fir tree (var. 2)'},
+        tree_oak: {name:'Oak'},
+        bench_metal: {name:'Ornate metal bench'},
+        bench_wood: {name:'Wooden bench'},
+        lamppost_2: {name:'Lamppost (var. 2)'},
+        lamppost_3: {name:'Lamppost (var. 3)'},
+        signpost: {name:'Signpost'},
+        signpost_2: {name:'Signpost (var. 2)'},
+        street_clock: {name:'Street clock'},
+        street_clock_2: {name:'Street clock (var. 2)'},
+        trash_bin: {name:'Trash bin'},
+        trash_bin_2: {name:'Trash bin (var. 2)'},
+        flowerbed: {name:'Flower bed'},
+        flowerbed_2: {name:'Flower bed (var. 2)'},
+        flowerbed_3: {name:'Flower bed (var. 3)'},
+        hot_air_balloon: {name:'Hot air balloon'},
+        potted_bush: {name:'Potted bush'},
+        topiary_bush: {name:'Topiary bush'},
+        crane_2: {name:'Port crane (var. 2)'},
+        fountain_poseidon: {name:'Poseidon fountain'},
+        fountain_small: {name:'Small fountain'},
+        fountain_small_2: {name:'Small fountain (var. 2)'},
+        historic_building: {name:'Historic townhouse'},
+        well: {name:'Water well'},
+        well_2: {name:'Water well (var. 2)'},
+        willow_pond: {name:'Willow by the pond'},
+        willow_pond_2: {name:'Willow by the pond (var. 2)'},
+        flower_vendor_2: {name:'Flower vendor cart (var. 2)'},
+        flower_stall: {name:'Flower stall'},
+        fruit_vendor: {name:'Fruit cart'},
+        fruit_vendor_2: {name:'Fruit cart (var. 2)'},
+        fisherman_2: {name:'Fisherman (var. 2)'},
+        fisherman_3: {name:'Fisherman (var. 3)'}
+      },
+      decorCats: {
+        all: {name:'All'}, trees: {name:'Trees'}, furniture: {name:'Street furniture'},
+        props: {name:'Decor'}, landmarks: {name:'Landmarks'}, people: {name:'Figures'}
       },
       ground: {
         cobble: {name:'Cobblestone'},
@@ -1919,7 +2017,53 @@
         lamppost: {name:'Ліхтар'},
         fountain: {name:'Фантан'},
         crane: {name:'Партовы кран'},
-        greengate: {name:'Зялёная Брама'}
+        greengate: {name:'Зялёная Брама'},
+        tree_bare_2: {name:'Голае дрэва (варыянт 2)'},
+        tree_bare_3: {name:'Голае дрэва (варыянт 3)'},
+        tree_birch_2: {name:'Бяроза (варыянт 2)'},
+        tree_birch_3: {name:'Бяроза (варыянт 3)'},
+        tree_blossom: {name:'Квітнеючая вішня'},
+        tree_blossom_2: {name:'Квітнеючая вішня (варыянт 2)'},
+        tree_cypress: {name:'Кіпарыс'},
+        tree_cypress_2: {name:'Кіпарыс (варыянт 2)'},
+        tree_fir: {name:'Піхта'},
+        tree_fir_2: {name:'Піхта (варыянт 2)'},
+        tree_oak: {name:'Дуб'},
+        bench_metal: {name:'Аздобная металічная лаўка'},
+        bench_wood: {name:'Драўляная лаўка'},
+        lamppost_2: {name:'Ліхтар (варыянт 2)'},
+        lamppost_3: {name:'Ліхтар (варыянт 3)'},
+        signpost: {name:'Указальнік'},
+        signpost_2: {name:'Указальнік (варыянт 2)'},
+        street_clock: {name:'Вулічны гадзіннік'},
+        street_clock_2: {name:'Вулічны гадзіннік (варыянт 2)'},
+        trash_bin: {name:'Смеццевы кош'},
+        trash_bin_2: {name:'Смеццевы кош (варыянт 2)'},
+        flowerbed: {name:'Кветкавая клумба'},
+        flowerbed_2: {name:'Кветкавая клумба (варыянт 2)'},
+        flowerbed_3: {name:'Кветкавая клумба (варыянт 3)'},
+        hot_air_balloon: {name:'Паветраны шар'},
+        potted_bush: {name:'Куст у гаршку'},
+        topiary_bush: {name:'Фігурны куст'},
+        crane_2: {name:'Партовы кран (варыянт 2)'},
+        fountain_poseidon: {name:'Фантан Пасейдона'},
+        fountain_small: {name:'Малы фантан'},
+        fountain_small_2: {name:'Малы фантан (варыянт 2)'},
+        historic_building: {name:'Гістарычная камяніца'},
+        well: {name:'Калодзеж'},
+        well_2: {name:'Калодзеж (варыянт 2)'},
+        willow_pond: {name:'Вярба над сажалкай'},
+        willow_pond_2: {name:'Вярба над сажалкай (варыянт 2)'},
+        flower_vendor_2: {name:'Кветачніца з вазком (варыянт 2)'},
+        flower_stall: {name:'Кветкавы прылавак'},
+        fruit_vendor: {name:'Вазок з садавінай'},
+        fruit_vendor_2: {name:'Вазок з садавінай (варыянт 2)'},
+        fisherman_2: {name:'Рыбак (варыянт 2)'},
+        fisherman_3: {name:'Рыбак (варыянт 3)'}
+      },
+      decorCats: {
+        all: {name:'Усё'}, trees: {name:'Дрэвы'}, furniture: {name:'Вулічная мэбля'},
+        props: {name:'Дэкор'}, landmarks: {name:'Славутасці'}, people: {name:'Постаці'}
       },
       ground: {
         cobble: {name:'Брукаванка'},
@@ -2301,30 +2445,90 @@
      now. Deliberately scoped to trees/bushes only for this pass -- manual road-drawing is a much
      bigger feature (the road network is still auto-derived from building positions, see
      city-geometry.js's computeRoadTiles) and stays out of scope here. */
+  /* ---- decor category tabs: the catalog grew from 15 to 57 items across this and the previous
+     pass, too long to scan as one flat grid -- every DECOR entry below now carries a `cat` field
+     (one of DECOR_CATS' keys) and the picker (renderDecorTabs/renderDecorGrid) filters by the
+     active tab, 'all' showing everything as before. Order here is display order for the 'all' tab
+     and doesn't need to match DECOR_CATS' order. */
+  var DECOR_CATS = [
+    {key:'all', icon:'🗂️'},
+    {key:'trees', icon:'🌳'},
+    {key:'furniture', icon:'💡'},
+    {key:'props', icon:'🌷'},
+    {key:'landmarks', icon:'🏛️'},
+    {key:'people', icon:'🧑'}
+  ];
   var DECOR = [
-    {key:'tree_apple', icon:'🌸', slot:'tree_apple_01'},
-    {key:'tree_birch', icon:'🌳', slot:'tree_birch_01'},
-    {key:'tree_linden', icon:'🌳', slot:'tree_linden_01'},
-    {key:'tree_poplar', icon:'🌳', slot:'tree_poplar_01'},
-    {key:'tree_willow', icon:'🌳', slot:'tree_willow_01'},
-    {key:'tree_spruce', icon:'🌲', slot:'tree_spruce_01'},
-    {key:'bush', icon:'🌿', slot:'tree_shrub_01'},
-    {key:'tree_bare', icon:'🍂', slot:'tree_old_bare_01'},
+    {key:'tree_apple', icon:'🌸', slot:'tree_apple_01', cat:'trees'},
+    {key:'tree_birch', icon:'🌳', slot:'tree_birch_01', cat:'trees'},
+    {key:'tree_linden', icon:'🌳', slot:'tree_linden_01', cat:'trees'},
+    {key:'tree_poplar', icon:'🌳', slot:'tree_poplar_01', cat:'trees'},
+    {key:'tree_willow', icon:'🌳', slot:'tree_willow_01', cat:'trees'},
+    {key:'tree_spruce', icon:'🌲', slot:'tree_spruce_01', cat:'trees'},
+    {key:'bush', icon:'🌿', slot:'tree_shrub_01', cat:'trees'},
+    {key:'tree_bare', icon:'🍂', slot:'tree_old_bare_01', cat:'trees'},
     /* item 10: these three used to be walking street NPCs (npc.js's NPC_SLOTS) -- their art
        already shows them standing still with their cart/stall/dock, so they're now placed by the
        player as static decor instead, same slots, same UX as any other decor item below. */
-    {key:'flower_vendor', icon:'💐', slot:'npc_vendor_01'},
-    {key:'newsboy', icon:'📰', slot:'npc_newsboy_01'},
-    {key:'fisherman', icon:'🎣', slot:'npc_fisherman_01'},
+    {key:'flower_vendor', icon:'💐', slot:'npc_vendor_01', cat:'people'},
+    {key:'newsboy', icon:'📰', slot:'npc_newsboy_01', cat:'people'},
+    {key:'fisherman', icon:'🎣', slot:'npc_fisherman_01', cat:'people'},
     /* the promenade treeline, street lampposts, and the 3 fixed landmarks (fountain, port crane,
        Green Gate) used to be hard-coded to draw on every city unconditionally -- see the removed
        loops in city-renderer.js's drawVisibleGround. Explicit ask: nothing but sea and land by
        default, the player decorates the city themselves -- so these move here, same slots, same
        free/no-cost placement as every other decor item. */
-    {key:'lamppost', icon:'💡', slot:'lamp_01'},
-    {key:'fountain', icon:'⛲', slot:'landmark_fountain_01'},
-    {key:'crane', icon:'🏗️', slot:'landmark_crane_01'},
-    {key:'greengate', icon:'🏛️', slot:'landmark_greengate_01'}
+    {key:'lamppost', icon:'💡', slot:'lamppost_01', cat:'furniture'},
+    {key:'fountain', icon:'⛲', slot:'landmark_fountain_01', cat:'landmarks'},
+    {key:'crane', icon:'🏗️', slot:'landmark_crane_01', cat:'landmarks'},
+    {key:'greengate', icon:'🏛️', slot:'landmark_greengate_01', cat:'landmarks'},
+    /* second art batch ("Magnific", see assets.js) -- more tree species/variants, street furniture
+       (benches, extra lampposts, signposts, a street clock, trash bins), decor props (flowerbeds,
+       a hot-air balloon, potted/topiary greenery), more one-off landmarks, and more vendor-stall
+       and fisherman looks as additional static decor (same reasoning as the item-10 comment above:
+       their art already shows them planted next to their own cart/stall/dock patch). */
+    {key:'tree_bare_2', icon:'🍂', slot:'bare_01', cat:'trees'},
+    {key:'tree_bare_3', icon:'🍂', slot:'bare_02', cat:'trees'},
+    {key:'tree_birch_2', icon:'🌳', slot:'birch_01', cat:'trees'},
+    {key:'tree_birch_3', icon:'🌳', slot:'birch_02', cat:'trees'},
+    {key:'tree_blossom', icon:'🌸', slot:'blossom_01', cat:'trees'},
+    {key:'tree_blossom_2', icon:'🌸', slot:'blossom_02', cat:'trees'},
+    {key:'tree_cypress', icon:'🌲', slot:'cypress_01', cat:'trees'},
+    {key:'tree_cypress_2', icon:'🌲', slot:'cypress_02', cat:'trees'},
+    {key:'tree_fir', icon:'🌲', slot:'fir_01', cat:'trees'},
+    {key:'tree_fir_2', icon:'🌲', slot:'fir_02', cat:'trees'},
+    {key:'tree_oak', icon:'🌳', slot:'oak_01', cat:'trees'},
+    {key:'bench_metal', icon:'🪑', slot:'ornate_metal_bench_01', cat:'furniture'},
+    {key:'bench_wood', icon:'🪑', slot:'wood_bench_01', cat:'furniture'},
+    {key:'lamppost_2', icon:'💡', slot:'lamppost_02', cat:'furniture'},
+    {key:'lamppost_3', icon:'💡', slot:'lamppost_03', cat:'furniture'},
+    {key:'signpost', icon:'🪧', slot:'signpost_01', cat:'furniture'},
+    {key:'signpost_2', icon:'🪧', slot:'signpost_02', cat:'furniture'},
+    {key:'street_clock', icon:'🕰️', slot:'street_clock_01', cat:'furniture'},
+    {key:'street_clock_2', icon:'🕰️', slot:'street_clock_02', cat:'furniture'},
+    {key:'trash_bin', icon:'🗑️', slot:'trash_bin_01', cat:'furniture'},
+    {key:'trash_bin_2', icon:'🗑️', slot:'trash_bin_02', cat:'furniture'},
+    {key:'flowerbed', icon:'🌷', slot:'flowerbed_oval_01', cat:'props'},
+    {key:'flowerbed_2', icon:'🌷', slot:'flowerbed_oval_02', cat:'props'},
+    {key:'flowerbed_3', icon:'🌷', slot:'flowerbed_oval_03', cat:'props'},
+    {key:'hot_air_balloon', icon:'🎈', slot:'hot_air_balloon_01', cat:'props'},
+    {key:'potted_bush', icon:'🪴', slot:'potted_bush_01', cat:'props'},
+    {key:'topiary_bush', icon:'🌳', slot:'topiary_bush_round_01', cat:'props'},
+    {key:'crane_2', icon:'🏗️', slot:'dock_crane_01', cat:'landmarks'},
+    {key:'fountain_poseidon', icon:'⛲', slot:'fountain_poseidon_01', cat:'landmarks'},
+    {key:'fountain_small', icon:'⛲', slot:'fountain_small_01', cat:'landmarks'},
+    {key:'fountain_small_2', icon:'⛲', slot:'fountain_small_02', cat:'landmarks'},
+    {key:'historic_building', icon:'🏛️', slot:'gdansk_building_01', cat:'landmarks'},
+    {key:'well', icon:'💧', slot:'well_01', cat:'landmarks'},
+    {key:'well_2', icon:'💧', slot:'well_02', cat:'landmarks'},
+    {key:'willow_pond', icon:'🪷', slot:'willow_pond_scene_01', cat:'landmarks'},
+    {key:'willow_pond_2', icon:'🪷', slot:'willow_pond_scene_02', cat:'landmarks'},
+    {key:'flower_vendor_2', icon:'💐', slot:'flower_vendor_cart_01', cat:'people'},
+    {key:'flower_stall', icon:'💐', slot:'flower_vendor_stall_01', cat:'people'},
+    {key:'fruit_vendor', icon:'🍎', slot:'fruit_vendor_cart_01', cat:'people'},
+    {key:'fruit_vendor_2', icon:'🍏', slot:'fruit_vendor_cart_02', cat:'people'},
+    {key:'fisherman_2', icon:'🎣', slot:'fisherman_01', cat:'people'},
+    {key:'fisherman_3', icon:'🎣', slot:'fisherman_02', cat:'people'}
   ];
   var DECOR_BY_KEY = {}; DECOR.forEach(function(d){ DECOR_BY_KEY[d.key] = d; });
   /* ---- ground-texture brush catalog: unlike DECOR these aren't placeable sprites, they're
@@ -4019,7 +4223,7 @@
     }
     renderCityMap();
     if(buildFullModal && buildFullModal.classList.contains('show')) renderBuildGrid();
-    if(decorFullModal && decorFullModal.classList.contains('show')) renderDecorGrid();
+    if(decorFullModal && decorFullModal.classList.contains('show')){ renderDecorTabs(); renderDecorGrid(); }
     if(groundFullModal && groundFullModal.classList.contains('show')) renderGroundGrid();
     if(manageFullModal && manageFullModal.classList.contains('show')) renderManageList();
   }
@@ -4100,11 +4304,38 @@
 
   /* ---- decoration picker: same tile-grid pattern as the building picker, but every item is
      free (no cost/afford check, no city-full gate -- decor doesn't consume plot capacity) so the
-     signature is much simpler than buildGridSignature's. ---- */
+     signature is much simpler than buildGridSignature's.
+     The catalog grew from 15 to 57 items, too long to scan as one flat grid, so a row of category
+     pills (DECOR_CATS) filters it -- 'all' (the default) reproduces the old flat-list behaviour
+     exactly, so nothing changes for anyone who ignores the tabs. decorActiveCat persists across
+     opens/closes of the modal within a session (re-opening on the tab you were just browsing beats
+     resetting to "all" every time), but not across a full reload -- it's UI state, not save data. */
+  var decorActiveCat = 'all';
+  var lastDecorTabsSig = null;
+  function renderDecorTabs(){
+    var wrap = $('decorTabs'); if(!wrap) return;
+    var sig = LANG+':'+decorActiveCat;
+    if(sig === lastDecorTabsSig) return;
+    lastDecorTabsSig = sig;
+    wrap.innerHTML = '';
+    var t = T();
+    DECOR_CATS.forEach(function(cat){
+      var btn = document.createElement('button');
+      btn.className = 'decor-tab' + (cat.key === decorActiveCat ? ' active' : '');
+      btn.textContent = cat.icon + ' ' + (t.decorCats[cat.key] ? t.decorCats[cat.key].name : cat.key);
+      btn.addEventListener('click', function(){
+        if(decorActiveCat === cat.key) return;
+        decorActiveCat = cat.key;
+        lastDecorTabsSig = null; lastDecorGridSig = null;
+        renderDecorTabs(); renderDecorGrid();
+      });
+      wrap.appendChild(btn);
+    });
+  }
   var lastDecorGridSig = null;
   function renderDecorGrid(){
     var gridEl = $('decorGrid'); if(!gridEl) return;
-    var sig = LANG+':'+(!!pendingDecor);
+    var sig = LANG+':'+(!!pendingDecor)+':'+decorActiveCat;
     if(sig === lastDecorGridSig) return;
     lastDecorGridSig = sig;
     gridEl.innerHTML = '';
@@ -4112,7 +4343,8 @@
     var holding = !!pendingDecor;
     var Assets = window.CityAssets;
     if(Assets && !Assets.isBaked()) Assets.bakeAll();
-    DECOR.forEach(function(def){
+    var items = decorActiveCat === 'all' ? DECOR : DECOR.filter(function(d){ return d.cat === decorActiveCat; });
+    items.forEach(function(def){
       var dt = t.decor[def.key];
       var tile = document.createElement('button');
       tile.className = 'bg-tile'; tile.disabled = holding; tile.title = dt.name;
@@ -4131,7 +4363,7 @@
       }; }(def.key));
     });
   }
-  function openDecorFull(){ decorFullModal.classList.add('show'); renderDecorGrid(); sfx('click'); }
+  function openDecorFull(){ decorFullModal.classList.add('show'); renderDecorTabs(); renderDecorGrid(); sfx('click'); }
   function closeDecorFull(){ decorFullModal.classList.remove('show'); }
   cityDecorFab.addEventListener('click', openDecorFull);
   decorFullClose.addEventListener('click', function(){ closeDecorFull(); sfx('click'); });
