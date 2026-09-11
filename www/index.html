@@ -2142,15 +2142,30 @@
      The sea used to run along only the NORTH edge, inside a rectangular (diamond, once projected)
      outer boundary -- the buildable island itself was round, but the map as a WHOLE still read as
      a square because the water band never curved with it (it just filled the diamond's corners).
-     Now FIELD_WATER_ROWS/FIELD_PROMENADE_ROWS are each a PER-SIDE count: the sea wraps both the
-     north and south edges, and the single buildable ellipse below now governs the whole field --
-     water included -- so the entire rendered map is one continuous oval, not a diamond with an
-     oval cut out of it (see city-geometry.js's tileTypeAt, which returns null -- nothing drawn at
-     all -- outside this same ellipse). Numbers land almost exactly on an 80% land / 20% sea+
-     boardwalk split: 56 of 70 rows are land (80%), 12 water + 2 promenade rows are the coast (20%). */
-  var FIELD_COLS = 70, FIELD_ROWS = 70, FIELD_WATER_ROWS = 6, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
+     That got fixed by wrapping water around BOTH the north and south edges symmetrically -- which
+     fixed the square-corners problem but overshot: it turned the map into an island sitting in
+     open sea on two sides, when what was actually asked for is a single northern coastline with
+     the ENTIRE south being land, split so south:north is a strict 80:20 by AREA (not just row
+     count -- since the map is an ellipse/circle, a row band nearer the pole is narrower than one
+     through the middle, so an 80/20 split by row count alone would NOT be an 80/20 split by area).
+     Water/promenade now live on the north side ONLY (FIELD_WATER_ROWS/FIELD_PROMENADE_ROWS below);
+     the south side gets zero of either -- see FIELD_ROW1, which now runs all the way to the last
+     row. The 17/1 row split below was solved from the actual circle-segment area formula (not
+     guessed): with the field's buildable ellipse being a circle of radius 33 rows centred at row
+     34.5 (see FIELD_ELLIPSE_* below), the row where a horizontal cut divides the circle's area
+     80/20 works out to row ~18.27 from the top -- rows 0-17 (18 rows) north of that cut land at
+     19.55% of the circle's area, the closest an integer row count gets to exactly 20%. The single
+     buildable ellipse below still governs the whole field -- water included -- so the entire
+     rendered map is one continuous oval, not a diamond with an oval cut out of it (see
+     city-geometry.js's tileTypeAt, which returns null -- nothing drawn at all -- outside this same
+     ellipse). */
+  var FIELD_COLS = 70, FIELD_ROWS = 70, FIELD_WATER_ROWS = 17, FIELD_PROMENADE_ROWS = 1, FIELD_MIN_GAP = 1;
+  // south shore is intentionally zero -- see the comment above. Kept as named constants (rather
+  // than hardcoded 0s scattered around) so a future "actually give it a second shore" ask is a
+  // one-line change, not a re-derivation.
+  var FIELD_WATER_ROWS_SOUTH = 0, FIELD_PROMENADE_ROWS_SOUTH = 0;
   var FIELD_ROW0 = FIELD_WATER_ROWS + FIELD_PROMENADE_ROWS;                  // first buildable row (north shore)
-  var FIELD_ROW1 = FIELD_ROWS - 1 - FIELD_WATER_ROWS - FIELD_PROMENADE_ROWS; // last buildable row (south shore)
+  var FIELD_ROW1 = FIELD_ROWS - 1 - FIELD_WATER_ROWS_SOUTH - FIELD_PROMENADE_ROWS_SOUTH; // last buildable row (south edge -- all land)
   /* The buildable land is clipped to a rounded (elliptical) region well inside the field
      rectangle, instead of every tile up to the raw edges -- a plain square lot never read as an
      island/peninsula, and letting the player build right up against the field's outer border
@@ -4694,7 +4709,12 @@
        layout math can never drift from this file's own idea of what's a legal building tile
        (canBuildAt is the actual gate; this is just the numbers the renderer draws from). */
     getCityGridDims: function(){
-      return {cols:FIELD_COLS, rows:FIELD_ROWS, waterRows:FIELD_WATER_ROWS, promenadeRows:FIELD_PROMENADE_ROWS, minGap:FIELD_MIN_GAP, plotCount:CITY_PLOTS,
+      // waterRows/promenadeRows (no suffix) = north shore, still named this way so any older
+      // renderer code that only ever knew about one shore keeps working unchanged; *_South are
+      // the new asymmetric south-side counts (0/0 -- see FIELD_WATER_ROWS_SOUTH's comment above).
+      return {cols:FIELD_COLS, rows:FIELD_ROWS, waterRows:FIELD_WATER_ROWS, promenadeRows:FIELD_PROMENADE_ROWS,
+        waterRowsSouth:FIELD_WATER_ROWS_SOUTH, promenadeRowsSouth:FIELD_PROMENADE_ROWS_SOUTH,
+        minGap:FIELD_MIN_GAP, plotCount:CITY_PLOTS,
         buildableEllipse:{cx:FIELD_ELLIPSE_CX, cy:FIELD_ELLIPSE_CY, rx:FIELD_ELLIPSE_RX, ry:FIELD_ELLIPSE_RY}};
     },
     getCities: function(){ return cities; },

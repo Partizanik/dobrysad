@@ -53,20 +53,26 @@
      numbers (see canBuildAt() there). */
   function buildLayout(dims){
     var cols = dims.cols, rows = dims.rows;
-    // waterRows/promenadeRows are now a PER-SIDE count (index.html's FIELD_WATER_ROWS/
-    // FIELD_PROMENADE_ROWS) -- the sea wraps both the north (top) and south (bottom) edges of the
-    // field instead of only the north edge, so the coastline reads as a proper island with open
-    // water on two sides rather than a lake on one edge of a square lot.
+    // waterRows/promenadeRows = the NORTH shore's row counts (index.html's FIELD_WATER_ROWS/
+    // FIELD_PROMENADE_ROWS). waterRowsSouth/promenadeRowsSouth are separate and default to 0 --
+    // one coastline on the north, the entire south is land -- giving a strict 80/20 south/north
+    // AREA split (solved from the buildable circle's segment-area formula in index.html, not just
+    // a row-count ratio) instead of the old symmetric "island in open sea on two sides" look.
     var waterRows = dims.waterRows != null ? dims.waterRows : 5;
     var promenadeRows = dims.promenadeRows != null ? dims.promenadeRows : 1;
+    var waterRowsS = dims.waterRowsSouth != null ? dims.waterRowsSouth : 0;
+    var promenadeRowsS = dims.promenadeRowsSouth != null ? dims.promenadeRowsSouth : 0;
     var minCol = 0, maxCol = cols-1, minRow = 0, maxRow = rows-1;
     // north band
     var waterRow1N = waterRows-1;
     var promRow0N = waterRows, promRow1N = waterRows+promenadeRows-1;
     var fieldRow0 = waterRows+promenadeRows;
-    // south band (mirrors the north band from the bottom edge)
-    var fieldRow1 = maxRow - waterRows - promenadeRows;
-    var promRow0S = fieldRow1+1, promRow1S = fieldRow1+promenadeRows;
+    // south band -- independent counts from the north band; both 0 by default means fieldRow1
+    // runs all the way to the last row (maxRow) and tileTypeAt's south water/promenade checks
+    // below (row >= waterRow0S / promRow0S) can never be true, since those indices land past
+    // maxRow -- so "no south shore" falls out naturally without a separate code path.
+    var fieldRow1 = maxRow - waterRowsS - promenadeRowsS;
+    var promRow0S = fieldRow1+1, promRow1S = fieldRow1+promenadeRowsS;
     var waterRow0S = promRow1S+1;
     // Same ellipse index.html's isFieldBuildableTile() uses to decide where building is legal --
     // reusing it here too (rather than only gating placement) is what actually makes the map READ
@@ -285,6 +291,29 @@
     clampView(view, wrapRect);
   }
 
+  /* content-space outline of the buildable ellipse (the island's true silhouette, water band
+     included), sampled as a closed polygon -- used to hard-clip the whole draw pass so nothing
+     (a building/decor sprite whose ANCHOR tile is legally inside the ellipse, but whose art is
+     wider than one tile) can ever paint past the island's edge, no matter how close to the border
+     the player places it. tileTypeAt() already keeps ground/water tiles from being drawn outside
+     the ellipse; this is the belt-and-braces version for sprites, which aren't tile-shaped. Built
+     by sampling the grid-space ellipse and mapping each point through the same isoToContent used
+     for everything else, rather than special-casing the math for the rotated ellipse this becomes
+     in content-space -- correct for any rx/ry, not just the current circle. */
+  function islandClipPoints(layout, steps){
+    var e = layout.ellipse;
+    if(!e) return null;
+    steps = steps || 96;
+    var pts = [];
+    for(var i=0; i<steps; i++){
+      var t = (i/steps) * Math.PI*2;
+      var col = e.cx + e.rx*Math.cos(t);
+      var row = e.cy + e.ry*Math.sin(t);
+      pts.push(isoToContent(layout, col, row));
+    }
+    return pts;
+  }
+
   global.CityGeometry = {
     TW: TW, TH: TH, BUILD_HEADROOM: BUILD_HEADROOM,
     MIN_SCALE: MIN_SCALE, MAX_SCALE: MAX_SCALE, INITIAL_SCALE: INITIAL_SCALE,
@@ -294,6 +323,7 @@
     anchorAt: anchorAt,
     tileTypeAt: tileTypeAt,
     insideEllipse: insideEllipse,
+    islandClipPoints: islandClipPoints,
     contentToIso: contentToIso,
     depthAt: depthAt,
     wrapScale: wrapScale,

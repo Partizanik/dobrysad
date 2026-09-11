@@ -106,25 +106,38 @@
     // that real grass texture", not a rare 1-in-6 accent on an otherwise flat-color field (which
     // is how this used to work). Picked from GROUND_VARIANT_FILES, deterministic per-tile via the
     // same seed city-renderer.js already derives from col/row (so it doesn't flicker between
-    // different textures frame to frame), and clipped to the tile's own diamond so the photo's
-    // non-tileable edges (grass blades, a raised dirt lip on two sides -- these were generated as
-    // a small diorama chunk of ground, not a seamless texture) never show past this one tile's
-    // boundary and can't visibly clash with a neighbour. Falls through to the plain gradient below
-    // only as a loading-frame placeholder, until the chosen image has actually finished loading.
+    // different textures frame to frame).
+    //
+    // Two things made every tile boundary read as a visible seam/grid, which is what this pass
+    // fixes: (1) a stroked outline was drawn around literally every diamond -- an explicit grid
+    // line on top of the art, not an artifact of the art itself -- now removed; (2) each tile
+    // drew the SAME source photo centered on its own cx/cy with no variation, so any two
+    // neighbouring tiles that happened to pick the same one of the only 2 source files (very
+    // common with just 2 variants) showed the exact same crop, composed identically, repeated --
+    // an obvious regular "wallpaper" pattern rather than a random field. Now each tile also gets
+    // a seeded 90-degree rotation and optional mirror before the photo is drawn, so even the same
+    // source file lands differently tile to tile and the repeat stops reading as a grid. The clip
+    // diamond is also drawn slightly OVERSIZED (1.05x instead of 0.98x) so neighbouring tiles
+    // overlap a hair at the seam instead of leaving a 2%-thin gap between them.
     var rnd = mulberry32((seed||1) >>> 0);
     var useVariant = true;
     if(useVariant){
       var file = GROUND_VARIANT_FILES[Math.floor(rnd()*GROUND_VARIANT_FILES.length) % GROUND_VARIANT_FILES.length];
       var img = loadImg(file, GROUND_BASE);
       if(img.complete && img.naturalWidth){
+        var rot = Math.floor(rnd()*4) * (Math.PI/2); // 0/90/180/270 -- ground texture has no
+        // strong directional light baked in, so a quarter-turn doesn't look "wrong" the way it
+        // would on a building or a person, and it's what actually breaks up the repeat.
+        var flip = rnd() < 0.5 ? -1 : 1;
         ctx.save();
-        diamondPath(ctx, cx, cy, tw*0.98, th*0.98); ctx.clip();
+        diamondPath(ctx, cx, cy, tw*1.05, th*1.05); ctx.clip();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.scale(flip, 1);
         var iw = tw*1.35, ih = iw * (img.naturalHeight/img.naturalWidth); // slight overscan so the
         // clip never reveals a bare edge if the photo's own aspect doesn't exactly match tw:th
-        ctx.drawImage(img, cx-iw/2, cy-ih/2, iw, ih);
+        ctx.drawImage(img, -iw/2, -ih/2, iw, ih);
         ctx.restore();
-        ctx.strokeStyle = 'rgba(60,90,35,0.25)'; ctx.lineWidth = Math.max(1, tw*0.012);
-        diamondPath(ctx, cx, cy, tw*0.96, th*0.96); ctx.stroke();
         return;
       }
     }

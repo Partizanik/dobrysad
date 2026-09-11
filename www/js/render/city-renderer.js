@@ -69,7 +69,8 @@
   function ensureLayout(){
     var dims = global.GameAPI.getCityGridDims();
     if(!layout || !layoutDims || layoutDims.cols !== dims.cols || layoutDims.rows !== dims.rows ||
-       layoutDims.waterRows !== dims.waterRows || layoutDims.promenadeRows !== dims.promenadeRows){
+       layoutDims.waterRows !== dims.waterRows || layoutDims.promenadeRows !== dims.promenadeRows ||
+       layoutDims.waterRowsSouth !== dims.waterRowsSouth || layoutDims.promenadeRowsSouth !== dims.promenadeRowsSouth){
       layout = GEO.buildLayout(dims);
       layoutDims = dims;
       view.contentW = layout.contentW; view.contentH = layout.contentH;
@@ -248,7 +249,15 @@
         var dDef = GameAPI.getDecorDef ? GameAPI.getDecorDef(d.key) : null;
         if(!dDef) return;
         var anchor = GEO.anchorAt(L, d.col, d.row);
-        var depth = GEO.depthAt(L, d.col, d.row);
+        // -0.3: same trick npc.js uses (+0.4) to break ties on the same iso diagonal (col+row
+        // equal). Without a tie-break, Array#sort is stable, and since buildings are pushed into
+        // `entries` before decor, a bush sharing a building's diagonal (e.g. one tile up-right of
+        // it) sorted equal-last and drew ON TOP of the building's roof -- the "2 extra images
+        // above the building" bug. Buildings are visually much taller than their single tile, so
+        // decor on the same diagonal should stay behind them; nudging decor's depth down keeps
+        // correct ordering against farther/nearer buildings (integer depths) and only resolves
+        // the equal-depth tie.
+        var depth = GEO.depthAt(L, d.col, d.row) - 0.3;
         var isLifted = !!(liftedD && liftedD.cityIdx===activeIdx && liftedD.decorIdx===di);
         entries.push({ depth: depth, draw: function(){
           if(isLifted){ c.save(); c.globalAlpha = 0.6; Assets.blit(c, dDef.slot, anchor.x, anchor.y); c.restore(); }
@@ -300,8 +309,25 @@
 
     var range = visibleTileRange(rect);
     var placement = placementInfo(global.GameAPI);
+
+    // Hard-clip the whole draw pass to the island's true silhouette. tileTypeAt() already keeps
+    // ground/water TILES from drawing past the ellipse, but a building/decor sprite is wider than
+    // its one anchor tile -- something placed legally right at the shoreline could still paint a
+    // few pixels of roof/foliage past the coastline into empty space. This clip is the actual
+    // guarantee nothing ever renders outside the island, requested independently of that
+    // per-tile check.
+    var clipPts = GEO.islandClipPoints(layout);
+    if(clipPts){
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(clipPts[0].x, clipPts[0].y);
+      for(var cpi=1; cpi<clipPts.length; cpi++) ctx.lineTo(clipPts[cpi].x, clipPts[cpi].y);
+      ctx.closePath();
+      ctx.clip();
+    }
     drawVisibleGround(ctx, layout, range, global.GameAPI, placement);
     drawDynamic(ctx, layout, global.GameAPI, dt, range);
+    if(clipPts) ctx.restore();
 
     rafId = requestAnimationFrame(drawFrame);
   }
