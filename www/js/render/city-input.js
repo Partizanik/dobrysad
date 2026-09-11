@@ -35,6 +35,32 @@
   var inertia = null;    // {vx, vy} in local(px)/sec, ticked down each frame
   var tween = null;      // {anchorX, anchorY, fromScale, toScale, t0, dur}
 
+  /* ---- ground-texture brush: while GameAPI.getPendingGroundBrush() is armed, a single-finger
+     gesture paints instead of panning -- every tile the finger crosses gets GameAPI.paintGroundAt()
+     called on it, exactly once per NEW cell entered (lastPaintCell dedupes redundant calls while
+     the finger sits still or re-crosses the same tile). Two-finger pinch/pan is untouched either
+     way (that code path never looks at brushStroke), so the player can still zoom/pan out to see
+     more of the map mid-stroke without that finger being mistaken for a paint gesture. */
+  var brushStroke = null; // {pointerId} while a paint drag is in progress, else null
+  var lastPaintCell = null; // {col,row} last painted this stroke
+
+  function groundBrushActive(){
+    var GameAPI = global.GameAPI;
+    return !!(GameAPI && GameAPI.getPendingGroundBrush && GameAPI.getPendingGroundBrush());
+  }
+
+  function paintAtClient(clientX, clientY){
+    var CR = global.CityRenderer, GEO = global.CityGeometry, GameAPI = global.GameAPI;
+    if(!CR || !GEO || !GameAPI || !GameAPI.paintGroundAt) return;
+    var layout = CR.getGeom(); if(!layout) return;
+    var view = CR.getView(), rect = CR.getWrapRect();
+    var world = GEO.screenToWorld(view, rect, clientX, clientY);
+    var cell = GEO.worldToFieldCell(layout, world.x, world.y);
+    if(lastPaintCell && lastPaintCell.col===cell.col && lastPaintCell.row===cell.row) return;
+    lastPaintCell = cell;
+    GameAPI.paintGroundAt(GameAPI.getActiveCityIdx(), cell.col, cell.row);
+  }
+
   function dist(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); }
   function pointerDist(){
     var ids = Object.keys(pointers);
@@ -71,6 +97,7 @@
     pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
     var ids = Object.keys(pointers);
     if(ids.length === 2){
+      brushStroke = null; // a second finger landing mid-stroke hands off to pinch/pan instead
       pinchStartDist = pointerDist();
       pinchStartScale = CR.getView().scale;
       var a = pointers[ids[0]], b = pointers[ids[1]];
@@ -78,8 +105,16 @@
       tapCandidate = null;
       if(pendingTapTimer){ clearTimeout(pendingTapTimer); pendingTapTimer = null; }
     } else if(ids.length === 1){
-      tapCandidate = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-      velTracker = { x: e.clientX, y: e.clientY, t: performance.now() };
+      if(groundBrushActive()){
+        brushStroke = { pointerId: e.pointerId };
+        lastPaintCell = null;
+        tapCandidate = null; velTracker = null;
+        if(pendingTapTimer){ clearTimeout(pendingTapTimer); pendingTapTimer = null; }
+        paintAtClient(e.clientX, e.clientY);
+      } else {
+        tapCandidate = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+        velTracker = { x: e.clientX, y: e.clientY, t: performance.now() };
+      }
     }
   }
 
@@ -106,6 +141,9 @@
         GEO.clampView(view0, rect);
       }
       pinchStartMid = mid;
+    } else if(brushStroke && brushStroke.pointerId === e.pointerId){
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      paintAtClient(e.clientX, e.clientY);
     } else {
       var dxPx = e.clientX - prev.x, dyPx = e.clientY - prev.y;
       pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
@@ -129,6 +167,12 @@
   }
 
   function onPointerEnd(e){
+    if(brushStroke && brushStroke.pointerId === e.pointerId){
+      brushStroke = null; lastPaintCell = null;
+      delete pointers[e.pointerId];
+      if(Object.keys(pointers).length < 2){ pinchStartDist = null; pinchStartMid = null; }
+      return;
+    }
     var wasSingle = Object.keys(pointers).length === 1;
     if(tapCandidate && tapCandidate.pointerId === e.pointerId && !tapCandidate.moved && wasSingle){
       var now = performance.now();

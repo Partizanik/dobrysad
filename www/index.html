@@ -380,6 +380,11 @@
   .city-fab-secondary{position:absolute; bottom:10px; z-index:2; width:44px; height:44px; border-radius:999px; border:none; background:var(--surface); color:var(--ink); box-shadow:0 4px 10px -3px var(--shadow); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
   .city-fab-secondary svg{width:20px; height:20px;}
   .city-manage-fab{right:10px;}
+  /* ground-texture brush -- another small icon-only tool next to Manage, not given the same
+     labeled/colored treatment as Build/Decorate: those two are things every new player needs to
+     discover immediately, this is a secondary customization tool for players already comfortable
+     with the map. */
+  .city-ground-fab{right:62px;}
 
   /* building picker: its own fullscreen window (reuses .city-fullscreen), a grid of square image
      tiles -- real building art baked to a small canvas via CityAssets (no emoji), name below,
@@ -453,7 +458,14 @@
 
   /* banner shown over the full city view while a bought building is "in hand" waiting for a
      plot, or while an existing building has been picked up to be moved. */
-  .city-place-banner{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--gold-soft); border:1px solid var(--gold); border-radius:10px; padding:7px 10px; margin-bottom:6px; font-size:11px; font-weight:700; color:var(--gold-ink);}
+  /* min-height reserves room for 2 lines of banner text up front (at mount time, before any real
+     message is ever shown) instead of sizing to whatever the FIRST message happens to be. Without
+     this, a later message longer than every prior one (the ground-brush banner was the first to
+     wrap to 2 lines) grows the banner and steals that many px from #cityFullWrap's flex:1 height
+     -- ResizeObserver then sees the wrap shrink and re-fits the whole view to it, yanking the
+     player's current pan/zoom back to "whole field" right as they arm a tool. Reserving worst-case
+     height keeps #cityFullWrap's size constant no matter which banner text is showing. */
+  .city-place-banner{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--gold-soft); border:1px solid var(--gold); border-radius:10px; padding:7px 10px; margin-bottom:6px; font-size:11px; font-weight:700; color:var(--gold-ink); min-height:44px; box-sizing:border-box;}
   .city-place-cancel{border:none; background:none; color:var(--gold-ink); font-size:13px; cursor:pointer; flex-shrink:0;}
 
   .profile-btn-icon{width:16px; height:16px; display:block;}
@@ -1140,6 +1152,9 @@
           <button class="city-fab-secondary city-manage-fab" id="cityManageFab" title="">
             <svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
+          <button class="city-fab-secondary city-ground-fab" id="cityGroundFab" title="">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="11" height="6" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="8.5" y1="10" x2="8.5" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="6.5" y="15" width="4" height="5.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          </button>
         </div>
 
         <!-- Building picker -- its own fullscreen window, same pattern/placement as #cityFullModal
@@ -1168,6 +1183,21 @@
           <div class="build-full-hint" id="decorFullHint"></div>
           <div class="build-grid-wrap">
             <div class="build-grid" id="decorGrid"></div>
+          </div>
+        </div>
+
+        <!-- Ground-texture brush picker -- same tile-grid pattern again, but picking a tile here
+             doesn't place a single item: it arms a paint tool (pendingGroundBrush) that stays
+             active while the player drags a finger across the map (city-input.js), repainting
+             every free tile it crosses, until they cancel it from the place-banner. -->
+        <div class="city-fullscreen" id="groundFullModal">
+          <div class="city-full-head">
+            <h3 id="groundFullTitle"></h3>
+            <button class="city-full-back" id="groundFullClose"><span class="cfb-arrow" aria-hidden="true">←</span><span id="groundFullCloseLbl"></span></button>
+          </div>
+          <div class="build-full-hint" id="groundFullHint"></div>
+          <div class="build-grid-wrap">
+            <div class="build-grid" id="groundGrid"></div>
           </div>
         </div>
 
@@ -1291,6 +1321,10 @@
       manageFabLbl: 'Zarządzaj',
       manageFullTitle: 'Zarządzaj miastem',
       manageFullHint: 'Usuń dowolny budynek lub ozdobę ze swojego miasta.',
+      groundFabLbl: 'Nawierzchnia',
+      groundFullTitle: 'Wybierz nawierzchnię',
+      groundFullHint: 'Wybierz nawierzchnię, a potem przeciągnij palcem po mapie, aby ją namalować na dowolnej wolnej działce. Osobne narzędzie „trawa" usuwa malowanie.',
+      groundBrushBannerText: function(name){ return '🖌️ Malujesz: ' + name + ' — przeciągnij po mapie.'; },
       manageSectionBuildings: 'Budynki',
       manageSectionDecor: 'Ozdoby',
       manageRemoveBtn: 'Usuń',
@@ -1342,6 +1376,12 @@
         fountain: {name:'Fontanna'},
         crane: {name:'Dźwig portowy'},
         greengate: {name:'Zielona Brama'}
+      },
+      ground: {
+        cobble: {name:'Bruk'},
+        dirt: {name:'Ścieżka gruntowa'},
+        wood: {name:'Drewniany pomost'},
+        grass: {name:'Trawa (gumka)'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Otwórz', confirmNo:'Anuluj',
@@ -1452,7 +1492,8 @@
         newCity: function(n){ return '🎉 Nowe miasto #' + n + ' odblokowane!'; },
         decorPlaced: function(name){ return '🌳 Posadzono: ' + name + '.'; },
         decorRemoved: '🗑️ Ozdoba usunięta.',
-        buildingRemoved: function(name){ return '🗑️ Budynek usunięty' + (name ? (': ' + name) : '') + '.'; }
+        buildingRemoved: function(name){ return '🗑️ Budynek usunięty' + (name ? (': ' + name) : '') + '.'; },
+        groundBrushSelected: function(name){ return '🖌️ Wybrano: ' + name + ' — przeciągnij palcem po mapie, aby malować.'; }
       },
       shop: {
         catFree: 'Podlewanie — zdobywane wyłącznie za oglądanie reklam',
@@ -1550,6 +1591,10 @@
       manageFabLbl: 'Manage',
       manageFullTitle: 'Manage your city',
       manageFullHint: 'Remove any building or decoration from your city.',
+      groundFabLbl: 'Ground',
+      groundFullTitle: 'Choose a ground texture',
+      groundFullHint: 'Pick a texture, then drag your finger across the map to paint it onto any free tile. A separate "grass" tool clears painted ground back to plain grass.',
+      groundBrushBannerText: function(name){ return '🖌️ Painting: ' + name + ' — drag across the map.'; },
       manageSectionBuildings: 'Buildings',
       manageSectionDecor: 'Decorations',
       manageRemoveBtn: 'Remove',
@@ -1601,6 +1646,12 @@
         fountain: {name:'Fountain'},
         crane: {name:'Port crane'},
         greengate: {name:'Green Gate'}
+      },
+      ground: {
+        cobble: {name:'Cobblestone'},
+        dirt: {name:'Dirt path'},
+        wood: {name:'Wooden planks'},
+        grass: {name:'Grass (eraser)'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Unlock', confirmNo:'Cancel',
@@ -1711,7 +1762,8 @@
         newCity: function(n){ return '🎉 New city #' + n + ' unlocked!'; },
         decorPlaced: function(name){ return '🌳 Planted: ' + name + '.'; },
         decorRemoved: '🗑️ Decoration removed.',
-        buildingRemoved: function(name){ return '🗑️ Building removed' + (name ? (': ' + name) : '') + '.'; }
+        buildingRemoved: function(name){ return '🗑️ Building removed' + (name ? (': ' + name) : '') + '.'; },
+        groundBrushSelected: function(name){ return '🖌️ Selected: ' + name + ' — drag your finger across the map to paint.'; }
       },
       shop: {
         catFree: 'Watering — earned only by watching ads',
@@ -1813,6 +1865,10 @@
       manageFabLbl: 'Кіраваць',
       manageFullTitle: 'Кіраванне горадам',
       manageFullHint: 'Выдаліце любы будынак або ўпрыгожанне са свайго горада.',
+      groundFabLbl: 'Пакрыццё',
+      groundFullTitle: 'Абярыце пакрыццё',
+      groundFullHint: 'Абярыце пакрыццё, а потым правядзіце пальцам па карце, каб размаляваць любую вольную клетку. Асобны інструмент «трава» сцірае размалёўку назад да звычайнай травы.',
+      groundBrushBannerText: function(name){ return '🖌️ Малюеце: ' + name + ' — правядзіце па карце.'; },
       manageSectionBuildings: 'Будынкі',
       manageSectionDecor: 'Упрыгожанні',
       manageRemoveBtn: 'Выдаліць',
@@ -1864,6 +1920,12 @@
         fountain: {name:'Фантан'},
         crane: {name:'Партовы кран'},
         greengate: {name:'Зялёная Брама'}
+      },
+      ground: {
+        cobble: {name:'Брукаванка'},
+        dirt: {name:'Грунтовая сцежка'},
+        wood: {name:'Драўляны насціл'},
+        grass: {name:'Трава (ластык)'}
       },
       comboLabel: function(n){ return '🔥 Комба ×' + n; },
       confirmYes:'Адкрыць', confirmNo:'Скасаваць',
@@ -1974,7 +2036,8 @@
         newCity: function(n){ return '🎉 Новы горад #' + n + ' адкрыты!'; },
         decorPlaced: function(name){ return '🌳 Пасаджана: ' + name + '.'; },
         decorRemoved: '🗑️ Упрыгожанне выдалена.',
-        buildingRemoved: function(name){ return '🗑️ Будынак выдалены' + (name ? (': ' + name) : '') + '.'; }
+        buildingRemoved: function(name){ return '🗑️ Будынак выдалены' + (name ? (': ' + name) : '') + '.'; },
+        groundBrushSelected: function(name){ return '🖌️ Абрана: ' + name + ' — правядзіце пальцам па карце, каб маляваць.'; }
       },
       shop: {
         catFree: 'Паліванне — атрымліваецца толькі за прагляд рэкламы',
@@ -2264,9 +2327,20 @@
     {key:'greengate', icon:'🏛️', slot:'landmark_greengate_01'}
   ];
   var DECOR_BY_KEY = {}; DECOR.forEach(function(d){ DECOR_BY_KEY[d.key] = d; });
+  /* ---- ground-texture brush catalog: unlike DECOR these aren't placeable sprites, they're
+     textures painted directly onto the ground layer (see paintGroundAt below) -- 'grass' is the
+     odd one out, a dedicated eraser that clears a paint back to the default grass rather than a
+     texture of its own, kept in the same catalog so it shows up as a normal 4th tile in the picker
+     grid instead of needing a bespoke "eraser mode" UI. */
+  var GROUND_TEXTURES = [
+    {key:'cobble', icon:'🧱'},
+    {key:'dirt', icon:'🟫'},
+    {key:'wood', icon:'🪵'},
+    {key:'grass', icon:'🌱'}
+  ];
   // name:null means "no custom name yet" -- display falls back to the localized "Miasto N"/"City N"
   // (cityDisplayName below), so every existing/older city with no name keeps looking the same.
-  function makeCity(){ return {plots: new Array(CITY_PLOTS).fill(null), name: null, decor: []}; }
+  function makeCity(){ return {plots: new Array(CITY_PLOTS).fill(null), name: null, decor: [], groundPaint: {}}; }
   function cityDisplayName(idx){ var c = cities[idx]; return (c && c.name) ? c.name : T().cityCardName(idx+1); }
   function renameCity(idx, raw){
     var name = (raw || '').replace(/\s+/g,' ').trim().slice(0, 18);
@@ -2281,6 +2355,10 @@
   var liftedPlot = null; // {cityIdx, plotIdx} picked up for a move
   var pendingDecor = null; // decor key chosen from the decorate menu, waiting for a field-tile tap
   var liftedDecor = null; // {cityIdx, decorIdx} picked up for a move
+  /* ground-texture key ('cobble'/'dirt'/'wood') or 'grass' (eraser), armed via the ground-brush
+     picker -- see startGroundBrush's comment for why this one stays armed across many paints
+     instead of disarming after the first tile like pendingPlacement/pendingDecor do. */
+  var pendingGroundBrush = null;
   /* ---- free-placement field rules: is (col,row) a legal spot to build on right now? Single
      source of truth for both the actual placement mutation (onPlotTap below) and the renderer's
      green/red buildability tint (GameAPI.canBuildAt) — the highlight can never promise a tile
@@ -2374,6 +2452,41 @@
   }
   function canDecorAt(cityIdx, col, row, excludeDecorIdx){
     return decorDenyReason(cityIdx, col, row, excludeDecorIdx==null?-1:excludeDecorIdx) === null;
+  }
+  /* ---- ground-texture brush: paints cobblestone/dirt/wood onto any free field tile, or clears a
+     paint back to plain grass through the separate "grass" tool -- purely cosmetic, no cost. No
+     collision with decor (a bench can sit on painted ground exactly like on plain grass) and no
+     gap rule (unlike buildings) -- the only thing actually off-limits is a tile a building stands
+     on (all 4 footprint cells), since paint drawn there would just be hidden under the building
+     anyway, and it reappears on its own if that building is ever removed or moved away. */
+  function canPaintGroundAt(cityIdx, col, row){
+    var city = cities[cityIdx]; if(!city) return false;
+    if(!isFieldBuildableTile(col, row)) return false;
+    for(var i=0;i<city.plots.length;i++){
+      var p=city.plots[i]; if(!p) continue;
+      var cells = buildingFootprintCells(p.col, p.row);
+      for(var k=0;k<cells.length;k++){ if(cells[k].col===col && cells[k].row===row) return false; }
+    }
+    return true;
+  }
+  /* returns true only when this call actually changed something -- lets city-input.js's drag
+     handler skip the (cheap but non-zero) haptic/redraw-relevant work for every tile the finger
+     re-crosses without having moved to a genuinely new cell or texture. */
+  function paintGroundAt(cityIdx, col, row, texKey){
+    if(!canPaintGroundAt(cityIdx, col, row)) return false;
+    var city = cities[cityIdx];
+    city.groundPaint = city.groundPaint || {};
+    var k = col+','+row;
+    var already = city.groundPaint[k];
+    if(texKey === 'grass'){
+      if(already === undefined) return false;
+      delete city.groundPaint[k];
+    } else {
+      if(already === texKey) return false;
+      city.groundPaint[k] = texKey;
+    }
+    haptic('light');
+    return true;
   }
   function buildingCount(key){
     var n = 0;
@@ -2507,7 +2620,19 @@
           var decor = rawDecor.filter(function(d){
             return d && typeof d==='object' && DECOR_BY_KEY[d.key] && typeof d.col==='number' && typeof d.row==='number';
           }).map(function(d){ return {key:d.key, col:d.col, row:d.row}; });
-          return {plots:plots, name:nm, decor:decor};
+          // groundPaint didn't exist in older saves either -- same defensive re-validation as
+          // decor above: only well-formed "col,row" keys with a texture that's still in
+          // GROUND_TEXTURES survive ('grass' is never actually stored, see paintGroundAt, so a
+          // stray 'grass' entry from some future format change is dropped rather than kept).
+          var rawGroundPaint = (c && c.groundPaint && typeof c.groundPaint === 'object') ? c.groundPaint : {};
+          var groundPaint = {};
+          for(var gpKey in rawGroundPaint){
+            if(!Object.prototype.hasOwnProperty.call(rawGroundPaint, gpKey)) continue;
+            if(!/^-?\d+,-?\d+$/.test(gpKey)) continue;
+            var gpVal = rawGroundPaint[gpKey];
+            if(gpVal==='cobble' || gpVal==='dirt' || gpVal==='wood') groundPaint[gpKey] = gpVal;
+          }
+          return {plots:plots, name:nm, decor:decor, groundPaint:groundPaint};
         });
       } else if(s.townBuilt && typeof s.townBuilt==='object'){
         /* pre-plots save (townBuilt/townPeople/townRent) — line the old buildings up into
@@ -2617,8 +2742,9 @@
   var townTitle=$('townTitle'), townPeopleLine=$('townPeopleLine'), townFoodLine=$('townFoodLine');
   var cityBuildFab=$('cityBuildFab'), cityBuildFabLbl=$('cityBuildFabLbl');
   var buildFullModal=$('buildFullModal'), buildFullTitle=$('buildFullTitle'), buildFullClose=$('buildFullClose'), buildFullCloseLbl=$('buildFullCloseLbl'), buildFullHint=$('buildFullHint');
-  var cityDecorFab=$('cityDecorFab'), cityDecorFabLbl=$('cityDecorFabLbl'), cityManageFab=$('cityManageFab');
+  var cityDecorFab=$('cityDecorFab'), cityDecorFabLbl=$('cityDecorFabLbl'), cityManageFab=$('cityManageFab'), cityGroundFab=$('cityGroundFab');
   var decorFullModal=$('decorFullModal'), decorFullTitle=$('decorFullTitle'), decorFullClose=$('decorFullClose'), decorFullCloseLbl=$('decorFullCloseLbl'), decorFullHint=$('decorFullHint');
+  var groundFullModal=$('groundFullModal'), groundFullTitle=$('groundFullTitle'), groundFullClose=$('groundFullClose'), groundFullCloseLbl=$('groundFullCloseLbl'), groundFullHint=$('groundFullHint');
   var manageFullModal=$('manageFullModal'), manageFullTitle=$('manageFullTitle'), manageFullClose=$('manageFullClose'), manageFullCloseLbl=$('manageFullCloseLbl'), manageFullHint=$('manageFullHint');
   var manageSectionBuildingsLbl=$('manageSectionBuildingsLbl'), manageSectionDecorLbl=$('manageSectionDecorLbl'), manageBuildingList=$('manageBuildingList'), manageDecorList=$('manageDecorList'), manageEmptyHint=$('manageEmptyHint');
   var cityMapOpen=$('cityMapOpen'), cityHereLbl=$('cityHereLbl');
@@ -3227,7 +3353,7 @@
      never places it automatically: it hands the player a "held" building (pendingPlacement)
      that has to be dropped onto an empty plot on the city map — see onPlotTap below. ---- */
   function startPlacement(key){
-    pendingPlacement = key; liftedPlot = null;
+    pendingPlacement = key; liftedPlot = null; pendingGroundBrush = null;
     renderWarehouse();
     /* jump straight into the interactive city view so the just-bought building's plot is
        immediately visible to tap — buying and placing reads as one motion, not two separate
@@ -3312,7 +3438,7 @@
      pendingDecor/liftedDecor state, since decor has no cost/afford-check/rent to worry about. ---- */
   function startDecorPlacement(key){
     if(!DECOR_BY_KEY[key]) return;
-    pendingDecor = key; liftedDecor = null;
+    pendingDecor = key; liftedDecor = null; pendingGroundBrush = null;
     renderWarehouse();
     if(cityFullModal && !cityFullModal.classList.contains('show')) openCityFull();
     toast(T().toast.choosePlot(T().decor[key].name), 3200);
@@ -3320,6 +3446,26 @@
   function cancelDecorPlacement(){
     if(!pendingDecor) return;
     pendingDecor = null; renderCityMap(); renderWarehouse();
+  }
+  /* ---- ground-texture brush: same free/no-cost spirit as decor, but a fundamentally different
+     interaction -- painting a street or a whole plaza is one continuous multi-tile gesture
+     (possibly several separate strokes), not a single pick-a-spot tap, so unlike
+     pendingPlacement/pendingDecor this tool deliberately stays armed after every paint (see
+     GameAPI.paintGroundAt, called straight from city-input.js's drag handler on every tile the
+     finger crosses). It only disarms when the player explicitly cancels it from the place-banner's
+     ✕ (cancelGroundBrush) or arms a different tool (startPlacement/startDecorPlacement above both
+     clear it too, so only one tool is ever "in hand" at a time). */
+  function startGroundBrush(key){
+    var exists = GROUND_TEXTURES.some(function(g){ return g.key===key; });
+    if(!exists) return;
+    pendingGroundBrush = key; pendingPlacement = null; pendingDecor = null; liftedPlot = null; liftedDecor = null;
+    renderWarehouse();
+    if(cityFullModal && !cityFullModal.classList.contains('show')) openCityFull();
+    toast(T().toast.groundBrushSelected(T().ground[key].name), 3200);
+  }
+  function cancelGroundBrush(){
+    if(!pendingGroundBrush) return;
+    pendingGroundBrush = null; renderCityMap(); renderWarehouse();
   }
   function placeDecorAt(cityIdx, col, row, key){
     cities[cityIdx].decor = cities[cityIdx].decor || [];
@@ -3579,7 +3725,7 @@
   var CITY_NS = 'http://www.w3.org/2000/svg';
   function cityMapSignature(){
     return activeCityIdx+':'+pendingPlacement+':'+(liftedPlot?liftedPlot.cityIdx+'-'+liftedPlot.plotIdx:'')+':'+
-      pendingDecor+':'+(liftedDecor?liftedDecor.cityIdx+'-'+liftedDecor.decorIdx:'')+':'+
+      pendingDecor+':'+(liftedDecor?liftedDecor.cityIdx+'-'+liftedDecor.decorIdx:'')+':'+pendingGroundBrush+':'+
       cities.map(function(c){ return c.plots.map(function(p){ return p ? p.key+(p.rentUntil?(p.rentUntil>Date.now()?'1':'0'):''):'.'; }).join('')
         + '#' + (c.decor||[]).map(function(d){ return d.key+d.col+','+d.row; }).join(''); }).join('|');
   }
@@ -3792,6 +3938,11 @@
       cityPlaceBannerText.textContent = t.liftedDecorBannerText;
       cityPlaceCancelBtn.style.display = '';
       cityPlaceCancelBtn.onclick = function(){ liftedDecor=null; renderCityMap(); };
+    } else if(pendingGroundBrush){
+      cityPlaceBanner.style.visibility = 'visible'; cityPlaceBanner.style.pointerEvents = '';
+      cityPlaceBannerText.textContent = t.groundBrushBannerText(t.ground[pendingGroundBrush].name);
+      cityPlaceCancelBtn.style.display = '';
+      cityPlaceCancelBtn.onclick = cancelGroundBrush;
     } else {
       cityPlaceBanner.style.visibility = 'hidden'; cityPlaceBanner.style.pointerEvents = 'none';
     }
@@ -3850,10 +4001,16 @@
     buildFullHint.textContent = t.buildFullHint;
     if(cityDecorFabLbl) cityDecorFabLbl.textContent = t.decorFabLbl;
     if(cityManageFab) cityManageFab.title = t.manageFabLbl;
+    if(cityGroundFab) cityGroundFab.title = t.groundFabLbl;
     if(decorFullTitle){
       decorFullTitle.textContent = t.decorFullTitle;
       decorFullCloseLbl.textContent = t.cityFullBackBtn;
       decorFullHint.textContent = t.decorFullHint;
+    }
+    if(groundFullTitle){
+      groundFullTitle.textContent = t.groundFullTitle;
+      groundFullCloseLbl.textContent = t.cityFullBackBtn;
+      groundFullHint.textContent = t.groundFullHint;
     }
     if(manageFullTitle){
       manageFullTitle.textContent = t.manageFullTitle;
@@ -3863,6 +4020,7 @@
     renderCityMap();
     if(buildFullModal && buildFullModal.classList.contains('show')) renderBuildGrid();
     if(decorFullModal && decorFullModal.classList.contains('show')) renderDecorGrid();
+    if(groundFullModal && groundFullModal.classList.contains('show')) renderGroundGrid();
     if(manageFullModal && manageFullModal.classList.contains('show')) renderManageList();
   }
   /* ---- building picker: its own fullscreen window (see #buildFullModal above), showing every
@@ -3977,6 +4135,46 @@
   function closeDecorFull(){ decorFullModal.classList.remove('show'); }
   cityDecorFab.addEventListener('click', openDecorFull);
   decorFullClose.addEventListener('click', function(){ closeDecorFull(); sfx('click'); });
+
+  /* ---- ground-texture brush picker: same tile-grid pattern once more, but the thumbnails are
+     rendered straight from CityAssets' procedural ground-tile draw functions (drawGroundPaintTile/
+     drawPlotGroundTile) instead of blitting a baked sprite -- these aren't placeable objects with
+     their own slot in the asset manifest, they're the same flat tile textures the ground layer
+     itself draws, just sampled once into a small canvas here. Selecting a tile arms the brush
+     (startGroundBrush) rather than placing anything immediately. */
+  var lastGroundGridSig = null;
+  function renderGroundGrid(){
+    var gridEl = $('groundGrid'); if(!gridEl) return;
+    var sig = LANG+':'+(!!pendingGroundBrush);
+    if(sig === lastGroundGridSig) return;
+    lastGroundGridSig = sig;
+    gridEl.innerHTML = '';
+    var t = T();
+    var holding = !!pendingGroundBrush;
+    var Assets = window.CityAssets;
+    GROUND_TEXTURES.forEach(function(def){
+      var gt = t.ground[def.key];
+      var tile = document.createElement('button');
+      tile.className = 'bg-tile'; tile.disabled = holding; tile.title = gt.name;
+      tile.innerHTML = '<span class="bg-thumb-wrap"><canvas class="bg-thumb" width="150" height="150"></canvas></span>'+
+        '<span class="bg-name">'+def.icon+' '+gt.name+'</span>';
+      gridEl.appendChild(tile);
+      if(Assets){
+        var cv = tile.querySelector('canvas'), cctx = cv.getContext('2d');
+        var tw = cv.width*0.92, th = tw*0.5;
+        if(def.key==='grass') Assets.drawPlotGroundTile(cctx, cv.width/2, cv.height/2, tw, th, 7);
+        else Assets.drawGroundPaintTile(cctx, cv.width/2, cv.height/2, tw, th, 7, def.key);
+      }
+      tile.addEventListener('click', function(k){ return function(){
+        startGroundBrush(k);
+        closeGroundFull();
+      }; }(def.key));
+    });
+  }
+  function openGroundFull(){ groundFullModal.classList.add('show'); renderGroundGrid(); sfx('click'); }
+  function closeGroundFull(){ groundFullModal.classList.remove('show'); }
+  if(cityGroundFab) cityGroundFab.addEventListener('click', openGroundFull);
+  if(groundFullClose) groundFullClose.addEventListener('click', function(){ closeGroundFull(); sfx('click'); });
 
   /* ---- manage/remove: a plain list of every building and decoration currently placed in the
      active city, each with its own remove button -- the dedicated delete function the map's
@@ -4838,6 +5036,19 @@
     canDecorAt: function(cityIdx, col, row){
       var excludeIdx = (liftedDecor && liftedDecor.cityIdx===cityIdx) ? liftedDecor.decorIdx : -1;
       return canDecorAt(cityIdx, col, row, excludeIdx);
+    },
+    getGroundCatalog: function(){ return GROUND_TEXTURES; },
+    getGroundDisplay: function(key){ var t = T(); return t.ground[key] || {name:key}; },
+    getPendingGroundBrush: function(){ return pendingGroundBrush; },
+    canPaintGroundAt: function(cityIdx, col, row){ return canPaintGroundAt(cityIdx, col, row); },
+    // the one mutation entry point city-input.js's drag handler calls, straight from
+    // onPointerDown/onPointerMove -- mirrors tapPlot's role for the ground brush specifically,
+    // deliberately NOT going through onPlotTap (which always disarms pendingPlacement/pendingDecor
+    // after a single hit -- the brush must not disarm itself after every tile of a drag). A no-op,
+    // not an error, when no brush is actually armed (e.g. a stray call after cancelGroundBrush).
+    paintGroundAt: function(cityIdx, col, row){
+      if(!pendingGroundBrush) return false;
+      return paintGroundAt(cityIdx, col, row, pendingGroundBrush);
     },
     tapPlot: function(cityIdx, col, row){ onPlotTap(cityIdx, col, row); },
     movePlot: movePlot,

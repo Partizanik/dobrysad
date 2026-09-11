@@ -148,6 +148,10 @@
         cells.forEach(function(cc){ occupied[cc.col+','+cc.row] = true; });
       });
     }
+    // player-painted ground textures (cobblestone/dirt/wood) -- a sparse {"col,row":key} map read
+    // fresh off the live city object every frame, same as `occupied` above, since a drag-paint
+    // stroke can add entries mid-frame-loop and the very next frame should already show them.
+    var groundPaint = (cityNow && cityNow.groundPaint) || {};
     for(var row = range.r0; row <= range.r1; row++){
       for(var col = range.c0; col <= range.c1; col++){
         var type = GEO.tileTypeAt(L, col, row);
@@ -155,8 +159,10 @@
         var p = GEO.isoToContent(L, col, row);
         if(type === 'water'){ Assets.drawWaterTile(c, p.x, p.y, TW, TH, col*7+row*13); continue; }
         if(type === 'promenade'){ Assets.drawPromenadeTile(c, p.x, p.y, TW, TH); continue; }
+        var paintKey = groundPaint[col+','+row];
         var isRoad = !!roads[col+','+row];
-        if(isRoad) Assets.drawRoadTile(c, p.x, p.y, TW, TH, col*31+row*17+1);
+        if(paintKey) Assets.drawGroundPaintTile(c, p.x, p.y, TW, TH, col*31+row*17+1, paintKey);
+        else if(isRoad) Assets.drawRoadTile(c, p.x, p.y, TW, TH, col*31+row*17+1);
         else Assets.drawPlotGroundTile(c, p.x, p.y, TW, TH, col*31+row*17+1);
         if(!isRoad && occupied[col+','+row]) Assets.drawBuildingPad(c, p.x, p.y, TW, TH);
         if(tinting && !isRoad){

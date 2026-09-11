@@ -868,6 +868,98 @@
     else drawFromCache(ctx, baked, anchorX, anchorY);
   }
 
+  /* ---- ground-texture brush tiles: cobblestone/dirt/wood, all drawn procedurally (never from a
+     source photo) -- the 3 pieces of purchased reference art for these textures (cobblestone_01,
+     dirt_path_01, wood_planks_01) each turned out to be a complete finished "composition" (a fan
+     of cobbles radiating from one corner, a directional dirt path with grass verges on both
+     sides, floorboards with fixed seam positions) rather than a uniform tileable pattern, so
+     repeating any of them edge-to-edge across a painted area would show an obvious seam/repeat at
+     every tile boundary (the exact problem item 6's grass-tile treatment solved for real photo
+     tiles, but there's no uniform crop to extract from a directional path or a from-the-corner
+     fan). Drawing these from scratch, seeded per-tile exactly like drawRoadTile/drawPlotGroundTile
+     above, sidesteps the seam problem entirely -- neighbouring tiles never repeat identically, and
+     there's no "wrong" crop to worry about. */
+  function drawCobbleGroundTile(ctx, cx, cy, tw, th, seed){
+    var rnd = mulberry32((seed||1)*2246822519 >>> 0);
+    var base = ctx.createLinearGradient(cx, cy-th/2, cx, cy+th/2);
+    base.addColorStop(0, '#c9a06a'); base.addColorStop(1, '#a97f4f');
+    ctx.fillStyle = base; diamondPath(ctx, cx, cy, tw*1.02, th*1.02); ctx.fill();
+    // scattered rounded cobblestones in a loose grid (each nudged/tinted randomly so the grid
+    // itself doesn't read as a regular pattern), with a thin mortar-line stroke around each
+    var tones = ['#dab88a', '#c9a06a', '#b8905a', '#e6cfa4'];
+    var cols = 6, rows = 4;
+    for(var gy=0; gy<rows; gy++){
+      for(var gx=0; gx<cols; gx++){
+        var u = (gx+0.5)/cols - 0.5, v = (gy+0.5)/rows - 0.5;
+        var jitterX = (rnd()-0.5)*tw*0.05, jitterY = (rnd()-0.5)*th*0.06;
+        var px = cx + u*tw*0.92 + jitterX, py = cy + v*th*0.92 + jitterY;
+        var rw = tw*(0.065+rnd()*0.02), rh = th*(0.09+rnd()*0.03);
+        ctx.fillStyle = tones[Math.floor(rnd()*tones.length)];
+        ctx.beginPath(); ctx.ellipse(px, py, rw, rh, 0, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = 'rgba(90,66,38,0.35)'; ctx.lineWidth = Math.max(1, tw*0.006);
+        ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = 'rgba(80,58,32,0.3)'; ctx.lineWidth = Math.max(1, tw*0.01);
+    diamondPath(ctx, cx, cy, tw*0.97, th*0.97); ctx.stroke();
+  }
+  function drawDirtGroundTile(ctx, cx, cy, tw, th, seed){
+    var rnd = mulberry32((seed||1)*3266489917 >>> 0);
+    var g = ctx.createLinearGradient(cx, cy-th/2, cx, cy+th/2);
+    g.addColorStop(0, '#a9784a'); g.addColorStop(1, '#8a5e37');
+    ctx.fillStyle = g; diamondPath(ctx, cx, cy, tw*1.02, th*1.02); ctx.fill();
+    // loose cracked-earth speckling, darker and lighter patches mixed, plus a handful of small
+    // pebbles -- a uniform "raw dirt" fill, unlike drawRoadTile's packed-gravel worn-track look
+    for(var i=0;i<12;i++){
+      var px = cx + (rnd()-0.5)*tw*0.84, py = cy + (rnd()-0.5)*th*0.84;
+      var r = tw*(0.012+rnd()*0.02);
+      ctx.fillStyle = rnd() < 0.5 ? 'rgba(60,40,20,0.32)' : 'rgba(205,175,125,0.35)';
+      ctx.beginPath(); ctx.ellipse(px, py, r, r*0.7, 0, 0, Math.PI*2); ctx.fill();
+    }
+    for(var j=0;j<4;j++){
+      var qx = cx + (rnd()-0.5)*tw*0.7, qy = cy + (rnd()-0.5)*th*0.7;
+      ctx.fillStyle = '#cdbb9c';
+      ctx.beginPath(); ctx.ellipse(qx, qy, tw*0.018, th*0.026, 0, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(70,48,26,0.3)'; ctx.lineWidth = Math.max(1, tw*0.01);
+    diamondPath(ctx, cx, cy, tw*0.97, th*0.97); ctx.stroke();
+  }
+  function drawWoodGroundTile(ctx, cx, cy, tw, th, seed){
+    var rnd = mulberry32((seed||1)*2654435789 >>> 0);
+    ctx.save();
+    diamondPath(ctx, cx, cy, tw*1.02, th*1.02); ctx.clip();
+    var base = ctx.createLinearGradient(cx-tw/2, cy, cx+tw/2, cy);
+    base.addColorStop(0, '#b98a54'); base.addColorStop(0.5, '#a97b48'); base.addColorStop(1, '#9c6d3d');
+    ctx.fillStyle = base; ctx.fillRect(cx-tw/2, cy-th/2, tw, th);
+    // plank seams running across the tile, seeded per-tile so a painted boardwalk doesn't show
+    // the exact same seam spacing on every tile
+    var planks = 5;
+    ctx.strokeStyle = 'rgba(70,46,22,0.45)'; ctx.lineWidth = Math.max(1, tw*0.012);
+    for(var i=1;i<planks;i++){
+      var t = i/planks + (rnd()-0.5)*0.03;
+      var x = cx - tw/2 + t*tw;
+      ctx.beginPath(); ctx.moveTo(x, cy-th/2); ctx.lineTo(x, cy+th/2); ctx.stroke();
+    }
+    // grain speckles along the boards
+    for(var k=0;k<8;k++){
+      var px = cx + (rnd()-0.5)*tw*0.8, py = cy + (rnd()-0.5)*th*0.8;
+      ctx.fillStyle = 'rgba(70,46,22,0.25)';
+      ctx.beginPath(); ctx.ellipse(px, py, tw*0.012, th*0.05, Math.PI/2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(60,40,20,0.35)'; ctx.lineWidth = Math.max(1, tw*0.01);
+    diamondPath(ctx, cx, cy, tw*0.97, th*0.97); ctx.stroke();
+  }
+  var GROUND_PAINT_DRAWERS = { cobble: drawCobbleGroundTile, dirt: drawDirtGroundTile, wood: drawWoodGroundTile };
+  // dispatcher city-renderer.js's ground pass calls for any painted tile -- an unrecognized key
+  // (e.g. a 'grass' that shouldn't be stored at all, see index.html's paintGroundAt) just falls
+  // back to plain grass rather than drawing nothing.
+  function drawGroundPaintTile(ctx, cx, cy, tw, th, seed, key){
+    var fn = GROUND_PAINT_DRAWERS[key];
+    if(fn) fn(ctx, cx, cy, tw, th, seed);
+    else drawPlotGroundTile(ctx, cx, cy, tw, th, seed);
+  }
+
   global.CityAssets = {
     PALETTE: PALETTE,
     MANIFEST: ASSET_MANIFEST,
@@ -886,6 +978,7 @@
     drawWaterTile: drawWaterTile,
     drawPromenadeTile: drawPromenadeTile,
     drawPlotGroundTile: drawPlotGroundTile,
+    drawGroundPaintTile: drawGroundPaintTile,
     drawBuildingPad: drawBuildingPad,
     drawBuildTint: drawBuildTint,
     seededRandom: mulberry32
