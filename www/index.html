@@ -2187,7 +2187,11 @@
      every (FIELD_MIN_GAP+1) tiles along each axis -- this is the honest "how many charity
      buildings actually fit here" number the city list/fullscreen header show as X/CITY_PLOTS,
      replacing the old fixed 30-slot cap that had nothing to do with the field's real size. */
-  var FIELD_PACK_STEP = FIELD_MIN_GAP + 1;
+  // item 9: a building is now a 2x2 footprint (see buildingFootprintCells below), not 1 tile, so
+  // the densest legal packing places one building every (2 + FIELD_MIN_GAP) tiles along each
+  // axis, not (1 + FIELD_MIN_GAP) -- keeps the "X/CITY_PLOTS" capacity label an honest estimate
+  // of how many buildings actually fit, same spirit as before this change.
+  var FIELD_PACK_STEP = 2 + FIELD_MIN_GAP;
   var CITY_PLOTS = Math.ceil(FIELD_COLS/FIELD_PACK_STEP) * Math.ceil(FIELD_LAND_ROWS/FIELD_PACK_STEP);
   var BUILDING_BY_KEY = {}; BUILDINGS.forEach(function(b){ BUILDING_BY_KEY[b.key] = b; });
   /* ---- city decorations: trees/bushes the player places themselves, free of charge (no
@@ -2234,26 +2238,57 @@
     var dx = (col-FIELD_ELLIPSE_CX)/FIELD_ELLIPSE_RX, dy = (row-FIELD_ELLIPSE_CY)/FIELD_ELLIPSE_RY;
     return (dx*dx + dy*dy) <= 1;
   }
+  /* ---- item 9: a building now occupies a 2x2 footprint, not 1 tile -- the stored {col,row} is
+     the FRONT corner (the corner nearest the viewer, i.e. the one with the largest col+row), and
+     the other 3 cells are the ones behind/beside it (col-1,row / col,row-1 / col-1,row-1). This
+     corner was chosen because it's also the sprite's own ground-contact point: with anchor:
+     'bottom-center', a 1x1 tile's own bottom point IS the overall 2x2 diamond's frontmost/
+     bottommost point too (each tile's screen position is its own diamond's CENTER, so a 2x2
+     block's outer diamond is exactly double the width/height of a single tile's, centered so its
+     front corner coincides with the front tile's own front corner) -- see assets.js's
+     BUILDING_FOOTPRINT_SCALE comment. That's why doubling the baked sprite size (done there) is
+     the only rendering change needed: anchorAt/depthAt in city-geometry.js still just take the
+     single stored (col,row) and need no awareness of the other 3 cells at all. Collision is the
+     one place that DOES need to know about them. */
+  var BUILDING_FOOTPRINT_CELLS = [{dc:0,dr:0}, {dc:-1,dr:0}, {dc:0,dr:-1}, {dc:-1,dr:-1}];
+  function buildingFootprintCells(col, row){
+    return BUILDING_FOOTPRINT_CELLS.map(function(o){ return {col:col+o.dc, row:row+o.dr}; });
+  }
   function findPlotAt(city, col, row){
-    for(var i=0;i<city.plots.length;i++){ var p=city.plots[i]; if(p && p.col===col && p.row===row) return i; }
+    for(var i=0;i<city.plots.length;i++){
+      var p=city.plots[i]; if(!p) continue;
+      var cells = buildingFootprintCells(p.col, p.row);
+      for(var k=0;k<cells.length;k++){ if(cells[k].col===col && cells[k].row===row) return i; }
+    }
     return -1;
   }
   function placementDenyReason(cityIdx, col, row, excludeSlotIdx){
     var city = cities[cityIdx]; if(!city) return 'outOfBounds';
-    if(!isFieldBuildableTile(col, row)) return 'outOfBounds';
+    var myCells = buildingFootprintCells(col, row);
+    for(var c=0;c<myCells.length;c++){ if(!isFieldBuildableTile(myCells[c].col, myCells[c].row)) return 'outOfBounds'; }
     for(var i=0;i<city.plots.length;i++){
       if(i===excludeSlotIdx) continue;
       var p = city.plots[i]; if(!p) continue;
-      var dist = Math.max(Math.abs(p.col-col), Math.abs(p.row-row));
-      if(dist === 0) return 'occupied';
-      if(dist <= FIELD_MIN_GAP) return 'tooClose';
+      var theirCells = buildingFootprintCells(p.col, p.row);
+      // Chebyshev distance between the two 2x2 footprints = the smallest distance between any
+      // pair of their cells (generalizes the old single-point dist check to sets of 4 cells).
+      var minDist = Infinity;
+      for(var a=0;a<myCells.length;a++){
+        for(var b=0;b<theirCells.length;b++){
+          var d = Math.max(Math.abs(myCells[a].col-theirCells[b].col), Math.abs(myCells[a].row-theirCells[b].row));
+          if(d<minDist) minDist = d;
+        }
+      }
+      if(minDist === 0) return 'occupied';
+      if(minDist <= FIELD_MIN_GAP) return 'tooClose';
     }
-    // a tree/bush sitting exactly on the tile is also a hard block (two sprites stacked on one
-    // tile would just draw on top of each other) -- no gap requirement against decor, though,
-    // only against other buildings, so a building can still go right up next to a tree.
+    // a tree/bush sitting on any of the 4 footprint tiles is also a hard block (two sprites
+    // stacked on one spot would just draw on top of each other) -- no gap requirement against
+    // decor, though, only against other buildings, so a building can still go right up next to a
+    // tree that isn't actually under its footprint.
     for(var j=0;j<(city.decor||[]).length;j++){
       var dd = city.decor[j];
-      if(dd.col===col && dd.row===row) return 'occupied';
+      for(var m=0;m<myCells.length;m++){ if(myCells[m].col===dd.col && myCells[m].row===dd.row) return 'occupied'; }
     }
     return null;
   }
@@ -2262,7 +2297,8 @@
   }
   /* ---- same rules for decor (trees/bushes), except there's no FIELD_MIN_GAP requirement between
      decor items or between decor and buildings -- a hedge/treeline planted tile-to-tile is exactly
-     the point, only the exact same tile is off-limits (can't stack two sprites on one spot). */
+     the point, only a tile actually occupied (by another decor item, or by any of a building's 4
+     footprint cells) is off-limits. */
   function findDecorAt(city, col, row){
     var arr = city.decor||[];
     for(var i=0;i<arr.length;i++){ if(arr[i].col===col && arr[i].row===row) return i; }
@@ -2271,7 +2307,11 @@
   function decorDenyReason(cityIdx, col, row, excludeDecorIdx){
     var city = cities[cityIdx]; if(!city) return 'outOfBounds';
     if(!isFieldBuildableTile(col, row)) return 'outOfBounds';
-    for(var i=0;i<city.plots.length;i++){ var p=city.plots[i]; if(p && p.col===col && p.row===row) return 'occupied'; }
+    for(var i=0;i<city.plots.length;i++){
+      var p=city.plots[i]; if(!p) continue;
+      var cells = buildingFootprintCells(p.col, p.row);
+      for(var k=0;k<cells.length;k++){ if(cells[k].col===col && cells[k].row===row) return 'occupied'; }
+    }
     var arr = city.decor||[];
     for(var j=0;j<arr.length;j++){
       if(j===excludeDecorIdx) continue;
@@ -4733,6 +4773,10 @@
       var excludeIdx = (liftedPlot && liftedPlot.cityIdx===cityIdx) ? liftedPlot.plotIdx : -1;
       return canBuildAt(cityIdx, col, row, excludeIdx);
     },
+    // item 9: a building's 4 grid cells (the stored col/row is just the front corner) -- used by
+    // the renderer to mark the ground under all 4 tiles, not only the front one, as "has a
+    // building on it" (drawBuildingPad).
+    getBuildingFootprintCells: function(col, row){ return buildingFootprintCells(col, row); },
     getDecorCatalog: function(){ return DECOR; },
     getDecorDef: function(key){ return DECOR_BY_KEY[key] || null; },
     getDecorDisplay: function(key){ var t = T(); return t.decor[key] || {name:key}; },

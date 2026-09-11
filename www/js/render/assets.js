@@ -510,6 +510,16 @@
     seagull_02: { category:'sky', anchor:'center', size:{w:20, h:12}, draw:function(ctx,w,h){ drawSeagull(ctx,w,h,{flap:-0.4}); } }
   };
 
+  // item 9: these procedural drawIsoBox placeholders are the pre-real-art fallback for the
+  // 'building' category (dead path today -- every catalog key already resolves to real art via
+  // REAL_ART_SLOT/NAMED_CHARITY_SLOT below -- but kept correct in case a future building type
+  // ships without bespoke art yet). Doubled in step with REAL_ART_SIZES so a fallback building
+  // still reads as the same 2x2 footprint size as every real one, not a mismatched 1x1.
+  Object.keys(ASSET_MANIFEST).forEach(function(k){
+    var e = ASSET_MANIFEST[k];
+    if(e.category === 'building'){ e.size = {w: e.size.w*2, h: e.size.h*2}; }
+  });
+
   /* ---- real hand-painted buildings (purchased asset pack) ------------------------------------
      Drop-in raster art for the 13 catalog buildings, replacing the procedural drawIsoBox for
      these slots. Confirmed via pixel measurement (well/fence ellipse ratio ~2:1) that the pack's
@@ -668,6 +678,21 @@
     real_weaponsmith_01:{w:77.0,h:68.2}, real_weaponsmith_02:{w:72.5,h:57.4},
     real_flowershop_01:{w:73.9,h:77.7}, real_flowershop_02:{w:72.5,h:66.0}
   };
+
+  /* ---- item 9: buildings occupy a 2x2 footprint on the grid now (see placementDenyReason/
+     buildingFootprintCells in index.html), not 1 tile. The anchor point stays the SAME single
+     (col,row) tap point -- it's the FRONT corner of the 2x2 block, and since every tile's own
+     center-to-center spacing already equals TW/TH, a 2x2 footprint's overall diamond is exactly
+     2x as wide and 2x as tall as a 1x1 one, with its frontmost/bottom point unchanged (see the
+     placement-logic comment for the geometry). So the only rendering change a 2x2 footprint
+     needs is doubling the sprite's own on-screen size -- anchor math, depth-sort, everything
+     else in city-renderer.js/city-geometry.js is untouched. People/animals/decor are NOT sized
+     relative to buildings (their sizes are separate fixed entries above/below), so this scale-up
+     does not drag them along -- that was the whole point of the ask (house grows, people don't). */
+  var BUILDING_FOOTPRINT_SCALE = 2;
+  Object.keys(REAL_ART_SIZES).forEach(function(k){
+    REAL_ART_SIZES[k] = { w: REAL_ART_SIZES[k].w * BUILDING_FOOTPRINT_SCALE, h: REAL_ART_SIZES[k].h * BUILDING_FOOTPRINT_SCALE };
+  });
 
   realBuildingSlot('real_cottage_01', 'cottage_01.png', accentHeart);
   realBuildingSlot('real_cottage_04', 'cottage_04.png', accentHeart);

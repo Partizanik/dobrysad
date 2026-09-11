@@ -142,7 +142,14 @@
     var citiesNow = GameAPI.getCities();
     var cityNow = citiesNow && citiesNow[activeIdx];
     if(cityNow){
-      cityNow.plots.forEach(function(plot){ if(plot) occupied[plot.col+','+plot.row] = true; });
+      cityNow.plots.forEach(function(plot){
+        if(!plot) return;
+        // item 9: a building covers a 2x2 footprint now, not just its stored front-corner tile --
+        // mark all 4 cells so the ground pad renders under the whole building, not only its front
+        // quarter.
+        var cells = GameAPI.getBuildingFootprintCells ? GameAPI.getBuildingFootprintCells(plot.col, plot.row) : [{col:plot.col,row:plot.row}];
+        cells.forEach(function(cc){ occupied[cc.col+','+cc.row] = true; });
+      });
     }
     for(var row = range.r0; row <= range.r1; row++){
       for(var col = range.c0; col <= range.c1; col++){
