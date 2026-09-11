@@ -28,10 +28,18 @@
   // real painted people (see assets.js's realImageSlot calls) replacing the old flat-colour
   // npc_01..05 placeholders -- this was the original "people don't match the building art style"
   // complaint, now fixed with actual period-costumed figures instead of solid-colour blobs.
+  //
+  // item 10: npc_vendor_01/npc_newsboy_01/npc_fisherman_01 used to wander the street graph like
+  // everyone else, which never made sense for a vendor -- their art already shows them standing
+  // still next to their cart/stall/dock (the flower cart, the newspaper bundle, the fishing nets
+  // and basket), so a walking vendor looked like it had abandoned its goods mid-stroll. They're
+  // now placed by the player as static decor instead (see DECOR in index.html, same slots reused
+  // verbatim -- Assets.blit doesn't care whether a slot's category says 'npc' or 'decor'), same as
+  // a bench or a lamppost: dropped once, stays put. Removing them here is the whole fix; no assets
+  // were deleted, just no longer picked by spawn()/ensureWalkers().
   var NPC_SLOTS = [
     'npc_woman_fancy_01', 'npc_woman_peasant_01', 'npc_man_suit_01', 'npc_man_worker_01',
-    'npc_elder_man_01', 'npc_elder_woman_01', 'npc_mother_pram_01', 'npc_mother_pram_02',
-    'npc_vendor_01', 'npc_newsboy_01', 'npc_fisherman_01'
+    'npc_elder_man_01', 'npc_elder_woman_01', 'npc_mother_pram_01', 'npc_mother_pram_02'
   ];
   // the horse-drawn cart replaces the flat-colour car_XX slots on the street for the same reason --
   // no era-appropriate car art exists yet (the one Model-T-style generation that came back didn't

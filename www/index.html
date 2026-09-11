@@ -1320,7 +1320,10 @@
         tree_poplar: {name:'Topola'},
         tree_willow: {name:'Wierzba'},
         tree_spruce: {name:'Świerk'},
-        bush: {name:'Krzew'}
+        bush: {name:'Krzew'},
+        flower_vendor: {name:'Kwiaciarz z wózkiem'},
+        newsboy: {name:'Gazeciarz'},
+        fisherman: {name:'Rybak'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Otwórz', confirmNo:'Anuluj',
@@ -1571,7 +1574,10 @@
         tree_poplar: {name:'Poplar'},
         tree_willow: {name:'Willow'},
         tree_spruce: {name:'Spruce'},
-        bush: {name:'Bush'}
+        bush: {name:'Bush'},
+        flower_vendor: {name:'Flower vendor cart'},
+        newsboy: {name:'Newsboy'},
+        fisherman: {name:'Fisherman'}
       },
       comboLabel: function(n){ return '🔥 Combo ×' + n; },
       confirmYes:'Unlock', confirmNo:'Cancel',
@@ -1826,7 +1832,10 @@
         tree_poplar: {name:'Таполя'},
         tree_willow: {name:'Вярба'},
         tree_spruce: {name:'Ель'},
-        bush: {name:'Куст'}
+        bush: {name:'Куст'},
+        flower_vendor: {name:'Кветачніца з вазком'},
+        newsboy: {name:'Газетчык'},
+        fisherman: {name:'Рыбак'}
       },
       comboLabel: function(n){ return '🔥 Комба ×' + n; },
       confirmYes:'Адкрыць', confirmNo:'Скасаваць',
@@ -2208,7 +2217,13 @@
     {key:'tree_poplar', icon:'🌳', slot:'tree_poplar_01'},
     {key:'tree_willow', icon:'🌳', slot:'tree_willow_01'},
     {key:'tree_spruce', icon:'🌲', slot:'tree_spruce_01'},
-    {key:'bush', icon:'🌿', slot:'tree_shrub_01'}
+    {key:'bush', icon:'🌿', slot:'tree_shrub_01'},
+    /* item 10: these three used to be walking street NPCs (npc.js's NPC_SLOTS) -- their art
+       already shows them standing still with their cart/stall/dock, so they're now placed by the
+       player as static decor instead, same slots, same UX as any other decor item below. */
+    {key:'flower_vendor', icon:'💐', slot:'npc_vendor_01'},
+    {key:'newsboy', icon:'📰', slot:'npc_newsboy_01'},
+    {key:'fisherman', icon:'🎣', slot:'npc_fisherman_01'}
   ];
   var DECOR_BY_KEY = {}; DECOR.forEach(function(d){ DECOR_BY_KEY[d.key] = d; });
   // name:null means "no custom name yet" -- display falls back to the localized "Miasto N"/"City N"
