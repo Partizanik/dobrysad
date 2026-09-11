@@ -1,4 +1,5 @@
 node_modules/
+www/assets_backup_orig/
 android/app/build/
 android/build/
 android/.gradle/
