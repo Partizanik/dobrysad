@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="js/good-economy.js"></script>
+<script src="js/simple-city.js"></script>
 <script>
   /* runs synchronously, before first paint, so there's no flash of the desktop marketing
      layout before the real app switches to full-screen.
@@ -2766,7 +2767,7 @@
         gardens:serializeGardens(),
         warehouse:warehouse, warehouseCap:warehouseCap,
         inventory:inventory, activeBoosts:activeBoosts, boughtSeeds:boughtSeeds,
-        cities:cities, activeCityIdx:activeCityIdx, cityFed:cityFed,
+        cities:cities, activeCityIdx:activeCityIdx, cityFed:cityFed, simpleCity:window.SimpleCity.serialize(),
         votes:votes, votedAlready:votedAlready, skins:skins, tutorialShown:tutorialShown,
         playerNick:playerNick, authProvider:authProvider, adsWatched:adsWatched,
         lastSeenAt: Date.now()
@@ -2871,6 +2872,7 @@
       if(!cities.length) cities = [makeCity()];
       if(typeof s.activeCityIdx === 'number' && cities[s.activeCityIdx]) activeCityIdx = s.activeCityIdx;
       if(typeof s.cityFed === 'boolean') cityFed = s.cityFed;
+      if(s.simpleCity) window.SimpleCity.load(s.simpleCity);
       if(typeof s.adsWatched === 'number') adsWatched = s.adsWatched;
       if(s.votes && typeof s.votes==='object') votes = s.votes;
       if(typeof s.votedAlready === 'boolean') votedAlready = s.votedAlready;
@@ -3064,6 +3066,9 @@
      as soon as both resources are available again. */
   function tickBuildingEconomy(){
     var result = window.DobrySadEconomy.tickBuildings(cities, warehouse, BUILDING_BY_KEY, Date.now());
+    var simpleResult = window.SimpleCity.tick(warehouse, Date.now());
+    result.produced += simpleResult.produced;
+    result.hasPausedBuilding = result.hasPausedBuilding || simpleResult.hasPausedBuilding;
     cityFed = !result.hasPausedBuilding;
     return result.produced;
   }
@@ -4737,6 +4742,14 @@
     startCityAmbience();
   }
   cityMapOpen.addEventListener('click', function(){
+    if(window.SimpleCity){
+      window.SimpleCity.open({
+        getWarehouse:function(){ return warehouse; },
+        onChanged:function(){ saveGame(); renderWarehouse(); }
+      });
+      sfx('click');
+      return;
+    }
     activeCityIdx = activeCityIdx || 0; liftedPlot=null; pendingPlacement=null; liftedDecor=null; pendingDecor=null; lastCityMapSig=null;
     openCityFull(); sfx('click');
   });

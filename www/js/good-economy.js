@@ -25,7 +25,7 @@
   function buildingDefaults(definition){
     var people = numberOrZero(definition && definition.people);
     return {
-      materialCost: Object.assign({}, (definition && definition.cost) || {}),
+      materialCost: Object.assign({}, (definition && (definition.materialCost || definition.cost)) || {}),
       foodConsumption: people ? people * 0.03 : 0.03,
       waterConsumption: people ? people * 0.02 : 0.02,
       goodProduction: people ? people * 0.4 : 0.4,
