@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="js/good-economy.js"></script>
 <script>
   /* runs synchronously, before first paint, so there's no flash of the desktop marketing
      layout before the real app switches to full-screen.
@@ -761,10 +762,6 @@
     <symbol id="ic-mat-nails" viewBox="0 0 24 24">
       <rect x="10.3" y="6" width="3.4" height="2.2" rx=".6" fill="#9aa0a6"/>
       <rect x="11.2" y="8" width="1.6" height="12" rx=".6" fill="#c3c8cd"/>
-    </symbol>
-    <symbol id="ic-mat-sand" viewBox="0 0 24 24">
-      <circle cx="17" cy="7" r="3" fill="#f1cf83"/>
-      <path d="M3 16c2-3 4-3 6-1s4 2 6 0 4-3 6-1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2z" fill="#dcc07a"/>
     </symbol>
     <symbol id="ic-mat-glass" viewBox="0 0 24 24">
       <rect x="5" y="4" width="14" height="16" rx="1.6" fill="#bfe1f7" opacity=".55" stroke="#7fb3dd" stroke-width="1.4"/>
@@ -2254,10 +2251,10 @@
   /* gardens that yield raw materials once a plant reaches max level (tap a matured max-level
      plant to harvest it into the warehouse via a short ad, instead of merging it further):
      Ogród Nadziei & Ogród Tropikalny grow food (fed to town residents — see FOOD_PER_PERSON),
-     Gaj Drzewny grows wood, Kamieniołom grows stone, Huta Szkła grows sand, Kuźnia grows iron —
+     Gaj Drzewny grows wood, Kamieniołom grows stone, Huta Szkła grows glass, Kuźnia grows iron —
      each one goes straight into construction (see BUILDINGS' cost objects), with no crafting
      step in between any more. Ogród Kwiatowy stays a pure decorative/Dobro garden. */
-  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'sand', 6:'iron'};
+  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'glass', 6:'iron'};
   var MAX_LEVEL = 6, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
@@ -2284,7 +2281,7 @@
 
   /* ================= state ================= */
   var gardens = {}; var unlockedMax = 0; var active = 0;
-  var dobro = 12, hearts = 5, allTime = 0, milestoneIdx = 0;
+  var dobro = 12, hearts = 5, allTime = 0, lifetimeGoodProduced = 0, milestoneIdx = 0;
   var honeyStacks = 0, extraDonated = 0, secretGuaranteed = false;
   var activeBoosts = {}; var combo = 1, comboResetTimer = null;
   var screen = 'garden'; var rankTab = 'time'; var votes = {}; var votedAlready = false;
@@ -2303,30 +2300,30 @@
 
   /* ---- materials warehouse & town (charity buildings) ---- */
   /* Buildings used to need a "second tier" of refined materials (nails from iron from stone,
-     plank from wood, glass from sand) via an ad-gated refine action -- removed per explicit
+     plank from wood, glass from the glass garden) via an ad-gated refine action -- removed per explicit
      request: buildings are now built directly from whatever's already sitting in the warehouse,
      all six of which come straight from a garden (HARVESTABLE_GARDENS above), a "bank" food
      trade, or an ad (water). One fewer thing for the player to learn before the game's market
      launch; the plan is to spend that complexity budget on the next-city feature instead. */
-  var warehouse = {water:0, food:0, wood:0, stone:0, iron:0, sand:0};
+  var warehouse = {water:0, food:0, wood:0, stone:0, iron:0, glass:0};
   var warehouseCap = 40;
-  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', stone:'🪨', iron:'⚙️', sand:'🏖️'};
+  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', stone:'🪨', iron:'⚙️', glass:'🪟'};
   /* "bank" — trade a surplus of food for whichever raw material is running low, so the town
      never gets permanently stuck waiting on one specific garden (still ad-gated, same as every
      other exchange in the warehouse). This is NOT the old refine tier — it trades one raw
      material (food) for another raw material used directly in construction, no intermediate
      crafted goods involved. */
-  var BANK_EXCHANGE = {wood:{from:'food', need:10}, stone:{from:'food', need:10}, sand:{from:'food', need:10}};
+  var BANK_EXCHANGE = {wood:{from:'food', need:10}, stone:{from:'food', need:10}, glass:{from:'food', need:10}};
   var RENT_MS = 3*60*1000; /* 1 "month" is compressed to 3 minutes for this demo build */
-  var FOOD_PER_PERSON = 0.03; /* Dobro/sec worth of 🍎 each resident eats — keeps the town from running forever on one harvest */
+  var FOOD_PER_PERSON = 0.03; /* retained for old saves/UI compatibility; Stage 1 uses per-building consumption below */
   var cityFed = true;
   /* ---- TEST-ONLY toggle: when true, every building in the picker shows as immediately
      placeable (materials/money requirements bypassed, nothing is deducted from the warehouse or
      wallet) so it can be tested without grinding resources first. Flip to false (or delete this
      block) before a real release build. ---- */
-  var TEST_UNLOCK_ALL_BUILDINGS = true;
+  var TEST_UNLOCK_ALL_BUILDINGS = false;
   /* Costs below were remapped off the old refined materials (nails/plank/glass) onto the raw
-     material each one used to be crafted from (nails→iron, plank→wood, glass→sand), folding the
+     material each one uses directly (nails→iron, plank→wood, glass→glass), folding the
      amount straight into that raw material's existing cost line where the building already
      needed some. This is a deliberate simplification, not a difficulty-preserving conversion —
      the old ad-gated refine chain (e.g. 1 nail cost 3 iron which cost 5 stone each) made the
@@ -2339,21 +2336,21 @@
     {key:'needyhome', icon:'🏘️', fam:'housing', people:6, cost:{wood:6, water:6}},
     {key:'senior', icon:'🏠', fam:'housing', people:4, cost:{wood:15, iron:8, water:10}},
     {key:'orphan', icon:'🧸', fam:'housing', people:5, cost:{wood:12, stone:8, water:10}},
-    {key:'hospital', icon:'🏥', fam:'care', people:8, cost:{stone:20, iron:20, wood:6, sand:4, water:20}},
+    {key:'hospital', icon:'🏥', fam:'care', people:8, cost:{stone:20, iron:20, wood:6, glass:4, water:20}},
     {key:'hospice', icon:'🕊️', fam:'care', people:3, cost:{wood:18, stone:10, water:15}},
-    {key:'chapel', icon:'🕯️', fam:'care', people:3, cost:{wood:16, stone:8, sand:6, water:14}},
+    {key:'chapel', icon:'🕯️', fam:'care', people:3, cost:{wood:16, stone:8, glass:6, water:14}},
     {key:'shelter', icon:'🐾', fam:'care', people:2, cost:{wood:8, stone:5, water:8}},
-    {key:'library', icon:'📚', fam:'culture', people:3, cost:{wood:10, sand:6, iron:4, water:12}},
+    {key:'library', icon:'📚', fam:'culture', people:3, cost:{wood:10, glass:6, iron:4, water:12}},
     /* everyday city infrastructure — more people, and each pulls from more gardens than the
        one before it, so the town keeps needing every garden as it grows (per the "bigger
        building → more varied materials" rule). */
-    {key:'cafe', icon:'☕', fam:'food', people:3, cost:{wood:10, sand:5, water:10}},
-    {key:'florist', icon:'💐', fam:'shop', people:3, cost:{wood:8, sand:6, water:8}},
+    {key:'cafe', icon:'☕', fam:'food', people:3, cost:{wood:10, glass:5, water:10}},
+    {key:'florist', icon:'💐', fam:'shop', people:3, cost:{wood:8, glass:6, water:8}},
     {key:'restaurant', icon:'🍽️', fam:'food', people:4, cost:{wood:14, stone:8, iron:6, water:15}},
-    {key:'cinema', icon:'🎬', fam:'culture', people:6, cost:{stone:16, iron:18, sand:12, water:18}},
-    {key:'mall', icon:'🏬', fam:'shop', people:10, cost:{stone:25, iron:27, sand:20, wood:15, water:25}},
+    {key:'cinema', icon:'🎬', fam:'culture', people:6, cost:{stone:16, iron:18, glass:12, water:18}},
+    {key:'mall', icon:'🏬', fam:'shop', people:10, cost:{stone:25, iron:27, glass:20, wood:15, water:25}},
     {key:'repairshop', icon:'🔧', fam:'shop', people:4, cost:{stone:14, iron:20, water:14}},
-    {key:'clothingpoint', icon:'👕', fam:'care', people:4, cost:{wood:18, sand:5, water:12}},
+    {key:'clothingpoint', icon:'👕', fam:'care', people:4, cost:{wood:18, glass:5, water:12}},
     {key:'forge', icon:'🔨', fam:'shop', people:4, cost:{stone:16, iron:24, water:16}},
     {key:'foodbank', icon:'🥫', fam:'food', people:6, moneyOnly:true, moneyCost:49},
     {key:'mobileclinic', icon:'🚐', fam:'care', people:5, rentable:true, rentCost:29, rentMs:RENT_MS}
@@ -2438,6 +2435,16 @@
   var FIELD_PACK_STEP = 2 + FIELD_MIN_GAP;
   var CITY_PLOTS = Math.ceil(FIELD_COLS/FIELD_PACK_STEP) * Math.ceil(FIELD_LAND_ROWS/FIELD_PACK_STEP);
   var BUILDING_BY_KEY = {}; BUILDINGS.forEach(function(b){ BUILDING_BY_KEY[b.key] = b; });
+  /* Stage 1 keeps the old catalogue/UI intact, while giving every building the new economy
+     contract. Individual placed buildings receive the same fields when loaded or placed. */
+  BUILDINGS.forEach(function(def){
+    var economyDefaults = window.DobrySadEconomy.buildingDefaults(def);
+    def.materialCost = economyDefaults.materialCost;
+    def.foodConsumption = economyDefaults.foodConsumption;
+    def.waterConsumption = economyDefaults.waterConsumption;
+    def.goodProduction = economyDefaults.goodProduction;
+    def.active = false;
+  });
   /* ---- city decorations: trees/bushes the player places themselves, free of charge (no
      materials or money cost -- this is purely cosmetic, not part of the build economy). Uses the
      real tree art that already exists (assets.js); a dedicated "bush" art asset doesn't exist yet
@@ -2699,7 +2706,8 @@
   }
   function buildingCost(def){
     var out = {};
-    for(var k in def.cost) out[k] = Math.ceil(def.cost[k]);
+    var materialCost = def.materialCost || def.cost || {};
+    for(var k in materialCost) out[k] = Math.ceil(materialCost[k]);
     return out;
   }
   function moneyCostFor(def){ return Math.ceil(def.moneyCost); }
@@ -2751,8 +2759,8 @@
   function saveGame(){
     try{
       var state = {
-        v:1, LANG:LANG,
-        dobro:dobro, hearts:hearts, allTime:allTime, milestoneIdx:milestoneIdx,
+        v:2, LANG:LANG,
+        dobro:dobro, hearts:hearts, allTime:allTime, lifetimeGoodProduced:lifetimeGoodProduced, milestoneIdx:milestoneIdx,
         honeyStacks:honeyStacks, extraDonated:extraDonated, secretGuaranteed:secretGuaranteed,
         unlockedMax:unlockedMax, active:active,
         gardens:serializeGardens(),
@@ -2773,7 +2781,11 @@
       if(typeof s.LANG === 'string') LANG = s.LANG;
       if(typeof s.dobro === 'number') dobro = s.dobro;
       if(typeof s.hearts === 'number') hearts = s.hearts;
-      if(typeof s.allTime === 'number') allTime = s.allTime;
+      if(typeof s.allTime === 'number') allTime = Math.max(0, s.allTime);
+      /* `allTime` was the pre-Stage-1 lifetime Good counter. Keep it for existing milestone
+         UI, and initialise the explicit new field from it for every old save. */
+      if(typeof s.lifetimeGoodProduced === 'number') lifetimeGoodProduced = Math.max(0, s.lifetimeGoodProduced);
+      else lifetimeGoodProduced = allTime;
       if(typeof s.milestoneIdx === 'number') milestoneIdx = s.milestoneIdx;
       if(typeof s.honeyStacks === 'number') honeyStacks = s.honeyStacks;
       if(typeof s.extraDonated === 'number') extraDonated = s.extraDonated;
@@ -2794,7 +2806,7 @@
         }}
         gardens = loaded;
       }
-      if(s.warehouse && typeof s.warehouse==='object'){ for(var wk in warehouse){ if(typeof s.warehouse[wk]==='number') warehouse[wk]=s.warehouse[wk]; } }
+      if(s.warehouse && typeof s.warehouse==='object') warehouse = window.DobrySadEconomy.migrateWarehouse(s.warehouse);
       if(typeof s.warehouseCap === 'number') warehouseCap = s.warehouseCap;
       if(s.inventory && typeof s.inventory==='object'){ for(var ik in inventory){ if(typeof s.inventory[ik]==='number') inventory[ik]=s.inventory[ik]; } }
       if(typeof s.boughtSeeds === 'number') boughtSeeds = s.boughtSeeds;
@@ -2814,7 +2826,9 @@
             if(!p || typeof p!=='object' || typeof p.key!=='string'){ plots.push(null); continue; }
             var hasPos = typeof p.col==='number' && typeof p.row==='number';
             var pos = hasPos ? {col:p.col, row:p.row} : {col:(i%CITY_COLS)*2, row:FIELD_ROW0+Math.floor(i/CITY_COLS)*2};
-            plots.push({key:p.key, col:pos.col, row:pos.row, rentUntil: typeof p.rentUntil==='number'?p.rentUntil:undefined});
+            var loadedPlot = {key:p.key, col:pos.col, row:pos.row, rentUntil: typeof p.rentUntil==='number'?p.rentUntil:undefined};
+            window.DobrySadEconomy.ensureBuildingEconomy(loadedPlot, BUILDING_BY_KEY[loadedPlot.key]);
+            plots.push(loadedPlot);
           }
           var nm = (c && typeof c.name === 'string' && c.name.trim()) ? c.name.trim().slice(0,18) : null;
           // decor didn't exist in older saves -- Array.isArray guards that, and each entry is
@@ -2849,6 +2863,7 @@
           var mDef = BUILDING_BY_KEY[key];
           var mPlot = {key:key, col:(mpi%CITY_COLS)*2, row:FIELD_ROW0+Math.floor(mpi/CITY_COLS)*2};
           if(mDef && mDef.rentable && s.townRent && typeof s.townRent[key]==='number') mPlot.rentUntil = s.townRent[key];
+          window.DobrySadEconomy.ensureBuildingEconomy(mPlot, mDef);
           migrated[mci].plots[mpi] = mPlot; mpi++;
         });
         cities = migrated;
@@ -3042,17 +3057,15 @@
   function totalProduction(gardenIdx){
     var g = ensureGarden(gardenIdx); var sum=0;
     for(var i=0;i<g.board.length;i++) sum += production(gardenIdx, i);
-    var peopleBonus = cityFed ? totalResidents()*0.4 : 0;
-    return sum * (1+honeyStacks*0.05) + peopleBonus;
+    return sum * (1+honeyStacks*0.05);
   }
-  /* residents eat 🍎 food every second — without it they stop boosting Dobro until the
-     warehouse gets more food (from Ogród Nadziei / Ogród Tropikalny). This is what keeps the
-     town from ever being "finished": there is always another resource to keep flowing. */
-  function tickFood(){
-    var need = totalResidents()*FOOD_PER_PERSON;
-    if(need<=0){ cityFed = true; return; }
-    if(warehouse.food >= need){ warehouse.food -= need; cityFed = true; }
-    else { warehouse.food = 0; cityFed = false; }
+  /* Stage 1 building economy: each placed building consumes food and water independently.
+     A shortfall pauses that building only; it remains on the map and resumes automatically
+     as soon as both resources are available again. */
+  function tickBuildingEconomy(){
+    var result = window.DobrySadEconomy.tickBuildings(cities, warehouse, BUILDING_BY_KEY, Date.now());
+    cityFed = !result.hasPausedBuilding;
+    return result.produced;
   }
 
   function checkMilestone(){
@@ -3063,7 +3076,12 @@
       milestoneIdx++;
     }
   }
-  function addAllTime(n){ allTime += n; checkMilestone(); }
+  function addAllTime(n){
+    if(typeof n !== 'number' || !isFinite(n) || n <= 0) return;
+    allTime += n;
+    lifetimeGoodProduced += n;
+    checkMilestone();
+  }
 
   /* ---- static text application ---- */
   function applyStatic(){
@@ -3601,6 +3619,7 @@
     var def = BUILDING_BY_KEY[key];
     var plot = {key:key, col:col, row:row};
     if(def.rentable) plot.rentUntil = Date.now() + def.rentMs;
+    window.DobrySadEconomy.ensureBuildingEconomy(plot, def);
     var slot = cities[cityIdx].plots.indexOf(null);
     if(slot < 0) return; // shouldn't happen -- buildBuilding/buildWithMoney/rentBuilding already gate on cityIsFull
     cities[cityIdx].plots[slot] = plot;
@@ -4167,7 +4186,7 @@
     whHereLbl.textContent = t.whHereLbl(total, warehouseCap);
     whHereBar.style.width = pct + '%';
     whGrid.innerHTML = '';
-    ['water','food','wood','stone','iron','sand'].forEach(function(k){
+    ['water','food','wood','stone','iron','glass'].forEach(function(k){
       var chip = document.createElement('div'); chip.className = 'wh-chip';
       var fillPct = Math.min(100, Math.round((warehouse[k]||0)/warehouseCap*100));
       chip.innerHTML = '<span class="wi"><svg><use href="#ic-mat-'+k+'"/></svg></span>'+
@@ -4608,7 +4627,7 @@
     matEl.querySelector('button').onclick = function(){
       var room = warehouseCap - warehouseTotal();
       if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
-      var bundle = {wood:6, stone:6, iron:6, sand:6, food:3};
+      var bundle = {wood:6, stone:6, iron:6, glass:6, food:3};
       for(var mk in bundle){
         if(room<=0) break;
         var give = Math.min(bundle[mk], room);
@@ -5156,8 +5175,8 @@
   renderAll();
   var tickCount = 0;
   setInterval(function(){
-    tickFood();
-    var perSec = totalProduction(active);
+    var buildingGood = tickBuildingEconomy();
+    var perSec = totalProduction(active) + buildingGood;
     if(perSec>0){ dobro += perSec; addAllTime(perSec); }
     if(boostActive('automergeAll')) autoMergeAllStep();
     else if(boostActive('automerge')) autoMergeStep(active);

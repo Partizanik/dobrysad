@@ -655,10 +655,6 @@
       <rect x="10.3" y="6" width="3.4" height="2.2" rx=".6" fill="#9aa0a6"/>
       <rect x="11.2" y="8" width="1.6" height="12" rx=".6" fill="#c3c8cd"/>
     </symbol>
-    <symbol id="ic-mat-sand" viewBox="0 0 24 24">
-      <circle cx="17" cy="7" r="3" fill="#f1cf83"/>
-      <path d="M3 16c2-3 4-3 6-1s4 2 6 0 4-3 6-1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2z" fill="#dcc07a"/>
-    </symbol>
     <symbol id="ic-mat-glass" viewBox="0 0 24 24">
       <rect x="5" y="4" width="14" height="16" rx="1.6" fill="#bfe1f7" opacity=".55" stroke="#7fb3dd" stroke-width="1.4"/>
       <line x1="5" y1="12" x2="19" y2="12" stroke="#7fb3dd" stroke-width="1"/>
@@ -1595,10 +1591,10 @@
      plant to harvest it into the warehouse via a short ad, instead of merging it further):
      Ogród Nadziei & Ogród Tropikalny grow food (fed to town residents — see FOOD_PER_PERSON),
      Gaj Drzewny grows wood (→ planks), Kamieniołom grows stone (→ nails via iron),
-     Huta Szkła grows sand (→ glass), Kuźnia grows iron directly (also buildable via
+     Huta Szkła grows glass, Kuźnia grows iron directly (also buildable via
      stone → iron refining, see REFINE — two paths into the same warehouse count).
      Ogród Kwiatowy stays a pure decorative/Dobro garden. */
-  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'sand', 6:'iron'};
+  var HARVESTABLE_GARDENS = {0:'food', 1:'food', 2:'wood', 4:'stone', 5:'glass', 6:'iron'};
   var MAX_LEVEL = 6, SECRET_OFFSET = 100, MATURE_MS = 24000;
   var MILESTONE_T = [50,150,400,900,2000,4000,8000,15000,30000];
   var MILESTONE_ICON = ['🥕','🍽️','💧','📚','🌳','🧸','🏥','🎓','🏡'];
@@ -1643,14 +1639,14 @@
   function adWatched(){ adsWatched++; }
 
   /* ---- materials warehouse & town (charity buildings) ---- */
-  var warehouse = {water:0, food:0, wood:0, plank:0, stone:0, iron:0, nails:0, sand:0, glass:0};
+  var warehouse = {water:0, food:0, wood:0, plank:0, stone:0, iron:0, nails:0, glass:0};
   var warehouseCap = 40;
-  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', plank:'🟫', stone:'🪨', iron:'⚙️', nails:'🔩', sand:'🏖️', glass:'🪟'};
-  var REFINE = {iron:{from:'stone', need:5}, nails:{from:'iron', need:3}, plank:{from:'wood', need:5}, glass:{from:'sand', need:4}};
+  var MATERIAL_ICON = {water:'💧', food:'🍎', wood:'🪵', plank:'🟫', stone:'🪨', iron:'⚙️', nails:'🔩', glass:'🪟'};
+  var REFINE = {iron:{from:'stone', need:5}, nails:{from:'iron', need:3}, plank:{from:'wood', need:5}};
   /* "bank" — trade a surplus of food for whichever raw material is running low, so the town
      never gets permanently stuck waiting on one specific garden (still ad-gated, same as every
      other exchange in the warehouse). */
-  var BANK_EXCHANGE = {wood:{from:'food', need:10}, stone:{from:'food', need:10}, sand:{from:'food', need:10}};
+  var BANK_EXCHANGE = {wood:{from:'food', need:10}, stone:{from:'food', need:10}, glass:{from:'food', need:10}};
   var RENT_MS = 3*60*1000; /* 1 "month" is compressed to 3 minutes for this demo build */
   var FOOD_PER_PERSON = 0.03; /* Dobro/sec worth of 🍎 each resident eats — keeps the town from running forever on one harvest */
   var cityFed = true;
@@ -1858,7 +1854,10 @@
         }}
         gardens = loaded;
       }
-      if(s.warehouse && typeof s.warehouse==='object'){ for(var wk in warehouse){ if(typeof s.warehouse[wk]==='number') warehouse[wk]=s.warehouse[wk]; } }
+      if(s.warehouse && typeof s.warehouse==='object'){
+        for(var wk in warehouse){ if(typeof s.warehouse[wk]==='number') warehouse[wk]=s.warehouse[wk]; }
+        if(typeof s.warehouse.sand==='number') warehouse.glass += Math.max(0, s.warehouse.sand);
+      }
       if(typeof s.warehouseCap === 'number') warehouseCap = s.warehouseCap;
       if(s.inventory && typeof s.inventory==='object'){ for(var ik in inventory){ if(typeof s.inventory[ik]==='number') inventory[ik]=s.inventory[ik]; } }
       if(typeof s.boughtSeeds === 'number') boughtSeeds = s.boughtSeeds;
@@ -3101,7 +3100,7 @@
     whHereLbl.textContent = t.whHereLbl(total, warehouseCap);
     whHereBar.style.width = pct + '%';
     whGrid.innerHTML = '';
-    ['water','food','wood','plank','stone','iron','nails','sand','glass'].forEach(function(k){
+    ['water','food','wood','plank','stone','iron','nails','glass'].forEach(function(k){
       var chip = document.createElement('div'); chip.className = 'wh-chip';
       var fillPct = Math.min(100, Math.round((warehouse[k]||0)/warehouseCap*100));
       chip.innerHTML = '<span class="wi"><svg><use href="#ic-mat-'+k+'"/></svg></span>'+
@@ -3351,7 +3350,7 @@
     matEl.querySelector('button').onclick = function(){
       var room = warehouseCap - warehouseTotal();
       if(room<=0){ toast(T().toast.warehouseFull); sfx('deny'); return; }
-      var bundle = {wood:3, stone:3, iron:3, nails:3, plank:3, sand:3, glass:3, food:3};
+      var bundle = {wood:3, stone:3, iron:3, nails:3, plank:3, glass:3, food:3};
       for(var mk in bundle){
         if(room<=0) break;
         var give = Math.min(bundle[mk], room);
